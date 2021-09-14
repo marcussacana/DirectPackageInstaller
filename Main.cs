@@ -120,7 +120,7 @@ namespace DirectPackageInstaller
                 btnLoadUrl.Text = "Install";
             }
             catch {
-                SetStatus("Failed to Open the NPK");
+                SetStatus("Failed to Open the PKG");
             }   
         }
 
