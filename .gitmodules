@@ -1,0 +1,3 @@
+[submodule "HttpServerLite"]
+	path = HttpServerLite
+	url = https://github.com/marcussacana/HttpServerLite
