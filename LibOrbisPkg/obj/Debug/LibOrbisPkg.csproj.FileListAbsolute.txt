@@ -1,6 +1,5 @@
-C:\Users\Marcus\source\repos\DirectPackageInstaller\LibOrbisPkg\bin\Debug\LibOrbisPkg.dll
-C:\Users\Marcus\source\repos\DirectPackageInstaller\LibOrbisPkg\bin\Debug\LibOrbisPkg.pdb
-C:\Users\Marcus\source\repos\DirectPackageInstaller\LibOrbisPkg\obj\Debug\LibOrbisPkg.csproj.AssemblyReference.cache
-C:\Users\Marcus\source\repos\DirectPackageInstaller\LibOrbisPkg\obj\Debug\LibOrbisPkg.csproj.CoreCompileInputs.cache
-C:\Users\Marcus\source\repos\DirectPackageInstaller\LibOrbisPkg\obj\Debug\LibOrbisPkg.dll
-C:\Users\Marcus\source\repos\DirectPackageInstaller\LibOrbisPkg\obj\Debug\LibOrbisPkg.pdb
+C:\Users\Marcus\Documents\GitHub\DirectPackageInstaller\LibOrbisPkg\bin\Debug\LibOrbisPkg.dll
+C:\Users\Marcus\Documents\GitHub\DirectPackageInstaller\LibOrbisPkg\bin\Debug\LibOrbisPkg.pdb
+C:\Users\Marcus\Documents\GitHub\DirectPackageInstaller\LibOrbisPkg\obj\Debug\LibOrbisPkg.csproj.CoreCompileInputs.cache
+C:\Users\Marcus\Documents\GitHub\DirectPackageInstaller\LibOrbisPkg\obj\Debug\LibOrbisPkg.dll
+C:\Users\Marcus\Documents\GitHub\DirectPackageInstaller\LibOrbisPkg\obj\Debug\LibOrbisPkg.pdb

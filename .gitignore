@@ -289,3 +289,7 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+[Pp]ackages/
+[Oo]bj/
+[Bb]in/

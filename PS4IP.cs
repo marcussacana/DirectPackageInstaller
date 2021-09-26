@@ -71,6 +71,7 @@ namespace DirectPackageInstaller
             this.Controls.Add(this.lblIP);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
             this.Name = "PS4IP";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Confirm your PS4 IP";
             this.ResumeLayout(false);
             this.PerformLayout();

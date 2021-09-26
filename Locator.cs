@@ -1,61 +1,95 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Net.NetworkInformation;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace DirectPackageInstaller
 {
     static class Locator
     {
-        internal static List<string> Devices = new List<string>();
-        internal static void Locate()
-        {
-            while (Devices.Count == 0)
-            {
-                foreach (NetworkInterface Interface in NetworkInterface.GetAllNetworkInterfaces())
-                    if (Interface.NetworkInterfaceType == NetworkInterfaceType.Wireless80211 || Interface.NetworkInterfaceType == NetworkInterfaceType.Ethernet)
-                        foreach (UnicastIPAddressInformation IpInfo in Interface.GetIPProperties().UnicastAddresses)
-                            if (IpInfo.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
-                            {
+        static bool Searching = true;
+        public static Action<string> OnPS4DeviceFound = null;
 
-                                var Address = IpInfo.Address.GetAddressBytes();
-                                for (int i = 100; i < 255; i++)
-                                {
-                                    var IP = $"{Address[0]}.{Address[1]}.{Address[2]}.{i}";
-                                    if (IsValidPS4IP(IP))
-                                        Devices.Add(IP);
-                                }
-                                for (int i = 1; i < 99; i++)
-                                {
-                                    var IP = $"{Address[0]}.{Address[1]}.{Address[2]}.{i}";
-                                    if (IsValidPS4IP(IP))
-                                        Devices.Add(IP);
-                                }
+        internal static List<string> LocalIPs = new List<string>();
+        internal static List<string> Devices = new List<string>();
+        internal static void Locate(bool Persist)
+        {
+            do
+            {
+                SearchInterfaces();
+
+                foreach (NetworkInterface Interface in NetworkInterface.GetAllNetworkInterfaces().Where(x => x.NetworkInterfaceType == NetworkInterfaceType.Wireless80211 || x.NetworkInterfaceType == NetworkInterfaceType.Ethernet))
+                    foreach (UnicastIPAddressInformation IpInfo in Interface.GetIPProperties().UnicastAddresses.Where(x => x.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork))
+                    {
+                        if (Interface.OperationalStatus != OperationalStatus.Up)
+                            continue;
+
+                        if (Devices.Count > 0)
+                            return;
+
+                        var Address = IpInfo.Address.GetAddressBytes();
+                        var ParallelOpt = new ParallelOptions() { MaxDegreeOfParallelism = 10 };
+
+                        var Result = Parallel.For(0, 256, ParallelOpt, (i) =>
+                        {
+                            if (Devices.Count > 0)
+                                return;
+
+                            var IP = $"{Address[0]}.{Address[1]}.{Address[2]}.{i}";
+                            if (IsValidPS4IP(IP))
+                            {
+                                Devices.Add(IP);
+                                OnPS4DeviceFound(IP);
                             }
+                        });
+
+                        while (!Result.IsCompleted)
+                            Thread.Sleep(100);
+                    }
 
                 Thread.Sleep(3000);
-            }
+            } while (Devices.Count == 0 && Persist);
 
+        }
+
+        public static string FindLocalIP(string RemoteIP) {
+            if (Searching)
+                SearchInterfaces();
+            string RemotePartial = RemoteIP.Substring(0, RemoteIP.LastIndexOf('.'));
+            return LocalIPs.Where(x => x.StartsWith(RemotePartial)).Single();
+        }
+
+        static void SearchInterfaces()
+        {
+            foreach (NetworkInterface Interface in NetworkInterface.GetAllNetworkInterfaces().Where(x => x.NetworkInterfaceType == NetworkInterfaceType.Wireless80211 || x.NetworkInterfaceType == NetworkInterfaceType.Ethernet))
+                foreach (UnicastIPAddressInformation IpInfo in Interface.GetIPProperties().UnicastAddresses.Where(x => x.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork))
+                {
+                    if (Interface.OperationalStatus != OperationalStatus.Up)
+                        continue;
+
+                    if (!LocalIPs.Contains(IpInfo.Address.ToString()))
+                        LocalIPs.Add(IpInfo.Address.ToString());
+                }
+
+            Searching = false;
         }
 
         public static bool IsValidPS4IP(string IP)
         {
-            var Client = new HttpClient();
+            using var Client = new HttpClient();
             Client.Timeout = TimeSpan.FromMilliseconds(500);
             var APIUrl = $"http://{IP}:12800/api";
 
             try
             {
-                var Response = Client.GetAsync(APIUrl).GetAwaiter().GetResult();
+                using var Response = Client.GetAsync(APIUrl).GetAwaiter().GetResult();
                 var Resp = Response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
                 if (Resp.Contains("Unsupported method") && Resp.Contains("fail"))
                     return true;
-
             }
             catch { }
             return false;
