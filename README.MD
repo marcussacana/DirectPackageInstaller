@@ -34,7 +34,7 @@ A tool to preview and send PKG to your PS4 Remote Package Installer HB from dire
 	- Click at "Load" and wait.
 	- [Optional] Select the correct PKG in the file list
 	- Click at "Install" and wait again.
-	- It's done, you can close the DirectPackageInstaller or turn off your computer.
+	- It's done, you can't close the DirectPackageInstaller or turn off your computer.
 
 ### How It Works
 The tool it self is very simple, the Remote Package Installer have an API that allow you put packages from URLs into your PS4 download queue, the DirectPackageInstaller just use that API to push to your PS4 the download URL, helping only to you preview the PKG that you're installing.
