@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -206,6 +207,9 @@ namespace DirectPackageInstaller
                 {
                     HttpRequestsCount++;
 
+                    if (req != null)
+                        req.ServicePoint.CloseConnectionGroup(req.ConnectionGroupName);
+
                     if (ResponseStream != null)
                     {
                         ResponseStream?.Close();
@@ -219,7 +223,10 @@ namespace DirectPackageInstaller
                     }
 
                     req = HttpWebRequest.CreateHttp(Url);
+                    req.ConnectionGroupName = new Guid().ToString();
                     req.CookieContainer = Cookies;
+                    req.KeepAlive = false;
+                    req.ServicePoint.SetTcpKeepAlive(false, 1000 * 120, 1000 * 5);
 
 
                     req.AddRange(Position, Length - 1);
@@ -248,6 +255,9 @@ namespace DirectPackageInstaller
             }
             catch (WebException ex)
             {
+                if (req != null)
+                    req.ServicePoint.CloseConnectionGroup(req.ConnectionGroupName);
+
                 ResponseStream?.Dispose();
                 ResponseStream = null;
 
@@ -324,10 +334,19 @@ namespace DirectPackageInstaller
             }
         }
 
+        static Dictionary<string, (string Filename, long Length)> HeadCache = new Dictionary<string, (string Filename, long Length)>();
         private long HttpGetLength()
         {
+            if (HeadCache.ContainsKey(Url))
+            {
+                _fn = HeadCache[Url].Filename;
+                return HeadCache[Url].Length;
+            }
+
             HttpRequestsCount++;
             HttpWebRequest request = WebRequest.CreateHttp(Url);
+            request.ConnectionGroupName = new Guid().ToString();
+            request.KeepAlive = false;
             request.CookieContainer = Cookies;
             request.Method = "HEAD";
             using var response = request.GetResponse();
@@ -341,6 +360,10 @@ namespace DirectPackageInstaller
             
             var Length = response.ContentLength;
             response?.Close();
+
+            request.ServicePoint.CloseConnectionGroup(request.ConnectionGroupName);
+
+            HeadCache[Url] = (_fn, Length);
 
             return Length;
         }

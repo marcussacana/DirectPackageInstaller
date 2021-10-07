@@ -20,12 +20,24 @@ namespace DirectPackageInstaller
         }
 
         public Dictionary<string, DecompressTaskInfo> Tasks = new Dictionary<string, DecompressTaskInfo>();
-        
+
         public async Task<string> CreateUnrar(string Url, string Entry)
         {
             string EntryName = Entry;
-            var Input = new PartialHttpStream(Url, 1024 * 100);
-            var Archive = RarArchive.Open(Input);
+            Stream[] Inputs;
+
+            string Password = null;
+            if (Main.RARInfo.ContainsKey(Url))
+            {
+                var Info = Main.RARInfo[Url];
+                Inputs = Info.Links.Select(x => new PartialHttpStream(x, 1024 * 100)).ToArray();
+                Password = Info.Password;
+            }
+            else Inputs = new Stream[] { new PartialHttpStream(Url, 1024 * 100) };
+
+            var Archive = RarArchive.Open(Inputs, new SharpCompress.Readers.ReaderOptions() {
+                Password = Password
+            });
             
             IArchiveEntry PKG;
             var PKGs = Archive.Entries.Where(x => x.Key.EndsWith(".pkg", StringComparison.OrdinalIgnoreCase));
@@ -51,7 +63,7 @@ namespace DirectPackageInstaller
                     TaskCompSrc.SetResult(true);
                     return;
                 }
-                
+
                 var Input = Entry.OpenEntryStream();
                 var TmpFile = TempHelper.GetTempFile(EntryName + "extract");
                 

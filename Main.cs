@@ -2,7 +2,9 @@
 using LibOrbisPkg.PKG;
 using SharpCompress.Archives;
 using SharpCompress.Archives.Rar;
+using SharpCompress.Readers;
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
 using System.IO;
@@ -125,7 +127,7 @@ namespace DirectPackageInstaller
                     case CompressionFormat.RAR:
                         Compressed = true;
                         SetStatus("Decompressing...");
-                        var Unrar = UnrarPKG(PKGStream, sender is string ? (string)sender : null);
+                        var Unrar = UnrarPKG(PKGStream, tbURL.Text, sender is string ? (string)sender : null);
                         PKGStream = Unrar.Buffer;
                         EntryName = Unrar.Filename;
                         EntrySize = Unrar.Length;
@@ -210,6 +212,9 @@ namespace DirectPackageInstaller
         }
         private void ListEntries(string[] PKGList)
         {
+            if (PKGList == null)
+                return;
+
             if (miPackages.Visible = PKGList.Length > 1)
             {
                 miPackages.DropDownItems.Clear();
@@ -255,7 +260,7 @@ namespace DirectPackageInstaller
 
         string EntryName = null;
         long EntrySize = -1;
-        private async Task<bool> Install(string URL, bool Silent)
+        private async Task<bool> Install(string URL, bool Silent, int Retries = 10)
         {
             btnLoadUrl.Text = "Pushing...";
             miPackages.Enabled = false;
@@ -375,6 +380,11 @@ namespace DirectPackageInstaller
                         }
                         catch { }
                     }
+                    
+                    if (Compressed && Retries > 0)
+                    {
+                        return await Install(URL, Silent, Retries - 1);
+                    }
 
                     MessageBox.Show("Failed:\n" + Result == null ? ex.ToString() : Result, "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return false;
@@ -428,22 +438,85 @@ namespace DirectPackageInstaller
             } + $" ({CatID})";
         }
 
-        public static (IArchive Archive, Stream Buffer, string Filename, string[] PKGList, long Length) UnrarPKG(Stream RAR, string EntryName = null, bool Seekable = true)
+        public static Dictionary<string, (string[] Links, string Password)> RARInfo = new Dictionary<string, (string[] Links, string Password)>();
+        public static (IArchive Archive, Stream Buffer, string Filename, string[] PKGList, long Length) UnrarPKG(Stream Volume, string FirstUrl, string EntryName = null, bool Seekable = true, string Password = null) => UnrarPKG(new Stream[] { Volume }, FirstUrl, EntryName, Seekable, Password);
+        public static (IArchive Archive, Stream Buffer, string Filename, string[] PKGList, long Length) UnrarPKG(Stream[] Volumes, string FirstUrl, string EntryName = null, bool Seekable = true, string Password = null)
         {
             bool Silent = EntryName != null;
-            var Archive = RarArchive.Open(RAR);
-            if (Archive.IsMultipartVolume())
+            var Archive = RarArchive.Open(Volumes, new ReaderOptions() {
+                Password = Password,
+                DisableCheckIncomplete = true
+            });
+
+            bool Encrypted = Archive.Entries.Where(x => x.IsEncrypted).Any();
+
+            if (Archive.IsMultipartVolume() && Volumes.Count() == 1)
+            {
+                Archive.Dispose();
+
+                if (RARInfo.ContainsKey(FirstUrl))
+                {
+                    var List = RARInfo[FirstUrl];
+                    return UnrarPKG(List.Links.Select(x => new PartialHttpStream(x)).ToArray(), FirstUrl, EntryName, Seekable, List.Password);
+                }
+                else
+                {
+                    var List = new LinkList(true, Encrypted, FirstUrl);
+                    if (List.ShowDialog() != DialogResult.OK)
+                        throw new Exception();
+
+                    RARInfo[FirstUrl] = (List.Links, List.Password);
+
+                    return UnrarPKG(List.Links.Select(x => new PartialHttpStream(x)).ToArray(), FirstUrl, EntryName, Seekable, List.Password);
+                }
+            } else if (Encrypted)
+            {
+                if (RARInfo.ContainsKey(FirstUrl))
+                {
+                    var List = RARInfo[FirstUrl];
+
+                    var Volume = Volumes.Single();
+                    Volume.Seek(0, SeekOrigin.Begin);
+
+                    return UnrarPKG(Volume, FirstUrl, EntryName, Seekable, List.Password);
+                }
+                else
+                {
+                    var List = new LinkList(false, Encrypted, FirstUrl);
+                    if (List.ShowDialog() != DialogResult.OK)
+                        throw new Exception();
+
+                    RARInfo[FirstUrl] = (List.Links, List.Password);
+
+                    var Volume = Volumes.Single();
+                    Volume.Seek(0, SeekOrigin.Begin);
+
+                    return UnrarPKG(Volume, FirstUrl, EntryName, Seekable, List.Password);
+                }
+            }
+
+            if (!Archive.IsComplete)
             {
                 if (!Silent)
-                    MessageBox.Show("Splitted RAR isn't Supported Currently", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Corrupted or missing RAR parts.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return (null, null, null, null, 0);
             }
 
+            var RARs = Archive.Entries.Where(x => Path.GetExtension(x.Key).StartsWith(".r", StringComparison.OrdinalIgnoreCase));
+            
             var PKGs = Archive.Entries.Where(x => x.Key.EndsWith(".pkg", StringComparison.OrdinalIgnoreCase));
+            
+            //if (RARs.Any() && !PKGs.Any())
+            //{
+            //    Archive = RarArchive.Open(RARs.ToList().Select(x => x.OpenEntryStream()));
+            //}
+
+            //PKGs = Archive.Entries.Where(x => x.Key.EndsWith(".pkg", StringComparison.OrdinalIgnoreCase));
+            
             if (!PKGs.Any())
             {
                 if (!Silent)
-                    MessageBox.Show("No PKG Found in the given file", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("No PKG Found in the given file" + (RARs.Any() ? "\nIt looks like this file has been redundantly compressed." : ""), "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return (null, null, null, null, 0);
             }
 

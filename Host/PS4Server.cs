@@ -72,6 +72,8 @@ namespace DirectPackageInstaller.Host
 
         Random Rand = new Random();
 
+        const long MaxSkipBufferSize = 1024 * 1024 * 10;
+
         public string IP { get => Server.Settings.Hostname; }
         public PS4Server(string IP, int Port = 9898)
         {
@@ -166,12 +168,7 @@ namespace DirectPackageInstaller.Host
                     Origin = new VirtualStream(Origin, Range?.Begin ?? 0, Context.Response.ContentLength.Value);
                 }
 
-                //Some lost connections keep open causing leak
-                //I'm trying solve this by putting a timeout in each connection
-                //The random time is to the client don't think the server is offline
-                //closing the connections at the same time.
                 var Token = new CancellationTokenSource();
-                Token.CancelAfter(TimeSpan.FromMinutes(Rand.Next(5, 10)));
                 await Context.Response.SendAsync(Context.Response.ContentLength.Value, Origin, Token.Token);
             }
             finally
@@ -227,21 +224,28 @@ namespace DirectPackageInstaller.Host
             }
 
             var InstanceID = Url + Entry;
+
+            DecompressTaskInfo TaskInfo = default;
+            bool SeekRequest = false;
             
-            if (FromPS4)
+            if (EntryMap.ContainsKey(Url)) {
+                TaskInfo = Tasks[EntryMap[Url]];
+                SeekRequest = (Range?.Begin ?? 0) > TaskInfo.SafeTotalDecompressed + MaxSkipBufferSize;
+            }
+            
+            if (FromPS4 || !SeekRequest)
             {
-                if (!Instances.ContainsKey(InstanceID))
-                    Instances[InstanceID] = 0;
-                //else if (Instances[InstanceID] > 0)
-                //   throw new Exception();
-
-                Instances[InstanceID]++;
-
-
-                var TaskInfo = Tasks[EntryMap[Url]];
-
                 if (TaskInfo.Failed)
                     Tasks.Remove(EntryMap[Url]);
+
+                
+                if (!Instances.ContainsKey(InstanceID))
+                    Instances[InstanceID] = 0;
+                else if (Instances[InstanceID] > 0 && SeekRequest)
+                   throw new Exception();
+
+                if (FromPS4)
+                    Instances[InstanceID]++;
 
                 var RespData = TaskInfo.Content();
 
@@ -271,10 +275,12 @@ namespace DirectPackageInstaller.Host
                 {
 
                     RespData?.Dispose();
+                    
+                    if (FromPS4)
+                        Instances[InstanceID]--;
                 }
-                Instances[InstanceID]--;
                 return;
-            } 
+            }
 
             PartialHttpStream HttpStream = null;
 
@@ -289,7 +295,7 @@ namespace DirectPackageInstaller.Host
 
             try
             {
-                Unrar = Main.UnrarPKG(Origin, Entry, true);
+                Unrar = Main.UnrarPKG(Origin, Url, Entry, true);
 
                 Context.Response.ContentLength = Unrar.Length;
                 Context.Response.Headers["Content-Disposition"] = $"attachment; filename=\"{Unrar.Filename}\"";
@@ -302,7 +308,6 @@ namespace DirectPackageInstaller.Host
                     Context.Response.Headers["Content-Range"] = $"bytes {Range?.Begin ?? 0}-{Range?.End ?? Origin.Length}/{Origin.Length}";
 
                     Origin = new VirtualStream(Origin, Range?.Begin ?? 0, Context.Response.ContentLength.Value);
-
                 }
 
                 await Context.Response.SendAsync(Context.Response.ContentLength.Value, Origin, Token.Token);

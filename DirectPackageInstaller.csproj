@@ -81,6 +81,12 @@
     <Compile Include="Compression.cs" />
     <Compile Include="Host\PS4Server.cs" />
     <Compile Include="Ini.cs" />
+    <Compile Include="LinkList.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="LinkList.Designer.cs">
+      <DependentUpon>LinkList.cs</DependentUpon>
+    </Compile>
     <Compile Include="Locator.cs" />
     <Compile Include="Main.cs">
       <SubType>Form</SubType>
@@ -104,6 +110,9 @@
     <Compile Include="Settings.cs" />
     <Compile Include="IO\TempHelper.cs" />
     <Compile Include="IO\VirtualStream.cs" />
+    <EmbeddedResource Include="LinkList.resx">
+      <DependentUpon>LinkList.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Main.resx">
       <DependentUpon>Main.cs</DependentUpon>
     </EmbeddedResource>
