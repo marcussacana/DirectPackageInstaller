@@ -8,7 +8,7 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>DirectPackageInstallerLinux</RootNamespace>
     <AssemblyName>DirectPackageInstallerLinux</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <DebugSymbols>true</DebugSymbols>
@@ -63,17 +63,11 @@
     <Reference Include="Costura">
       <HintPath>packages\Costura.Fody.4.1.0\lib\net40\Costura.dll</HintPath>
     </Reference>
-    <Reference Include="HttpServerLite">
-      <HintPath>packages\HttpServerLite.1.2.1.1\lib\net461\HttpServerLite.dll</HintPath>
-    </Reference>
     <Reference Include="IpMatcher">
       <HintPath>packages\IpMatcher.1.0.4.2\lib\net452\IpMatcher.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="RegexMatcher">
-      <HintPath>packages\RegexMatcher.1.0.7\lib\net462\RegexMatcher.dll</HintPath>
     </Reference>
     <Reference Include="SharpCompress">
       <HintPath>packages\SharpCompress.0.30.0\lib\net461\SharpCompress.dll</HintPath>
@@ -94,12 +88,16 @@
       <HintPath>packages\System.Text.Encoding.CodePages.5.0.0\lib\net461\System.Text.Encoding.CodePages.dll</HintPath>
     </Reference>
     <Reference Include="System.Core" />
-    <Reference Include="System.ValueTuple">
-      <HintPath>packages\System.ValueTuple.4.5.0\lib\net47\System.ValueTuple.dll</HintPath>
-    </Reference>
     <Reference Include="UrlMatcher">
       <HintPath>packages\UrlMatcher.1.0.0.1\lib\net452\UrlMatcher.dll</HintPath>
     </Reference>
+    <Reference Include="System.ValueTuple">
+      <HintPath>packages\System.ValueTuple.4.5.0\lib\net461\System.ValueTuple.dll</HintPath>
+    </Reference>
+    <Reference Include="RegexMatcher">
+      <HintPath>packages\RegexMatcher.1.0.7\lib\netstandard2.0\RegexMatcher.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.Serialization" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Compression.cs" />
@@ -119,6 +117,38 @@
     <Compile Include="IO\TempHelper.cs" />
     <Compile Include="IO\VirtualStream.cs" />
     <Compile Include="Host\PS4Server.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\AccessControlManager.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\AccessControlMode.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\Chunk.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\Common.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\ConnectionEventArgs.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\ContentRoute.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\ContentRouteManager.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\ContentRouteProcessor.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\DynamicRoute.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\DynamicRouteAttribute.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\DynamicRouteManager.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\ExceptionEventArgs.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\HttpContext.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\HttpMethod.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\HttpRequest.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\HttpResponse.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\MimeTypes.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\ParameterRoute.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\ParameterRouteAttribute.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\ParameterRouteManager.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\RequestEventArgs.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\ResponseEventArgs.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\SerializationHelper.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\StaticRoute.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\StaticRouteAttribute.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\StaticRouteManager.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\Webserver.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\WebserverEvents.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\WebserverPages.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\WebserverRoutes.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\WebserverSettings.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\WebserverStatistics.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Import Project="packages\Fody.6.0.0\build\Fody.targets" Condition="Exists('packages\Fody.6.0.0\build\Fody.targets')" />

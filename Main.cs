@@ -442,7 +442,8 @@ namespace DirectPackageInstaller
                 }
             }
             catch {
-                Server = null;
+                Server = new PS4Server("127.0.0.1", ServerPort);
+                Server.Start();
             }
         }
 
