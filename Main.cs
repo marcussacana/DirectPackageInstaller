@@ -24,10 +24,34 @@ namespace DirectPackageInstaller
 
         string SettingsPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Settings.ini");
 
+        static bool IsUnix => (int)Environment.OSVersion.Platform == 4 || (int)Environment.OSVersion.Platform == 6 || (int)Environment.OSVersion.Platform == 128;
 
         public Main()
         {
             InitializeComponent();
+
+            if (IsUnix)
+            {
+                Size WinSize = Size;
+                WinSize.Height += 10;
+
+                Point tmpPoint = lblURL.Location;
+                tmpPoint.Y += 10;
+                lblURL.Location = tmpPoint;
+
+                tmpPoint = tbURL.Location;
+                tmpPoint.Y += 10;
+                tbURL.Location = tmpPoint;
+
+                tmpPoint = btnLoadUrl.Location;
+                tmpPoint.Y += 10;
+                btnLoadUrl.Location = tmpPoint;
+
+                tmpPoint = SplitPanel.Location;
+                tmpPoint.Y += 10;
+                SplitPanel.Location = tmpPoint;
+
+            }
 
             if (File.Exists(SettingsPath)) {
                 Config = new Settings();
@@ -185,7 +209,16 @@ namespace DirectPackageInstaller
                         byte[] Buffer = new byte[Icon.DataSize];
                         PKGStream.Read(Buffer, 0, Buffer.Length);
 
-                        IconBox.Image = Image.FromStream(new MemoryStream(Buffer));
+                        Bitmap IconBitmap = Image.FromStream(new MemoryStream(Buffer)) as Bitmap;
+                        
+                        if (IsUnix)
+                        {
+                            var NewBitmap = IconBitmap.Clone(new Rectangle(0, 0, IconBitmap.Width, IconBitmap.Height), System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                            IconBitmap.Dispose();
+                            IconBitmap = NewBitmap;
+                        }
+
+                        IconBox.Image = IconBitmap;
                     }
                     catch { }
                 }
