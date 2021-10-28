@@ -248,6 +248,9 @@ namespace DirectPackageInstaller
                 offset += nread;
                 count -= nread;
 
+                if (Program.IsUnix && nread == 0 && count > 0)
+                    throw new WebException();
+
                 RespPos = Position + nread;
 
                 return nread;

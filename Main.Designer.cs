@@ -77,6 +77,7 @@ namespace DirectPackageInstaller
             this.tbURL.Size = new System.Drawing.Size(705, 22);
             this.tbURL.TabIndex = 1;
             this.tbURL.TextChanged += new System.EventHandler(this.tbURL_TextChanged);
+            this.tbURL.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TbUrlKeyDown);
             // 
             // lblURL
             // 
@@ -189,7 +190,7 @@ namespace DirectPackageInstaller
             // 
             this.miProxyDownloads.CheckOnClick = true;
             this.miProxyDownloads.Name = "miProxyDownloads";
-            this.miProxyDownloads.Size = new System.Drawing.Size(224, 26);
+            this.miProxyDownloads.Size = new System.Drawing.Size(207, 26);
             this.miProxyDownloads.Text = "Proxy Downloads";
             // 
             // miAutoDetectPS4
@@ -198,7 +199,7 @@ namespace DirectPackageInstaller
             this.miAutoDetectPS4.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.tbPS4IP});
             this.miAutoDetectPS4.Name = "miAutoDetectPS4";
-            this.miAutoDetectPS4.Size = new System.Drawing.Size(224, 26);
+            this.miAutoDetectPS4.Size = new System.Drawing.Size(207, 26);
             this.miAutoDetectPS4.Text = "Auto Detect PS4";
             this.miAutoDetectPS4.Click += new System.EventHandler(this.miAutoDetectPS4_Click);
             // 
@@ -212,7 +213,7 @@ namespace DirectPackageInstaller
             // miRestartServer
             // 
             this.miRestartServer.Name = "miRestartServer";
-            this.miRestartServer.Size = new System.Drawing.Size(224, 26);
+            this.miRestartServer.Size = new System.Drawing.Size(207, 26);
             this.miRestartServer.Text = "Restart Server";
             this.miRestartServer.Click += new System.EventHandler(this.miRestartServer_Click);
             // 
@@ -229,12 +230,12 @@ namespace DirectPackageInstaller
             // toolStripSeparator1
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(221, 6);
+            this.toolStripSeparator1.Size = new System.Drawing.Size(150, 6);
             // 
             // miInstallAll
             // 
             this.miInstallAll.Name = "miInstallAll";
-            this.miInstallAll.Size = new System.Drawing.Size(224, 26);
+            this.miInstallAll.Size = new System.Drawing.Size(153, 26);
             this.miInstallAll.Text = "Install All";
             this.miInstallAll.Click += new System.EventHandler(this.miInstallAll_Click);
             // 

@@ -2,8 +2,16 @@
 
 cd bin/Debug
 
+
 export APP=DirectPackageInstallerLinux
-mkbundle $APP.exe -o $APP -L ../../packages/SharpCompress.0.30.0/lib/net461/ -L /usr/lib/mono/4.7.3-api/Facades/ -L /usr/lib/mono/fsharp/ -L ../../LibOrbisPkg/bin/Debug/ -L ../../packages/IpMatcher.1.0.4.2/lib/net452/ -L ../../packages/Newtonsoft.Json.13.0.1/lib/net45/ -L ../../packages/RegexMatcher.1.0.7/lib/net462/ -L ../../packages/CavemanTcp.1.3.8/lib/net461/ -L ../../packages/UrlMatcher.1.0.0.1/lib/net452/ -L ../../packages/System.ValueTuple.4.5.0/lib/net461/ --cross mono-6.6.0-ubuntu-16.04-x64 --config $APP.exe.config
+export TARGET=mono-6.0.0-ubuntu-18.04-x64
+
+mkbundle --fetch-target $TARGET
+
+
+#cp /usr/lib/libmono-native.so ./
+
+mkbundle --cross $TARGET -o $APP -L ./ -L ../../packages/SixLabors.ImageSharp.1.0.4/lib/net472/ -L ../../packages/SharpCompress.0.30.0/lib/net461/ -L /usr/lib/mono/4.7.3-api/Facades/ -L /usr/lib/mono/fsharp/ -L ../../LibOrbisPkg/bin/Debug/ -L ../../packages/IpMatcher.1.0.4.2/lib/net452/ -L ../../packages/Newtonsoft.Json.13.0.1/lib/net45/ -L ../../packages/RegexMatcher.1.0.7/lib/net462/ -L ../../packages/CavemanTcp.1.3.8/lib/net461/ -L ../../packages/UrlMatcher.1.0.0.1/lib/net452/ -L ../../packages/System.ValueTuple.4.5.0/lib/net461/ -L /usr/lib/mono/4.5/Facades/ -L /lib/mono/msbuild/Current/bin/ --config $APP.exe.config --machine-config /etc/mono/4.5/machine.config --deps $APP.exe
 
 export AppDir=$PWD/$APP.AppDir
 
@@ -52,6 +60,9 @@ for d in ~/.local/share/icons/hicolor/*x*/ ; do
     echo "Generating $r Icon"
     convert -resize $r "$ICO" "$AppDir/$APP.$r.png"
 done
+
+cp /usr/lib/libmono-native.so "$AppDir"
+cp /usr/lib/libgdiplus.so "$LIB"
 
 #cp /usr/lib/cli/gdk-sharp-2.0/libgdksharpglue-2.so "$LIB"
 #cp /usr/lib/cli/gdk-sharp-2.0/libgdksharpglue-2.so "$LIB"

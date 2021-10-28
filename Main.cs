@@ -14,6 +14,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using System.Windows.Forms;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
+using ManagedImage = SixLabors.ImageSharp.Image;
+using SixLabors.ImageSharp.Formats.Bmp;
+using Image = System.Drawing.Image;
+using Size = System.Drawing.Size;
+using Point = System.Drawing.Point;
 
 namespace DirectPackageInstaller
 {
@@ -24,13 +31,11 @@ namespace DirectPackageInstaller
 
         string SettingsPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Settings.ini");
 
-        static bool IsUnix => (int)Environment.OSVersion.Platform == 4 || (int)Environment.OSVersion.Platform == 6 || (int)Environment.OSVersion.Platform == 128;
-
         public Main()
         {
             InitializeComponent();
 
-            if (IsUnix)
+            if (Program.IsUnix)
             {
                 Size WinSize = Size;
                 WinSize.Height += 10;
@@ -209,16 +214,31 @@ namespace DirectPackageInstaller
                         byte[] Buffer = new byte[Icon.DataSize];
                         PKGStream.Read(Buffer, 0, Buffer.Length);
 
-                        Bitmap IconBitmap = Image.FromStream(new MemoryStream(Buffer)) as Bitmap;
-                        
-                        if (IsUnix)
+                        using (Stream ImgBuffer = new MemoryStream(Buffer))
                         {
-                            var NewBitmap = IconBitmap.Clone(new Rectangle(0, 0, IconBitmap.Width, IconBitmap.Height), System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                            IconBitmap.Dispose();
-                            IconBitmap = NewBitmap;
-                        }
+                            if (Program.IsUnix)
+                            {
+                                //I can't trust in the libgdiplus so much, so Let's make the image more simple before draw
+                                using (Stream NewImgBuffer = new MemoryStream())
+                                {
+                                    using (var image = ManagedImage.Load(ImgBuffer))
+                                    {
+                                        if (image.Width > 512 || image.Height > 512)
+                                            image.Mutate(x => x.Resize(512, 512));
 
-                        IconBox.Image = IconBitmap;
+                                        image.Save(NewImgBuffer, new BmpEncoder());
+                                    }
+
+                                    Bitmap IconBitmap = Image.FromStream(NewImgBuffer) as Bitmap;
+                                    IconBox.Image = IconBitmap;
+                                }
+                            }
+                            else
+                            {   
+                                Bitmap IconBitmap = Image.FromStream(ImgBuffer) as Bitmap;
+                                IconBox.Image = IconBitmap;
+                            }
+                        }
                     }
                     catch { }
                 }
@@ -693,5 +713,17 @@ namespace DirectPackageInstaller
             return -1;
         }
 
+        private void TbUrlKeyDown(object sender, KeyEventArgs e)
+        {
+            if (Program.IsUnix && e.KeyValue == 131089)
+            {
+                if (tbURL.SelectionLength > 0)
+                    tbURL.SelectedText = Clipboard.GetText();
+                else
+                    tbURL.Text = Clipboard.GetText();
+
+                e.Handled = true;
+            }
+        }
     }
 }
