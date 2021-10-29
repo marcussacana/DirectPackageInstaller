@@ -62,13 +62,13 @@ namespace DirectPackageInstaller.Host
         public static Dictionary<string, (string Entry, string Url)> TaskCache = new Dictionary<string, (string Entry, string Url)>();
 
         Dictionary<string, int> Instances = new Dictionary<string, int>();
-        Dictionary<string, string> EntryMap = new Dictionary<string, string>();
+        public Dictionary<string, string> EntryMap = new Dictionary<string, string>();
         
         Webserver Server;
 
         Compression Decompressor = new Compression();
 
-        Dictionary<string, DecompressTaskInfo> Tasks => Decompressor.Tasks;
+        internal Dictionary<string, DecompressTaskInfo> Tasks => Decompressor.Tasks;
 
         Random Rand = new Random();
 

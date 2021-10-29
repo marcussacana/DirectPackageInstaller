@@ -14,7 +14,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using System.Windows.Forms;
-using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 using ManagedImage = SixLabors.ImageSharp.Image;
 using SixLabors.ImageSharp.Formats.Bmp;
@@ -37,8 +36,15 @@ namespace DirectPackageInstaller
 
             if (Program.IsUnix)
             {
-                Size WinSize = Size;
-                WinSize.Height += 10;
+
+                Size TmpSize = Size;
+                TmpSize.Height += 10;
+                Size = TmpSize;
+
+                tbPS4IP.AutoSize = false;
+                TmpSize = tbPS4IP.Size;
+                TmpSize.Width += 30;
+                tbPS4IP.Size = TmpSize;
 
                 Point tmpPoint = lblURL.Location;
                 tmpPoint.Y += 10;
@@ -55,7 +61,6 @@ namespace DirectPackageInstaller
                 tmpPoint = SplitPanel.Location;
                 tmpPoint.Y += 10;
                 SplitPanel.Location = tmpPoint;
-
             }
 
             if (File.Exists(SettingsPath)) {
@@ -360,15 +365,33 @@ namespace DirectPackageInstaller
                     }
 
                     var FreeSpace = GetCurrentDiskAvailableFreeSpace();
-                    if (EntrySize > FreeSpace)
+                    if (EntrySize > FreeSpace && !Program.IsUnix)
                     {
                         long Missing = EntrySize - FreeSpace;
                         MessageBox.Show("Compressed files are cached to your disk, you need more " + ToFileSize(Missing) + " of free space to install this package.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return false;
                     }
 
+                    bool Retry = false;
+
                     var ID = PS4Server.TaskCache.Count.ToString();
-                    PS4Server.TaskCache[ID] = (EntryName, URL);
+                    foreach (var Task in PS4Server.TaskCache)
+                    {
+                        if (Task.Value.Entry == EntryName && Task.Value.Url == URL)
+                        {
+                            if ((Server?.EntryMap.ContainsKey(URL) ?? false) && (Server?.Tasks.ContainsKey(Server?.EntryMap[URL]) ?? false))
+                            {
+                                if (Server.Tasks[Server.EntryMap[URL]].Failed)
+                                    continue;
+                            }
+                            ID = Task.Key;
+                            Retry = true;
+                            break;
+                        }
+                    }
+
+                    if (!Retry)
+                        PS4Server.TaskCache[ID] = (EntryName, URL);
 
                     URL = $"http://{Server.IP}:{ServerPort}/unrar/?id={ID}";
                 }

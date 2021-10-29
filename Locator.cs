@@ -32,28 +32,41 @@ namespace DirectPackageInstaller
                             return;
 
                         var Address = IpInfo.Address.GetAddressBytes();
-                        var ParallelOpt = new ParallelOptions() { MaxDegreeOfParallelism = 10 };
 
-                        var Result = Parallel.For(0, 256, ParallelOpt, (i) =>
-                        {
-                            if (Devices.Count > 0)
-                                return;
-
-                            var IP = $"{Address[0]}.{Address[1]}.{Address[2]}.{i}";
-                            if (IsValidPS4IP(IP))
-                            {
-                                Devices.Add(IP);
-                                OnPS4DeviceFound(IP);
-                            }
-                        });
-
-                        while (!Result.IsCompleted)
-                            Thread.Sleep(100);
+                        if (!FindPS4(Address, 100, 256))
+                            FindPS4(Address, 0, 100);                        
                     }
 
                 Thread.Sleep(3000);
             } while (Devices.Count == 0 && Persist);
 
+        }
+
+        public static bool FindPS4(byte[] Address, int Begin, int End)
+        {
+            var CancelToken = new CancellationTokenSource();
+            var ParallelOpt = new ParallelOptions() { MaxDegreeOfParallelism = 10, CancellationToken = CancelToken.Token };
+            bool DeviceFound = false;
+
+            var Result = Parallel.For(100, 256, ParallelOpt, (i) =>
+            {
+                if (Devices.Count > 0)
+                    return;
+
+                var IP = $"{Address[0]}.{Address[1]}.{Address[2]}.{i}";
+                if (IsValidPS4IP(IP))
+                {
+                    DeviceFound = true;
+                    Devices.Add(IP);
+                    OnPS4DeviceFound(IP);
+                    CancelToken.Cancel();
+                }
+            });
+
+            while (!Result.IsCompleted)
+                Thread.Sleep(100);
+
+            return DeviceFound;
         }
 
         public static string FindLocalIP(string RemoteIP) {
