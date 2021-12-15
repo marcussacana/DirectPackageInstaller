@@ -48,20 +48,25 @@ namespace DirectPackageInstaller
             var ParallelOpt = new ParallelOptions() { MaxDegreeOfParallelism = 10, CancellationToken = CancelToken.Token };
             bool DeviceFound = false;
 
-            var Result = Parallel.For(100, 256, ParallelOpt, (i) =>
+            ParallelLoopResult Result = default;
+            try
             {
-                if (Devices.Count > 0)
-                    return;
-
-                var IP = $"{Address[0]}.{Address[1]}.{Address[2]}.{i}";
-                if (IsValidPS4IP(IP))
+                Result = Parallel.For(100, 256, ParallelOpt, (i) =>
                 {
-                    DeviceFound = true;
-                    Devices.Add(IP);
-                    OnPS4DeviceFound(IP);
-                    CancelToken.Cancel();
-                }
-            });
+                    if (Devices.Count > 0)
+                        return;
+
+                    var IP = $"{Address[0]}.{Address[1]}.{Address[2]}.{i}";
+                    if (IsValidPS4IP(IP))
+                    {
+                        DeviceFound = true;
+                        Devices.Add(IP);
+                        OnPS4DeviceFound?.Invoke(IP);
+                        CancelToken.Cancel();
+                    }
+                });
+            }
+            catch { }
 
             while (!Result.IsCompleted)
                 Thread.Sleep(100);

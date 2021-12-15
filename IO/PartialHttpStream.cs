@@ -97,9 +97,18 @@ namespace DirectPackageInstaller
 
             if (count > cacheLen)
             {
+                int EmptyTries = 3;
                 // large request, do not cache
                 while (count > 0)
-                    Position += HttpRead(buffer, ref offset, ref count);
+                {
+                    int Readed = 0;
+                    Position += Readed = HttpRead(buffer, ref offset, ref count);
+
+                    if (Readed == 0 && EmptyTries-- < 0)
+                        break;
+                    else if (Readed > 0)
+                        EmptyTries = 3;
+                }
             }
             else if (count > 0)
             {

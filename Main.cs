@@ -114,6 +114,7 @@ namespace DirectPackageInstaller
         bool Loaded;
         bool Fake;
         bool Compressed;
+        bool JSON;
 
         string[] CurrentFileList = null;
 
@@ -141,6 +142,7 @@ namespace DirectPackageInstaller
 
             miPackages.Visible = false;
             Compressed = false;
+            JSON = false;
             Loaded = false;
             if (!Uri.IsWellFormedUriString(tbURL.Text, UriKind.Absolute)) {
                 MessageBox.Show(this, "Invalid URL", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -150,6 +152,11 @@ namespace DirectPackageInstaller
             try
             {
                 PKGStream = new PartialHttpStream(tbURL.Text);
+                
+                if (tbURL.Text.EndsWith(".json", StringComparison.InvariantCultureIgnoreCase)) {
+                    PKGStream = SplitHelper.OpenRemoteJSON(tbURL.Text);
+                    JSON = true;
+                }
 
                 byte[] Magic = new byte[4];
                 PKGStream.Read(Magic, 0, Magic.Length);
@@ -374,14 +381,14 @@ namespace DirectPackageInstaller
 
                     bool Retry = false;
 
-                    var ID = PS4Server.TaskCache.Count.ToString();
-                    foreach (var Task in PS4Server.TaskCache)
+                    var ID = UnrarService.TaskCache.Count.ToString();
+                    foreach (var Task in UnrarService.TaskCache)
                     {
                         if (Task.Value.Entry == EntryName && Task.Value.Url == URL)
                         {
-                            if ((Server?.EntryMap.ContainsKey(URL) ?? false) && (Server?.Tasks.ContainsKey(Server?.EntryMap[URL]) ?? false))
+                            if (UnrarService.EntryMap.ContainsKey(URL) && Server.Unrar.Tasks.ContainsKey(UnrarService.EntryMap[URL]))
                             {
-                                if (Server.Tasks[Server.EntryMap[URL]].Failed)
+                                if (Server.Unrar.Tasks[UnrarService.EntryMap[URL]].Failed)
                                     continue;
                             }
                             ID = Task.Key;
@@ -391,13 +398,16 @@ namespace DirectPackageInstaller
                     }
 
                     if (!Retry)
-                        PS4Server.TaskCache[ID] = (EntryName, URL);
+                        UnrarService.TaskCache[ID] = (EntryName, URL);
 
                     URL = $"http://{Server.IP}:{ServerPort}/unrar/?id={ID}";
                 }
                 else if (miProxyDownloads.Checked)
                 {
                     URL = $"http://{Server.IP}:{ServerPort}/proxy/?url={HttpUtility.UrlEncode(URL)}";
+                }
+                else if (JSON) {
+                    URL = $"http://{Server.IP}:{ServerPort}/merge/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
                 }
 
                 try
