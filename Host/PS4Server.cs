@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
+using DirectPackageInstaller.IO;
 //using WatsonWebserver;
 using HttpServerLite;
 using HttpContext = HttpServerLite.HttpContext;
@@ -100,8 +101,8 @@ namespace DirectPackageInstaller.Host
             Context.Response.StatusCode = Partial ? 206 : 200;
             Context.Response.StatusDescription = Partial ? "Partial Content" : "OK";
 
-            PartialHttpStream HttpStream;
-            Stream Origin = HttpStream = new PartialHttpStream(Url, 1024 * 8);
+            FileHostStream HttpStream;
+            Stream Origin = HttpStream = new FileHostStream(Url, 1024 * 8);
 
             try
             {
@@ -143,8 +144,8 @@ namespace DirectPackageInstaller.Host
 
                 Context.Response.ContentLength = Origin.Length;
 
-                if (Origin is PartialHttpStream)
-                    Context.Response.Headers["Content-Disposition"] = $"attachment; filename=\"{((PartialHttpStream)Origin).Filename}\"";
+                if (Origin is FileHostStream)
+                    Context.Response.Headers["Content-Disposition"] = $"attachment; filename=\"{((FileHostStream)Origin).Filename}\"";
                 else
 
                     Context.Response.Headers["Content-Disposition"] = $"attachment; filename=\"merged.pkg\"";

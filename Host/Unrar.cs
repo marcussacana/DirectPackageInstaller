@@ -1,4 +1,5 @@
-﻿using HttpServerLite;
+﻿using DirectPackageInstaller.IO;
+using HttpServerLite;
 using SharpCompress.Archives;
 using System;
 using System.Collections.Generic;
@@ -118,14 +119,14 @@ namespace DirectPackageInstaller.Host
                 return;
             }
 
-            PartialHttpStream HttpStream = null;
+            FileHostStream HttpStream = null;
 
             Stream Origin = null;
 
             (IArchive Archive, Stream Buffer, string Filename, string[] Entries, long Length) Unrar = (null, null, null, null, 0);
 
 
-            Origin = HttpStream = new PartialHttpStream(Url, 1024 * 8);
+            Origin = HttpStream = new FileHostStream(Url, 1024 * 8);
 
             var Token = new CancellationTokenSource();
 

@@ -20,6 +20,7 @@ using SixLabors.ImageSharp.Formats.Bmp;
 using Image = System.Drawing.Image;
 using Size = System.Drawing.Size;
 using Point = System.Drawing.Point;
+using DirectPackageInstaller.IO;
 
 namespace DirectPackageInstaller
 {
@@ -151,7 +152,7 @@ namespace DirectPackageInstaller
 
             try
             {
-                PKGStream = new PartialHttpStream(tbURL.Text);
+                PKGStream = new FileHostStream(tbURL.Text);
                 
                 if (tbURL.Text.EndsWith(".json", StringComparison.InvariantCultureIgnoreCase)) {
                     PKGStream = SplitHelper.OpenRemoteJSON(tbURL.Text);
@@ -543,7 +544,7 @@ namespace DirectPackageInstaller
                 if (RARInfo.ContainsKey(FirstUrl))
                 {
                     var List = RARInfo[FirstUrl];
-                    return UnrarPKG(List.Links.Select(x => new PartialHttpStream(x)).ToArray(), FirstUrl, EntryName, Seekable, List.Password);
+                    return UnrarPKG(List.Links.Select(x => new FileHostStream(x)).ToArray(), FirstUrl, EntryName, Seekable, List.Password);
                 }
                 else
                 {
@@ -553,7 +554,7 @@ namespace DirectPackageInstaller
 
                     RARInfo[FirstUrl] = (List.Links, List.Password);
 
-                    return UnrarPKG(List.Links.Select(x => new PartialHttpStream(x)).ToArray(), FirstUrl, EntryName, Seekable, List.Password);
+                    return UnrarPKG(List.Links.Select(x => new FileHostStream(x)).ToArray(), FirstUrl, EntryName, Seekable, List.Password);
                 }
             } else if (Encrypted)
             {

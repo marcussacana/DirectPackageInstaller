@@ -24,7 +24,7 @@ namespace DirectPackageInstaller
         private static Stream OpenJSON(string JSON)
         {
             SplitPkgInfo Info = JsonConvert.DeserializeObject<SplitPkgInfo>(JSON);
-            Stream[] Urls = (from x in Info.pieces orderby x.fileOffset ascending select new PartialHttpStream(x.url)).ToArray();
+            Stream[] Urls = (from x in Info.pieces orderby x.fileOffset ascending select new FileHostStream(x.url)).ToArray();
             long[] Sizes = (from x in Info.pieces orderby x.fileOffset ascending select x.fileSize).ToArray();
             return new MergedStream(Urls, Sizes);
         }

@@ -6,11 +6,13 @@ using System.Net;
 using System.Threading.Tasks;
 using System.Web;
 
-namespace DirectPackageInstaller
+namespace DirectPackageInstaller.IO
 {
     //98% Stolen From: https://codereview.stackexchange.com/a/204766
     public class PartialHttpStream : Stream, IDisposable
     {
+
+        public List<(string Key, string Value)> Headers = new List<(string Key, string Value)>();
         public CookieContainer Cookies = new CookieContainer();
         string _fn;
         public string Filename
@@ -51,7 +53,7 @@ namespace DirectPackageInstaller
             Dispose();
         }
 
-        public string Url { get; private set; }
+        public string Url { get; protected set; }
 
         public override bool CanRead { get { return true; } }
         public override bool CanWrite { get { return false; } }
@@ -237,6 +239,8 @@ namespace DirectPackageInstaller
                     req.KeepAlive = false;
                     req.ServicePoint.SetTcpKeepAlive(false, 1000 * 120, 1000 * 5);
 
+                    foreach (var Header in Headers)
+                        req.Headers[Header.Key] = Header.Value;
 
                     req.AddRange(Position, Length - 1);
                     resp = req.GetResponse();
@@ -306,6 +310,8 @@ namespace DirectPackageInstaller
                     req = HttpWebRequest.CreateHttp(Url);
                     req.CookieContainer = Cookies;
 
+                    foreach (var Header in Headers)
+                        req.Headers[Header.Key] = Header.Value;
 
                     req.AddRange(Position, Length - 1);
                     resp = await req.GetResponseAsync();
@@ -361,6 +367,11 @@ namespace DirectPackageInstaller
             request.KeepAlive = false;
             request.CookieContainer = Cookies;
             request.Method = "HEAD";
+
+
+            foreach (var Header in Headers)
+                request.Headers[Header.Key] = Header.Value;
+
             using var response = request.GetResponse();
             if (response.Headers.AllKeys.Contains("Content-Disposition"))
             {

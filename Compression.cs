@@ -1,4 +1,5 @@
-﻿using SharpCompress.Archives;
+﻿using DirectPackageInstaller.IO;
+using SharpCompress.Archives;
 using SharpCompress.Archives.Rar;
 using System;
 using System.Collections.Generic;
@@ -30,10 +31,10 @@ namespace DirectPackageInstaller
             if (Main.RARInfo.ContainsKey(Url))
             {
                 var Info = Main.RARInfo[Url];
-                Inputs = Info.Links.Select(x => new PartialHttpStream(x, 1024 * 100)).ToArray();
+                Inputs = Info.Links.Select(x => new FileHostStream(x, 1024 * 100)).ToArray();
                 Password = Info.Password;
             }
-            else Inputs = new Stream[] { new PartialHttpStream(Url, 1024 * 100) };
+            else Inputs = new Stream[] { new FileHostStream(Url, 1024 * 100) };
 
             var Archive = RarArchive.Open(Inputs, new SharpCompress.Readers.ReaderOptions() {
                 Password = Password

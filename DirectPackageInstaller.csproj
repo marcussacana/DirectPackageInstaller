@@ -54,6 +54,9 @@
     <Reference Include="IpMatcher, Version=1.0.4.3, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>packages\IpMatcher.1.0.4.3\lib\net452\IpMatcher.dll</HintPath>
     </Reference>
+    <Reference Include="NCalc, Version=1.3.8.0, Culture=neutral, PublicKeyToken=973cde3f1cafed03, processorArchitecture=MSIL">
+      <HintPath>packages\ncalc.1.3.8\lib\NCalc.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
@@ -100,11 +103,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Compression.cs" />
+    <Compile Include="FileHosts\FileHostBase.cs" />
+    <Compile Include="FileHosts\ZippyShare.cs" />
     <Compile Include="Host\ClientInfo.cs" />
     <Compile Include="Host\HttpRange.cs" />
     <Compile Include="Host\PS4Server.cs" />
     <Compile Include="Host\Unrar.cs" />
     <Compile Include="Ini.cs" />
+    <Compile Include="IO\FileHostStream.cs" />
     <Compile Include="IO\MergedStream.cs" />
     <Compile Include="LinkList.cs">
       <SubType>Form</SubType>
