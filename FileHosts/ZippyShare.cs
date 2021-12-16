@@ -31,9 +31,7 @@ namespace DirectPackageInstaller.FileHosts
             string ResultUrl = URL.Replace("file.html", $"{Result}{Page}").Replace("/v/", "/d/");
             return new DownloadInfo()
             {
-                Url = ResultUrl,
-                Headers = new List<(string Key, string Value)>(),
-                Cookies = new System.Net.Cookie[0]
+                Url = ResultUrl
             };
         }
 

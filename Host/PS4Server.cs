@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -98,6 +99,19 @@ namespace DirectPackageInstaller.Host
             if (Partial)
                 Range = new HttpRange(Context.Request.Headers["Range"]);
 
+#if DEBUG
+            if (Debugger.IsAttached)
+            {
+                foreach (var entry in Main.PKGEntries)
+                {
+                    if (Range?.Begin >= entry.Offset && Range?.End <= entry.End)
+                    {
+                        Debugger.Break();
+                    }
+                }
+            }
+#endif
+
             Context.Response.StatusCode = Partial ? 206 : 200;
             Context.Response.StatusDescription = Partial ? "Partial Content" : "OK";
 
@@ -148,7 +162,7 @@ namespace DirectPackageInstaller.Host
                     Context.Response.Headers["Content-Disposition"] = $"attachment; filename=\"{((FileHostStream)Origin).Filename}\"";
                 else
 
-                    Context.Response.Headers["Content-Disposition"] = $"attachment; filename=\"merged.pkg\"";
+                    Context.Response.Headers["Content-Disposition"] = $"attachment; filename=\"app.pkg\"";
 
                 if (Partial)
                 {

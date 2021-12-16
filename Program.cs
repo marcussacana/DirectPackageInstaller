@@ -37,20 +37,24 @@ namespace DirectPackageInstaller
         /// </summary>
         public static void UnlockHeaders()
         {
-            var tHashtable = typeof(WebHeaderCollection).Assembly.GetType("System.Net.HeaderInfoTable")
-                            .GetFields(BindingFlags.NonPublic | BindingFlags.Static)
-                            .Where(x => x.FieldType.Name == "Hashtable").Single();
-
-            var Table = (Hashtable)tHashtable.GetValue(null);
-            foreach (var Key in Table.Keys.Cast<string>().ToArray())
+            try
             {
-                var HeaderInfo = Table[Key];
-                HeaderInfo.GetType().GetField("IsRequestRestricted", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(HeaderInfo, false);
-                HeaderInfo.GetType().GetField("IsResponseRestricted", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(HeaderInfo, false);
-                Table[Key] = HeaderInfo;
-            }
+                var tHashtable = typeof(WebHeaderCollection).Assembly.GetType("System.Net.HeaderInfoTable")
+                                .GetFields(BindingFlags.NonPublic | BindingFlags.Static)
+                                .Where(x => x.FieldType.Name == "Hashtable").Single();
 
-            tHashtable.SetValue(null, Table);
+                var Table = (Hashtable)tHashtable.GetValue(null);
+                foreach (var Key in Table.Keys.Cast<string>().ToArray())
+                {
+                    var HeaderInfo = Table[Key];
+                    HeaderInfo.GetType().GetField("IsRequestRestricted", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(HeaderInfo, false);
+                    HeaderInfo.GetType().GetField("IsResponseRestricted", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(HeaderInfo, false);
+                    Table[Key] = HeaderInfo;
+                }
+
+                tHashtable.SetValue(null, Table);
+            }
+            catch { }
         }
 
         public static bool HasName(this ParamSfo This, string name)

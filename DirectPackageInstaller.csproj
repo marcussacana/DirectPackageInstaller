@@ -104,6 +104,8 @@
   <ItemGroup>
     <Compile Include="Compression.cs" />
     <Compile Include="FileHosts\FileHostBase.cs" />
+    <Compile Include="FileHosts\GoogleDrive.cs" />
+    <Compile Include="FileHosts\Mediafire.cs" />
     <Compile Include="FileHosts\ZippyShare.cs" />
     <Compile Include="Host\ClientInfo.cs" />
     <Compile Include="Host\HttpRange.cs" />

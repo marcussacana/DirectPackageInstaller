@@ -353,7 +353,8 @@ namespace DirectPackageInstaller.IO
         }
 
         static Dictionary<string, (string Filename, long Length)> HeadCache = new Dictionary<string, (string Filename, long Length)>();
-        private long HttpGetLength()
+        
+        private long HttpGetLength(bool NoHead = false)
         {
             if (HeadCache.ContainsKey(Url))
             {
@@ -362,31 +363,38 @@ namespace DirectPackageInstaller.IO
             }
 
             HttpRequestsCount++;
-            HttpWebRequest request = WebRequest.CreateHttp(Url);
-            request.ConnectionGroupName = new Guid().ToString();
-            request.KeepAlive = false;
-            request.CookieContainer = Cookies;
-            request.Method = "HEAD";
-
-
-            foreach (var Header in Headers)
-                request.Headers[Header.Key] = Header.Value;
-
-            using var response = request.GetResponse();
-            if (response.Headers.AllKeys.Contains("Content-Disposition"))
+            try
             {
-                _fn = response.Headers["Content-Disposition"];
-                const string prefix = "filename=";
-                _fn = _fn.Substring(_fn.IndexOf(prefix) + prefix.Length).Trim('"');
-                _fn = HttpUtility.UrlDecode(_fn.Split(';').First().Trim('"'));
+                HttpWebRequest request = WebRequest.CreateHttp(Url);
+                request.ConnectionGroupName = new Guid().ToString();
+                request.KeepAlive = false;
+                request.CookieContainer = Cookies;
+                request.Method = NoHead ? "GET" : "HEAD";
+
+
+                foreach (var Header in Headers)
+                    request.Headers[Header.Key] = Header.Value;
+
+                using var response = request.GetResponse();
+                if (response.Headers.AllKeys.Contains("Content-Disposition"))
+                {
+                    _fn = response.Headers["Content-Disposition"];
+                    const string prefix = "filename=";
+                    _fn = _fn.Substring(_fn.IndexOf(prefix) + prefix.Length).Trim('"');
+                    _fn = HttpUtility.UrlDecode(_fn.Split(';').First().Trim('"'));
+                }
+
+                var Length = response.ContentLength;
+                response?.Close();
+
+                request.ServicePoint.CloseConnectionGroup(request.ConnectionGroupName);
+
+                HeadCache[Url] = (_fn, Length);
             }
-            
-            var Length = response.ContentLength;
-            response?.Close();
-
-            request.ServicePoint.CloseConnectionGroup(request.ConnectionGroupName);
-
-            HeadCache[Url] = (_fn, Length);
+            catch
+            {
+                return HttpGetLength(true);
+            }
 
             return Length;
         }

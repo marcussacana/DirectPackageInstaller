@@ -9,6 +9,7 @@ namespace DirectPackageInstaller.IO
 {
     class FileHostStream : PartialHttpStream
     {
+        public bool DirectLink { get; private set; } = true;
         public FileHostStream(string url, int cacheLen = 8192) : base(url, cacheLen)
         {
             foreach (var Host in FileHostBase.Hosts)
@@ -19,10 +20,20 @@ namespace DirectPackageInstaller.IO
                 var Info = Host.GetDownloadInfo(url);
                 Url = Info.Url;
 
-                Headers = Info.Headers;
+                if (Info.Headers != null)
+                {
+                    Headers = Info.Headers;
+                    DirectLink = false;
+                }
 
-                foreach (var Cookie in Info.Cookies)
-                    Cookies.Add(Cookie);
+                if (Info.Cookies != null)
+                {
+                    foreach (var Cookie in Info.Cookies)
+                    {
+                        Cookies.Add(Cookie);
+                        DirectLink = false;
+                    }
+                }
             }
         }
 

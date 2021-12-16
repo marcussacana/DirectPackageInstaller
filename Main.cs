@@ -26,6 +26,9 @@ namespace DirectPackageInstaller
 {
     public partial class Main : Form
     {
+#if DEBUG
+        public static (uint Offset, uint End, uint Size, EntryId Id)[] PKGEntries;
+#endif
 
         Settings Config;
 
@@ -98,7 +101,8 @@ namespace DirectPackageInstaller
                 };
             }
 
-            new Thread(() => Locator.Locate(Config.LastPS4IP == null)).Start();
+            if (Config.LastPS4IP == null || !Locator.IsValidPS4IP(Config.LastPS4IP))
+                new Thread(() => Locator.Locate(Config.LastPS4IP == null)).Start();
 
             if (Config.LastPS4IP != null)
             {
@@ -180,6 +184,10 @@ namespace DirectPackageInstaller
 
                 PKGParser = new PkgReader(PKGStream);
                 PKG = PKGParser.ReadPkg();
+
+#if DEBUG
+                PKGEntries = PKG.Metas.Metas.Select(x => (x.DataOffset, x.DataOffset + x.DataSize, x.DataSize, x.id)).ToArray();
+#endif
 
                 var SystemVer = PKG.ParamSfo.ParamSfo.HasName("SYSTEM_VER") ? PKG.ParamSfo.ParamSfo["SYSTEM_VER"].ToByteArray() : new byte[4];
                 var TitleName = Encoding.UTF8.GetString(PKG.ParamSfo.ParamSfo.HasName("TITLE") ? PKG.ParamSfo.ParamSfo["TITLE"].ToByteArray() : new byte[0]).Trim('\x0');
@@ -318,6 +326,7 @@ namespace DirectPackageInstaller
         }
 
         bool AllowIndirect = false;
+        bool ForceProxy = false;
 
         const int ServerPort = 9898;
 
@@ -361,6 +370,24 @@ namespace DirectPackageInstaller
 
                 StartServer(Config.LastPS4IP);
 
+                if (PKGStream is FileHostStream)
+                {
+                    var HostStream = ((FileHostStream)PKGStream);
+                    URL = HostStream.Url;
+
+                    if (!HostStream.DirectLink && !ForceProxy)
+                    {
+                        if (!miProxyDownloads.Checked)
+                        {
+                            var Reply = MessageBox.Show("The given URL can't be direct downloaded.\nDo you want to the DirectPackageInstaller act as a server?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                            if (Reply != DialogResult.Yes)
+                                return false;
+                        }
+
+                        ForceProxy = true;
+                    }
+                }
+
                 if (Compressed)
                 {
                     if (!miProxyDownloads.Checked && !AllowIndirect)
@@ -403,9 +430,9 @@ namespace DirectPackageInstaller
 
                     URL = $"http://{Server.IP}:{ServerPort}/unrar/?id={ID}";
                 }
-                else if (miProxyDownloads.Checked)
+                else if (miProxyDownloads.Checked || ForceProxy)
                 {
-                    URL = $"http://{Server.IP}:{ServerPort}/proxy/?url={HttpUtility.UrlEncode(URL)}";
+                    URL = $"http://{Server.IP}:{ServerPort}/proxy/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
                 }
                 else if (JSON) {
                     URL = $"http://{Server.IP}:{ServerPort}/merge/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";

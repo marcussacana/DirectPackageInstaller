@@ -96,12 +96,13 @@ namespace DirectPackageInstaller
             Searching = false;
         }
 
+        static HttpClient Client = new HttpClient()
+        {
+            Timeout = TimeSpan.FromMilliseconds(1000)
+        };
         public static bool IsValidPS4IP(string IP)
         {
-            using var Client = new HttpClient();
-            Client.Timeout = TimeSpan.FromMilliseconds(500);
             var APIUrl = $"http://{IP}:12800/api";
-
             try
             {
                 using var Response = Client.GetAsync(APIUrl).GetAwaiter().GetResult();
