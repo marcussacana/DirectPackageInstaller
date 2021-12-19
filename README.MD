@@ -47,7 +47,6 @@ The tool allow you to install pkgs from RAR as well, in this case the tool will 
 
 
 ### Warnings
-- Due to random access issues in compressed files, the RAR direct download feature may not be as reliable, although tested in some games, it has not been tested enough to guarantee its reliability.
 - The proxy feature in turn has proven to work in games over 90 GB, and I believe it is relatively stable as it depends on your internet connection and download server.
 - Compressed file downloads generate a temporary PKG 'cache' on your hard drive, which will require free space according to the size of the PKG on your hard drive.
 

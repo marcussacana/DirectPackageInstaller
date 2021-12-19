@@ -1,41 +1,47 @@
 ﻿using DirectPackageInstaller.FileHosts;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DirectPackageInstaller.IO
 {
     class FileHostStream : PartialHttpStream
     {
+        public string PageUrl;
+        public FileHostBase Host;
         public bool DirectLink { get; private set; } = true;
-        public FileHostStream(string url, int cacheLen = 8192) : base(url, cacheLen)
+        public FileHostStream(string Url, int cacheLen = 8192) : base(Url, cacheLen)
         {
             foreach (var Host in FileHostBase.Hosts)
             {
-                if (!Host.IsValidUrl(url))
+                if (!Host.IsValidUrl(Url))
                     continue;
 
-                var Info = Host.GetDownloadInfo(url);
-                Url = Info.Url;
+                this.Host = Host;
 
-                if (Info.Headers != null)
-                {
-                    Headers = Info.Headers;
-                    DirectLink = false;
-                }
+                PageUrl = Url;
+                RefreshUrl = GetUrl;
 
-                if (Info.Cookies != null)
-                {
-                    foreach (var Cookie in Info.Cookies)
-                    {
-                        Cookies.Add(Cookie);
-                        DirectLink = false;
-                    }
-                }
+                GetUrl();
             }
         }
 
+        public void GetUrl()
+        {
+            var Info = Host.GetDownloadInfo(PageUrl);
+            Url = Info.Url;
+
+            if (Info.Headers != null)
+            {
+                Headers = Info.Headers;
+                DirectLink = false;
+            }
+
+            if (Info.Cookies != null)
+            {
+                foreach (var Cookie in Info.Cookies)
+                {
+                    Cookies.Add(Cookie);
+                    DirectLink = false;
+                }
+            }
+        }
     }
 }

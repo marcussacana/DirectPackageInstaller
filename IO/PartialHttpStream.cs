@@ -11,6 +11,7 @@ namespace DirectPackageInstaller.IO
     //98% Stolen From: https://codereview.stackexchange.com/a/204766
     public class PartialHttpStream : Stream, IDisposable
     {
+        public Action RefreshUrl = null;
 
         public List<(string Key, string Value)> Headers = new List<(string Key, string Value)>();
         public CookieContainer Cookies = new CookieContainer();
@@ -278,7 +279,10 @@ namespace DirectPackageInstaller.IO
                 ResponseStream = null;
 
                 if (Tries < 2)
+                {
+                    RefreshUrl?.Invoke();
                     return HttpRead(buffer, ref offset, ref count, Tries + 1);
+                }
 
                 var response = (HttpWebResponse)ex.Response;
                 if (response?.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable)
@@ -343,7 +347,10 @@ namespace DirectPackageInstaller.IO
                 ResponseStream = null;
 
                 if (Tries < 2)
+                {
+                    RefreshUrl?.Invoke();
                     return await HttpReadAsync(buffer, offset, count, Tries + 1).ConfigureAwait(false);
+                }
 
                 var response = (HttpWebResponse)ex.Response;
                 if (response?.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable)

@@ -26,9 +26,7 @@ namespace DirectPackageInstaller
 {
     public partial class Main : Form
     {
-#if DEBUG
         public static (uint Offset, uint End, uint Size, EntryId Id)[] PKGEntries;
-#endif
 
         Settings Config;
 
@@ -132,9 +130,9 @@ namespace DirectPackageInstaller
             PKGStream?.Dispose();
 
             if (Loaded) {
-                await Install(tbURL.Text, false);
+                var Success = await Install(tbURL.Text, false);
 
-                if (FileInput)
+                if (FileInput && Success)
                     tbURL.Text = string.Empty;
 
                 return;
@@ -203,9 +201,7 @@ namespace DirectPackageInstaller
                 PKGParser = new PkgReader(PKGStream);
                 PKG = PKGParser.ReadPkg();
 
-#if DEBUG
                 PKGEntries = PKG.Metas.Metas.Select(x => (x.DataOffset, x.DataOffset + x.DataSize, x.DataSize, x.id)).ToArray();
-#endif
 
                 var SystemVer = PKG.ParamSfo.ParamSfo.HasName("SYSTEM_VER") ? PKG.ParamSfo.ParamSfo["SYSTEM_VER"].ToByteArray() : new byte[4];
                 var TitleName = Encoding.UTF8.GetString(PKG.ParamSfo.ParamSfo.HasName("TITLE") ? PKG.ParamSfo.ParamSfo["TITLE"].ToByteArray() : new byte[0]).Trim('\x0');
@@ -443,8 +439,28 @@ namespace DirectPackageInstaller
                         }
                     }
 
+                    var OriStatus = lblStatus.Text;
+                    SetStatus("Initializing Decompressor...");
+
                     if (!Retry)
+                    {
                         UnrarService.TaskCache[ID] = (EntryName, URL);
+                        var Entry = EntryName = await Server.Unrar.Decompressor.CreateUnrar(URL, EntryName);
+                        
+                        if (Entry == null)
+                            throw new Exception("Failed to decompress");
+
+                        UnrarService.EntryMap[URL] = Entry;
+                    }
+
+                    uint LastResource = PKGEntries.OrderByDescending(x => x.End).First().End;
+                    var DecompressTask = Server.Unrar.Tasks[EntryName];
+
+                    while (DecompressTask.SafeTotalDecompressed < LastResource) {
+                        SetStatus($"Preloading Compressed PKG... ({(double)DecompressTask.SafeTotalDecompressed / LastResource:P})");
+                        await Task.Delay(100);
+                    }
+                    SetStatus(OriStatus);
 
                     URL = $"http://{Server.IP}:{ServerPort}/unrar/?id={ID}";
                 }

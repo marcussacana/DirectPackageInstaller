@@ -19,7 +19,7 @@ namespace DirectPackageInstaller
 
         ~VirtualStream()
         {
-            //Dispose();
+            Dispose();
         }
 
         public override bool CanRead
@@ -144,10 +144,14 @@ namespace DirectPackageInstaller
             throw new NotImplementedException();
         }
 
+        public new void Dispose()
+        {
+            Close();
+            Package?.Dispose();
+        }
         public override void Close()
         {
-            Package.Close();
-            base.Close();
+            Package?.Close();
         }
     }
 }
