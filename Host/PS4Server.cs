@@ -80,6 +80,8 @@ namespace DirectPackageInstaller.Host
                     await Proxy(Context, Query, Url);
                 else if (Path.StartsWith("merge"))
                     await Merge(Context, Query, Url);
+                else if (Path.StartsWith("file"))
+                    await File(Context, Query, Url);
                 else
                     throw new NotImplementedException();
             }
@@ -92,6 +94,27 @@ namespace DirectPackageInstaller.Host
             //Context.Close();
         }
 
+        async Task File(HttpContext Context, NameValueCollection Query, string Path)
+        {
+            HttpRange? Range = null;
+            bool Partial = Context.Request.HeaderExists("Range", true);
+            if (Partial)
+                Range = new HttpRange(Context.Request.Headers["Range"]);
+
+            Context.Response.StatusCode = Partial ? 206 : 200;
+            Context.Response.StatusDescription = Partial ? "Partial Content" : "OK";
+
+            Stream Origin = System.IO.File.Open(Path, FileMode.Open, FileAccess.Read, FileShare.Read);
+
+            try
+            {
+                await SendStream(Context, Origin, Range);
+            }
+            finally
+            {
+                Origin.Close();
+            }
+        }
         async Task Proxy(HttpContext Context, NameValueCollection Query, string Url)
         {
             HttpRange? Range = null;

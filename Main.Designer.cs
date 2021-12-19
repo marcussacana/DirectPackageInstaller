@@ -48,6 +48,7 @@ namespace DirectPackageInstaller
             this.miPackages = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.miInstallAll = new System.Windows.Forms.ToolStripMenuItem();
+            this.OpenFileDialog = new System.Windows.Forms.OpenFileDialog();
             this.StatusStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.IconBox)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.SplitPanel)).BeginInit();
@@ -60,11 +61,11 @@ namespace DirectPackageInstaller
             // btnLoadUrl
             // 
             this.btnLoadUrl.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnLoadUrl.Location = new System.Drawing.Point(802, 29);
+            this.btnLoadUrl.Location = new System.Drawing.Point(802, 28);
             this.btnLoadUrl.Name = "btnLoadUrl";
             this.btnLoadUrl.Size = new System.Drawing.Size(90, 23);
             this.btnLoadUrl.TabIndex = 0;
-            this.btnLoadUrl.Text = "Load";
+            this.btnLoadUrl.Text = "Open";
             this.btnLoadUrl.UseVisualStyleBackColor = true;
             this.btnLoadUrl.Click += new System.EventHandler(this.btnLoadUrl_Click);
             // 
@@ -77,6 +78,8 @@ namespace DirectPackageInstaller
             this.tbURL.Size = new System.Drawing.Size(705, 22);
             this.tbURL.TabIndex = 1;
             this.tbURL.TextChanged += new System.EventHandler(this.tbURL_TextChanged);
+            this.tbURL.DragDrop += new System.Windows.Forms.DragEventHandler(this.FileDragDrop);
+            this.tbURL.DragEnter += new System.Windows.Forms.DragEventHandler(this.FileDragEnter);
             this.tbURL.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TbUrlKeyDown);
             // 
             // lblURL
@@ -239,8 +242,14 @@ namespace DirectPackageInstaller
             this.miInstallAll.Text = "Install All";
             this.miInstallAll.Click += new System.EventHandler(this.miInstallAll_Click);
             // 
+            // OpenFileDialog
+            // 
+            this.OpenFileDialog.Filter = "All PKG Files|*.pkg";
+            this.OpenFileDialog.FileOk += new System.ComponentModel.CancelEventHandler(this.OpenFileDialog_FileOk);
+            // 
             // Main
             // 
+            this.AllowDrop = true;
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(904, 415);
@@ -290,6 +299,7 @@ namespace DirectPackageInstaller
         private System.Windows.Forms.ToolStripMenuItem miPackages;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
         private System.Windows.Forms.ToolStripMenuItem miInstallAll;
+        private System.Windows.Forms.OpenFileDialog OpenFileDialog;
     }
 }
 

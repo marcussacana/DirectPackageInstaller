@@ -72,11 +72,11 @@ namespace DirectPackageInstaller
         }
         public static string Substring(this string String, string SubstringA, string SubStringB)
         {
-            var BIndex = String.IndexOf(SubstringA);
+            var BIndex = SubstringA == null ? 0 : String.IndexOf(SubstringA);
             if (BIndex == -1 || !String.Contains(SubStringB))
-                throw new Exception("Substring Not Found");
+                throw new Exception("SubstringB Not Found");
 
-            BIndex += SubstringA.Length;
+            BIndex += SubstringA?.Length ?? 0;
             var EIndex = String.IndexOf(SubStringB, BIndex);
             return String.Substring(BIndex, EIndex - BIndex);
         }

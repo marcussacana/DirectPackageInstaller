@@ -18,7 +18,7 @@ namespace DirectPackageInstaller
         }
 
         static Random random = new Random();
-        public static string TempDir => Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "Temp");
+        public static string TempDir => Path.Combine(Environment.GetEnvironmentVariable("CD") ?? Path.GetDirectoryName(Application.ExecutablePath), "Temp");
         public static string GetTempFile(string ID)
         {
             if (ID == null)

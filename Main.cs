@@ -32,7 +32,7 @@ namespace DirectPackageInstaller
 
         Settings Config;
 
-        string SettingsPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Settings.ini");
+        string SettingsPath => Path.Combine(Environment.GetEnvironmentVariable("CD") ?? AppDomain.CurrentDomain.BaseDirectory, "Settings.ini");
 
         public Main()
         {
@@ -120,6 +120,7 @@ namespace DirectPackageInstaller
         bool Fake;
         bool Compressed;
         bool JSON;
+        bool FileInput;
 
         string[] CurrentFileList = null;
 
@@ -132,6 +133,15 @@ namespace DirectPackageInstaller
 
             if (Loaded) {
                 await Install(tbURL.Text, false);
+
+                if (FileInput)
+                    tbURL.Text = string.Empty;
+
+                return;
+            }
+
+            if (string.IsNullOrEmpty(tbURL.Text)) {
+                OpenFileDialog.ShowDialog();
                 return;
             }
 
@@ -148,9 +158,11 @@ namespace DirectPackageInstaller
             miPackages.Visible = false;
             Compressed = false;
             JSON = false;
+            FileInput = false;
             Loaded = false;
-            if (!Uri.IsWellFormedUriString(tbURL.Text, UriKind.Absolute)) {
-                MessageBox.Show(this, "Invalid URL", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+            if (!Uri.IsWellFormedUriString(tbURL.Text, UriKind.Absolute) && !File.Exists(tbURL.Text)) {
+                MessageBox.Show(this, "Invalid URL or File Path", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
@@ -161,6 +173,12 @@ namespace DirectPackageInstaller
                 if (tbURL.Text.EndsWith(".json", StringComparison.InvariantCultureIgnoreCase)) {
                     PKGStream = SplitHelper.OpenRemoteJSON(tbURL.Text);
                     JSON = true;
+                }
+
+                if (tbURL.Text.Length > 2 && (tbURL.Text[1] == ':' || tbURL.Text[0] == '/'))
+                {
+                    PKGStream = File.Open(tbURL.Text, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    FileInput = true;
                 }
 
                 byte[] Magic = new byte[4];
@@ -434,9 +452,14 @@ namespace DirectPackageInstaller
                 {
                     URL = $"http://{Server.IP}:{ServerPort}/proxy/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
                 }
-                else if (JSON) {
+                else if (JSON)
+                {
                     URL = $"http://{Server.IP}:{ServerPort}/merge/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
                 }
+                else if (FileInput) 
+                {
+                    URL = $"http://{Server.IP}:{ServerPort}/file/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
+                }//I swear, if I add one more, I will use switch
 
                 try
                 {
@@ -466,6 +489,7 @@ namespace DirectPackageInstaller
                                 {
                                     if (!Silent)
                                         MessageBox.Show(this, "Package Sent!", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
                                     return true;
                                 }
                                 else
@@ -673,11 +697,12 @@ namespace DirectPackageInstaller
 
         private void tbURL_TextChanged(object sender, EventArgs e)
         {
-            Loaded = false;
-            btnLoadUrl.Text = "Load";
+            Loaded = false; 
+            btnLoadUrl.Text = string.IsNullOrWhiteSpace(tbURL.Text) ? "Open" : "Load";
             CurrentFileList = null;
             miPackages.Visible = false;
 
+            PKGStream?.Close();
             PKGStream?.Dispose();
         }
 
@@ -785,6 +810,23 @@ namespace DirectPackageInstaller
 
                 e.Handled = true;
             }
+        }
+
+        private void FileDragEnter(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop)) 
+                e.Effect = DragDropEffects.Copy;
+        }
+
+        private void FileDragDrop(object sender, DragEventArgs e)
+        {
+            string file = ((string[])e.Data.GetData(DataFormats.FileDrop)).First();
+            tbURL.Text = file;
+        }
+
+        private void OpenFileDialog_FileOk(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            tbURL.Text = OpenFileDialog.FileName;
         }
     }
 }

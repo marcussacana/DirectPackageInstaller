@@ -34,15 +34,15 @@
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="app.manifest" />
-    <None Include="App.config" />
-    <None Include="DirectPackageInstallerLinux.csproj" />
-    <None Include="DirectPackageInstallerLinux.sln" />
+    <None Include="AppLinux.config" />
     <None Include="FodyWeavers.xml" />
     <None Include="FodyWeavers.xsd" />
     <None Include="LinkList.resx" />
     <None Include="Main.resx" />
     <None Include="PS4IP.resx" />
     <None Include="Select.resx" />
+    <None Include="DirectPackageInstallerLinux.csproj" />
+    <None Include="DirectPackageInstallerLinux.sln" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="LibOrbisPkg">

@@ -19,12 +19,28 @@ namespace DirectPackageInstaller.FileHosts
 
             string Page = DownloadString(URL);
 
-            Page = Page.Substring("document.getElementById('dlbutton')");
-            Page = Page.Substring("= \"");
+            Page = Page.Substring("<a id=\"dlbutton\"  href=\"#\">");
+            Page = Page.Substring("<script type=\"text/javascript\">", "</script>");
 
-            string Exp = Page.Substring("(", ")");
+            List<(string Source, string Replace)> Replaces = new List<(string, string)>();
+            while (Page.Contains("var "))
+            {
+                Page = Page.Substring("var ");
+                var Def = Page.Substring(null, ";");
+                var Name = Def.Split('=').First().Trim();
+                var Value = $"({Def.Split('=').Last().Trim()})";
+                Replaces.Add((Name, Value));
+            }
 
-            Page = Page.Substring("+ \"", "\";");
+            string Exp = Page.Substring(".href = \"").Substring("(", ")");
+
+            foreach (var Replace in Replaces)
+                Exp = Exp.Replace(Replace.Source, Replace.Replace);
+
+            if (Page.Contains("+ \""))
+                Page = Page.Substring("+ \"", "\";");
+            if (Page.Contains("+\""))
+                Page = Page.Substring("+\"", "\";");
 
             var Result = (int)new Expression(Exp).Evaluate();
 
