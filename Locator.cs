@@ -74,11 +74,19 @@ namespace DirectPackageInstaller
             return DeviceFound;
         }
 
-        public static string FindLocalIP(string RemoteIP) {
-            if (Searching)
-                SearchInterfaces();
-            string RemotePartial = RemoteIP.Substring(0, RemoteIP.LastIndexOf('.'));
-            return LocalIPs.Where(x => x.StartsWith(RemotePartial)).Single();
+        public static string FindLocalIP(string RemoteIP)
+        {
+            try
+            {
+                if (Searching)
+                    SearchInterfaces();
+                string RemotePartial = RemoteIP.Substring(0, RemoteIP.LastIndexOf('.'));
+                return LocalIPs.Where(x => x.StartsWith(RemotePartial)).Single();
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         static void SearchInterfaces()

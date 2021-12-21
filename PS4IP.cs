@@ -89,5 +89,13 @@ namespace DirectPackageInstaller
             IP = tbIP.Text;
             Close();
         }
+
+        public static string AskIP(string Message) {
+            using var Window = new PS4IP();
+            Window.Text = Message; 
+            if (Window.ShowDialog() == DialogResult.OK)
+                return Window.IP;
+            return null;
+        }
     }
 }

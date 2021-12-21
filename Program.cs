@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -15,7 +16,9 @@ namespace DirectPackageInstaller
     static class Program
     {
         public static bool IsUnix => (int)Environment.OSVersion.Platform == 4 || (int)Environment.OSVersion.Platform == 6 || (int)Environment.OSVersion.Platform == 128;
+        public static string WorkingDirectory => Environment.GetEnvironmentVariable("CD") ?? Path.GetDirectoryName(Application.ExecutablePath);
 
+        public static GitHub Updater = new GitHub("marcussacana", "DirectPackageInstaller", IsUnix ? "DirectPackageInstallerLinux" : "DirectPackageInstaller");
 
         /// <summary>
         /// Ponto de entrada principal para o aplicativo.
@@ -23,6 +26,16 @@ namespace DirectPackageInstaller
         [STAThread]
         static void Main()
         {
+            if (!IsUnix)
+                Updater.BypassSLL();
+
+            if (Updater.FinishUpdatePending())
+            {
+                Process.Start(Updater.FinishUpdate());
+                Environment.Exit(0);
+                return;
+            }
+
             UnlockHeaders();
             ServicePointManager.DefaultConnectionLimit = 100;
             TempHelper.Clear();

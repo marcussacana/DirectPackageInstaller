@@ -66,7 +66,12 @@ namespace DirectPackageInstaller.Host
             }
 
             if (TaskInfo.Failed)
+            {
+                if (System.Diagnostics.Debugger.IsAttached)
+                    System.Diagnostics.Debugger.Break();
+                System.IO.File.WriteAllText("unrar.log", $"{Tasks[EntryMap[Url]].Error}");
                 Tasks.Remove(EntryMap[Url]);
+            }
 
             if (FromPS4)
             {

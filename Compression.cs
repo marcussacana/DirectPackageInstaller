@@ -62,7 +62,7 @@ namespace DirectPackageInstaller
                     TaskCompSrc.SetResult(true);
                     return;
                 }
-
+                
                 var Input = Entry.OpenEntryStream();
                 var TmpFile = TempHelper.GetTempFile(EntryName + "extract");
                 
@@ -85,7 +85,8 @@ namespace DirectPackageInstaller
 
                 try
                 {
-                    byte[] Buffer = new byte[1024 * 8];
+                    byte[] Buffer = new byte[1024 * 1024 * 1];
+
                     int Readed;
                     do
                     {
@@ -93,6 +94,9 @@ namespace DirectPackageInstaller
                         Output.Write(Buffer, 0, Readed);
                         *TaskInfo.TotalDecompressed += Readed;
                     } while (Readed > 0);
+                }
+                catch (Exception ex){
+                    TaskInfo.Error = ex;
                 }
                 finally
                 {
@@ -128,6 +132,8 @@ namespace DirectPackageInstaller
         public double Progress => ((double)*TotalDecompressed / TotalSize) * 100.0;
 
         public bool Failed => !Running && *TotalDecompressed > 0 && *TotalDecompressed < TotalSize;
+
+        public Exception Error { get; internal set; }
     }
     enum CompressionFormat { 
         RAR, ZIP, SevenZip, None

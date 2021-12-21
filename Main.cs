@@ -107,6 +107,11 @@ namespace DirectPackageInstaller
                 tbPS4IP.Text = Config.LastPS4IP;
                 new Thread(() => StartServer(Config.LastPS4IP)).Start();
             }
+
+            if (Program.Updater.HaveUpdate() && MessageBox.Show(this, "Update found, Update now?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.OK)
+            {
+                Program.Updater.Update();
+            }
         }
 
         Stream PKGStream;
@@ -557,7 +562,7 @@ namespace DirectPackageInstaller
             {
                 if (Server == null)
                 {
-                    var LocalIP = Locator.FindLocalIP(IP);
+                    var LocalIP = Locator.FindLocalIP(IP) ?? "127.0.0.1";
                     Server = new PS4Server(LocalIP, ServerPort);
                     Server.Start();
                 }
@@ -767,7 +772,7 @@ namespace DirectPackageInstaller
             }
             catch { }
 
-            Server = new PS4Server(Locator.FindLocalIP(Config.LastPS4IP));
+            Server = new PS4Server(Locator.FindLocalIP(Config.LastPS4IP) ?? PS4IP.AskIP("What is your Local IP?"));
             Server.Start();
         }
 

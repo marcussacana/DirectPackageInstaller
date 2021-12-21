@@ -8,10 +8,12 @@ using System.Web;
 
 namespace DirectPackageInstaller.IO
 {
-    //98% Stolen From: https://codereview.stackexchange.com/a/204766
+    //96% Stolen From: https://codereview.stackexchange.com/a/204766
     public class PartialHttpStream : Stream, IDisposable
     {
         public Action RefreshUrl = null;
+        private string FinalURL;
+        private string FinalContentType;
 
         public List<(string Key, string Value)> Headers = new List<(string Key, string Value)>();
         public CookieContainer Cookies = new CookieContainer();
@@ -24,6 +26,8 @@ namespace DirectPackageInstaller.IO
                 return _fn;
             }
         }
+
+        public int Timeout { get; set; }
 
         private const int CacheLen = 1024 * 8;
 
@@ -104,7 +108,7 @@ namespace DirectPackageInstaller.IO
                 // large request, do not cache
                 while (count > 0)
                 {
-                    int Readed = 0;
+                    int Readed;
                     Position += Readed = HttpRead(buffer, ref offset, ref count);
 
                     if (Readed == 0 && EmptyTries-- < 0)
@@ -213,6 +217,7 @@ namespace DirectPackageInstaller.IO
 
         private int HttpRead(byte[] buffer, ref int offset, ref int count, int Tries = 0)
         {
+            bool URLChanged = false;
             try
             {
                 if (RespPos != Position || ResponseStream == null)
@@ -246,8 +251,23 @@ namespace DirectPackageInstaller.IO
                     req.AddRange(Position, Length - 1);
                     resp = req.GetResponse();
 
+                    if (FinalURL != resp.ResponseUri.AbsoluteUri)
+                    {
+                        URLChanged = true;
+                        if (resp.ContentType.Contains("text/html") && resp.ContentType != FinalContentType)
+                        {
+                            FinalURL = resp.ResponseUri.AbsoluteUri;
+                            FinalContentType = resp.ContentType;
+                            throw new WebException("Link Expired?");
+                        }
+                    }
+
+                    FinalURL = resp.ResponseUri.AbsoluteUri;
+                    FinalContentType = resp.ContentType;
+
                     ResponseStream = resp.GetResponseStream();
-                    ResponseStream.ReadTimeout = (int)TimeSpan.FromMinutes(5).TotalMilliseconds;
+                    ResponseStream.ReadTimeout = (int)TimeSpan.FromMinutes(1).TotalMilliseconds;
+                    ResponseStream = new BufferedStream(ResponseStream);
                 }
 
                 int nread = 0;
@@ -293,6 +313,7 @@ namespace DirectPackageInstaller.IO
 
         private async Task<(int Readed, int Offset, int Count)> HttpReadAsync(byte[] buffer, int offset, int count, int Tries = 0)
         {
+            bool URLChanged = false;
             try
             {
                 if (RespPos != Position || ResponseStream == null)
@@ -320,7 +341,23 @@ namespace DirectPackageInstaller.IO
                     req.AddRange(Position, Length - 1);
                     resp = await req.GetResponseAsync();
 
+                    if (FinalURL != resp.ResponseUri.AbsoluteUri)
+                    {
+                        URLChanged = true;
+                        if (resp.ContentType.Contains("text/html") && resp.ContentType != FinalContentType)
+                        {
+                            FinalURL = resp.ResponseUri.AbsoluteUri;
+                            FinalContentType = resp.ContentType;
+                            throw new WebException("Link Expired?");
+                        }
+                    }
+
+                    FinalURL = resp.ResponseUri.AbsoluteUri;
+                    FinalContentType = resp.ContentType;
+
                     ResponseStream = resp.GetResponseStream();
+                    ResponseStream.ReadTimeout = (int)TimeSpan.FromMinutes(1).TotalMilliseconds;
+                    ResponseStream = new BufferedStream(ResponseStream);
                 }
 
                 int nread = 0;
@@ -383,6 +420,10 @@ namespace DirectPackageInstaller.IO
                     request.Headers[Header.Key] = Header.Value;
 
                 using var response = request.GetResponse();
+
+                FinalURL = response.ResponseUri.AbsoluteUri;
+                FinalContentType = response.ContentType;
+
                 if (response.Headers.AllKeys.Contains("Content-Disposition"))
                 {
                     _fn = response.Headers["Content-Disposition"];
