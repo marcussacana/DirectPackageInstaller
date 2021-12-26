@@ -43,6 +43,20 @@ namespace DirectPackageInstaller.IO
         {
             Dispose();
         }
+
+        public void AppendStream(Stream Part) => AppendStream(Part, Part.Length);
+        public void AppendStream(Stream Part, long Size)
+        {
+            long CurrentTotalSize = TotalLen;
+            Array.Resize(ref Streams, Streams.Length + 1);
+            Array.Resize(ref PartSize, PartSize.Length + 1);
+            Array.Resize(ref PartOffset, PartOffset.Length + 1);
+
+            Streams[Streams.Length - 1] = Part;
+            PartSize[PartSize.Length - 1] = Size;
+            PartOffset[PartOffset.Length - 1] = CurrentTotalSize;
+        }
+
         public override bool CanRead => true;
 
         public override bool CanSeek => true;

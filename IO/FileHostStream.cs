@@ -1,12 +1,16 @@
 ﻿using DirectPackageInstaller.FileHosts;
+using System.Collections.Generic;
 
 namespace DirectPackageInstaller.IO
 {
-    class FileHostStream : PartialHttpStream
+    public class FileHostStream : PartialHttpStream
     {
+        static Dictionary<string, DownloadInfo> UrlCache = new Dictionary<string, DownloadInfo>();
+
         public string PageUrl;
         public FileHostBase Host;
         public bool DirectLink { get; private set; } = true;
+
         public FileHostStream(string Url, int cacheLen = 8192) : base(Url, cacheLen)
         {
             foreach (var Host in FileHostBase.Hosts)
@@ -17,15 +21,33 @@ namespace DirectPackageInstaller.IO
                 this.Host = Host;
 
                 PageUrl = Url;
-                RefreshUrl = GetUrl;
+                RefreshUrl = Refresh;
 
                 GetUrl();
             }
         }
 
+        void Refresh()
+        {
+            if (UrlCache.ContainsKey(PageUrl))
+                UrlCache.Remove(PageUrl);
+            GetUrl();
+        }
+
         public void GetUrl()
         {
-            var Info = Host.GetDownloadInfo(PageUrl);
+            DownloadInfo Info;
+
+            if (UrlCache.ContainsKey(PageUrl))
+            {
+                Info = UrlCache[PageUrl];
+            }
+            else
+            {
+                Info = Host.GetDownloadInfo(PageUrl);
+                UrlCache[PageUrl] = Info;
+            }
+
             Url = Info.Url;
 
             if (Info.Headers != null)

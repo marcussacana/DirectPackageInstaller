@@ -7,7 +7,7 @@ using System.Web;
 
 namespace DirectPackageInstaller.FileHosts
 {
-    abstract class FileHostBase
+    public abstract class FileHostBase
     {
         string HostName { get; }
 
@@ -41,7 +41,7 @@ namespace DirectPackageInstaller.FileHosts
         }
 
         public static FileHostBase[] Hosts => new FileHostBase[] {
-                new ZippyShare(), new Mediafire(), new GoogleDrive()
+                new ZippyShare(), new Mediafire(), new GoogleDrive(), new PixelDrain()
         };
     }
 

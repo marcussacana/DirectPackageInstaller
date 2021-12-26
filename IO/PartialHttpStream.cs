@@ -273,6 +273,8 @@ namespace DirectPackageInstaller.IO
                 int nread = 0;
 
                 int Readed = 0;
+
+                
                 do
                 {
                     Readed = ResponseStream.Read(buffer, offset + nread, count - nread);
@@ -289,6 +291,19 @@ namespace DirectPackageInstaller.IO
 
                 return nread;
 
+            }
+            catch (IOException ex)
+            {
+                ResponseStream?.Dispose();
+                ResponseStream = null;
+
+                if (Tries < 2)
+                {
+                    RefreshUrl?.Invoke();
+                    return HttpRead(buffer, ref offset, ref count, Tries + 1);
+                }
+
+                throw ex;
             }
             catch (WebException ex)
             {
@@ -351,9 +366,6 @@ namespace DirectPackageInstaller.IO
                             throw new WebException("Link Expired?");
                         }
                     }
-
-                    FinalURL = resp.ResponseUri.AbsoluteUri;
-                    FinalContentType = resp.ContentType;
 
                     ResponseStream = resp.GetResponseStream();
                     ResponseStream.ReadTimeout = (int)TimeSpan.FromMinutes(1).TotalMilliseconds;

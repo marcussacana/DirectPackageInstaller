@@ -7,7 +7,7 @@ namespace DirectPackageInstaller
     public class VirtualStream : Stream
     {
         private Stream Package;
-        private long FilePos = 0;
+        public long FilePos { get; private set; } = 0;
         private long Len;
 
         internal VirtualStream(Stream Package, long Pos, long Len)
@@ -45,7 +45,7 @@ namespace DirectPackageInstaller
                 return false;
             }
         }
-        public override long Length
+        public  override long Length
         {
             get
             {
@@ -81,6 +81,9 @@ namespace DirectPackageInstaller
 
             if (Pos + count > Length)
                 count = (int)(Length - Pos);
+
+            if (count < 0)
+                count = 0;
 
             int Readed = 0;
             do
@@ -136,7 +139,10 @@ namespace DirectPackageInstaller
 
         public override void SetLength(long value)
         {
-            throw new NotImplementedException();
+            if (FilePos + value > Package.Length)
+                throw new Exception("Invalid Length");
+
+            Len = value;
         }
 
         public override void Write(byte[] buffer, int offset, int count)

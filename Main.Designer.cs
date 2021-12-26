@@ -64,7 +64,7 @@ namespace DirectPackageInstaller
             this.btnLoadUrl.Location = new System.Drawing.Point(802, 28);
             this.btnLoadUrl.Name = "btnLoadUrl";
             this.btnLoadUrl.Size = new System.Drawing.Size(90, 23);
-            this.btnLoadUrl.TabIndex = 0;
+            this.btnLoadUrl.TabIndex = 2;
             this.btnLoadUrl.Text = "Open";
             this.btnLoadUrl.UseVisualStyleBackColor = true;
             this.btnLoadUrl.Click += new System.EventHandler(this.btnLoadUrl_Click);

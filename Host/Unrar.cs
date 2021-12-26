@@ -77,8 +77,8 @@ namespace DirectPackageInstaller.Host
             {
                 if (!Instances.ContainsKey(InstanceID))
                     Instances[InstanceID] = 0;
-                else if (Instances[InstanceID] > 0 && SeekRequest)
-                    throw new Exception();
+                //else if (Instances[InstanceID] > 0 && SeekRequest)
+                //    throw new Exception();
 
                 Instances[InstanceID]++;
             }

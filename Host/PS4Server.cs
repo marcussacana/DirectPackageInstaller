@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -115,25 +113,13 @@ namespace DirectPackageInstaller.Host
                 Origin.Close();
             }
         }
+
         async Task Proxy(HttpContext Context, NameValueCollection Query, string Url)
         {
             HttpRange? Range = null;
             bool Partial = Context.Request.HeaderExists("Range", true);
             if (Partial)
                 Range = new HttpRange(Context.Request.Headers["Range"]);
-
-#if DEBUG
-            if (Debugger.IsAttached)
-            {
-                foreach (var entry in Main.PKGEntries)
-                {
-                    if (Range?.Begin >= entry.Offset && Range?.End <= entry.End)
-                    {
-                        Debugger.Break();
-                    }
-                }
-            }
-#endif
 
             Context.Response.StatusCode = Partial ? 206 : 200;
             Context.Response.StatusDescription = Partial ? "Partial Content" : "OK";

@@ -119,11 +119,9 @@ namespace DirectPackageInstaller
         PkgReader PKGParser;
         Pkg PKG;
 
-        bool Loaded;
         bool Fake;
-        bool Compressed;
-        bool JSON;
-        bool FileInput;
+
+        Source InputType = Source.NONE;
 
         string[] CurrentFileList = null;
 
@@ -134,10 +132,10 @@ namespace DirectPackageInstaller
             PKGStream?.Close();
             PKGStream?.Dispose();
 
-            if (Loaded) {
+            if (InputType != Source.NONE) {
                 var Success = await Install(tbURL.Text, false);
 
-                if (FileInput && Success)
+                if (InputType.HasFlag(Source.File) && Success)
                     tbURL.Text = string.Empty;
 
                 return;
@@ -159,10 +157,7 @@ namespace DirectPackageInstaller
             GC.Collect();
 
             miPackages.Visible = false;
-            Compressed = false;
-            JSON = false;
-            FileInput = false;
-            Loaded = false;
+            InputType = Source.NONE;
 
             if (!Uri.IsWellFormedUriString(tbURL.Text, UriKind.Absolute) && !File.Exists(tbURL.Text)) {
                 MessageBox.Show(this, "Invalid URL or File Path", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -171,17 +166,22 @@ namespace DirectPackageInstaller
 
             try
             {
-                PKGStream = new FileHostStream(tbURL.Text);
-                
-                if (tbURL.Text.EndsWith(".json", StringComparison.InvariantCultureIgnoreCase)) {
-                    PKGStream = SplitHelper.OpenRemoteJSON(tbURL.Text);
-                    JSON = true;
-                }
+                PKGStream = null;
 
-                if (tbURL.Text.Length > 2 && (tbURL.Text[1] == ':' || tbURL.Text[0] == '/'))
+                if (tbURL.Text.EndsWith(".json", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    PKGStream = SplitHelper.OpenRemoteJSON(tbURL.Text);
+                    InputType = Source.URL | Source.JSON;
+                }
+                else if (tbURL.Text.Length > 2 && (tbURL.Text[1] == ':' || tbURL.Text[0] == '/'))
                 {
                     PKGStream = File.Open(tbURL.Text, FileMode.Open, FileAccess.Read, FileShare.Read);
-                    FileInput = true;
+                    InputType = Source.File;
+                }
+                else
+                {
+                    InputType = Source.URL;
+                    PKGStream = new FileHostStream(tbURL.Text);
                 }
 
                 byte[] Magic = new byte[4];
@@ -191,7 +191,7 @@ namespace DirectPackageInstaller
                 switch (Compression.DetectCompressionFormat(Magic))
                 {
                     case CompressionFormat.RAR:
-                        Compressed = true;
+                        InputType |= Source.RAR;
                         SetStatus("Decompressing...");
                         var Unrar = UnrarPKG(PKGStream, tbURL.Text, sender is string ? (string)sender : null);
                         PKGStream = Unrar.Buffer;
@@ -283,7 +283,6 @@ namespace DirectPackageInstaller
                     catch { }
                 }
 
-                Loaded = true;
                 btnLoadUrl.Text = "Install";
             }
             catch {
@@ -292,7 +291,7 @@ namespace DirectPackageInstaller
                 IconBox.Image = null;
                 ParamList.Items.Clear();
 
-                Loaded = false;
+                InputType = Source.NONE;
                 btnLoadUrl.Text = "Load";
 
                 miPackages.Visible = false;
@@ -318,7 +317,7 @@ namespace DirectPackageInstaller
                     var Item = new ToolStripMenuItem(Entry);
                     Item.Click += (sender, e) =>
                     {
-                        Loaded = false;
+                        InputType = Source.NONE;
                         btnLoadUrl_Click(Item.Text, null);
                     };
 
@@ -334,7 +333,6 @@ namespace DirectPackageInstaller
             foreach (var File in CurrentFileList)
             {
                 EntryName = File;
-                Loaded = true;
                 if (!await Install(tbURL.Text, true)) {
                     var Reply = MessageBox.Show("Continue trying install the others packages?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                     if (Reply != DialogResult.Yes)
@@ -353,7 +351,7 @@ namespace DirectPackageInstaller
 
         string EntryName = null;
         long EntrySize = -1;
-        private async Task<bool> Install(string URL, bool Silent, int Retries = 10)
+        private async Task<bool> Install(string URL, bool Silent)
         {
             btnLoadUrl.Text = "Pushing...";
             miPackages.Enabled = false;
@@ -407,80 +405,95 @@ namespace DirectPackageInstaller
                     }
                 }
 
-                if (Compressed)
+                if (miProxyDownloads.Checked || ForceProxy)
+                    InputType |= Source.Proxy;
+
+                switch (InputType)
                 {
-                    if (!miProxyDownloads.Checked && !AllowIndirect)
-                    {
-                        var Reply = MessageBox.Show("The given pkg is compressed therefore can't be direct downloaded in your PS4.\nDo you want to the DirectPackageInstaller act as a decompress server?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                        if (Reply != DialogResult.Yes)
-                            return false;
-
-                        AllowIndirect = true;
-                    }
-
-                    var FreeSpace = GetCurrentDiskAvailableFreeSpace();
-                    if (EntrySize > FreeSpace && !Program.IsUnix)
-                    {
-                        long Missing = EntrySize - FreeSpace;
-                        MessageBox.Show("Compressed files are cached to your disk, you need more " + ToFileSize(Missing) + " of free space to install this package.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return false;
-                    }
-
-                    bool Retry = false;
-
-                    var ID = UnrarService.TaskCache.Count.ToString();
-                    foreach (var Task in UnrarService.TaskCache)
-                    {
-                        if (Task.Value.Entry == EntryName && Task.Value.Url == URL)
+                    case Source.URL | Source.RAR | Source.Proxy:
+                    case Source.URL | Source.RAR:
+                        if (!miProxyDownloads.Checked && !AllowIndirect)
                         {
-                            if (UnrarService.EntryMap.ContainsKey(URL) && Server.Unrar.Tasks.ContainsKey(UnrarService.EntryMap[URL]))
-                            {
-                                if (Server.Unrar.Tasks[UnrarService.EntryMap[URL]].Failed)
-                                    continue;
-                            }
-                            ID = Task.Key;
-                            Retry = true;
-                            break;
+                            var Reply = MessageBox.Show("The given pkg is compressed therefore can't be direct downloaded in your PS4.\nDo you want to the DirectPackageInstaller act as a decompress server?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                            if (Reply != DialogResult.Yes)
+                                return false;
+
+                            AllowIndirect = true;
                         }
-                    }
 
-                    var OriStatus = lblStatus.Text;
-                    SetStatus("Initializing Decompressor...");
+                        var FreeSpace = GetCurrentDiskAvailableFreeSpace();
+                        if (EntrySize > FreeSpace && !Program.IsUnix)
+                        {
+                            long Missing = EntrySize - FreeSpace;
+                            MessageBox.Show("Compressed files are cached to your disk, you need more " + ToFileSize(Missing) + " of free space to install this package.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            return false;
+                        }
 
-                    if (!Retry)
-                    {
-                        UnrarService.TaskCache[ID] = (EntryName, URL);
-                        var Entry = EntryName = await Server.Unrar.Decompressor.CreateUnrar(URL, EntryName);
-                        
-                        if (Entry == null)
-                            throw new Exception("Failed to decompress");
+                        bool Retry = false;
 
-                        UnrarService.EntryMap[URL] = Entry;
-                    }
+                        var ID = UnrarService.TaskCache.Count.ToString();
+                        foreach (var Task in UnrarService.TaskCache)
+                        {
+                            if (Task.Value.Entry == EntryName && Task.Value.Url == URL)
+                            {
+                                if (UnrarService.EntryMap.ContainsKey(URL) && Server.Unrar.Tasks.ContainsKey(UnrarService.EntryMap[URL]))
+                                {
+                                    if (Server.Unrar.Tasks[UnrarService.EntryMap[URL]].Failed)
+                                        continue;
 
-                    uint LastResource = PKGEntries.OrderByDescending(x => x.End).First().End;
-                    var DecompressTask = Server.Unrar.Tasks[EntryName];
+                                    ID = Task.Key;
+                                    Retry = true;
+                                }
+                                break;
+                            }
+                        }
 
-                    while (DecompressTask.SafeTotalDecompressed < LastResource) {
-                        SetStatus($"Preloading Compressed PKG... ({(double)DecompressTask.SafeTotalDecompressed / LastResource:P})");
-                        await Task.Delay(100);
-                    }
-                    SetStatus(OriStatus);
+                        var OriStatus = lblStatus.Text;
+                        SetStatus("Initializing Decompressor...");
 
-                    URL = $"http://{Server.IP}:{ServerPort}/unrar/?id={ID}";
+                        if (!Retry)
+                        {
+                            UnrarService.TaskCache[ID] = (EntryName, URL);
+                            var Entry = EntryName = await Server.Unrar.Decompressor.CreateUnrar(URL, EntryName);
+
+                            if (Entry == null)
+                                throw new Exception("Failed to decompress");
+
+                            UnrarService.EntryMap[URL] = Entry;
+                        }
+
+                        uint LastResource = PKGEntries.OrderByDescending(x => x.End).First().End;
+                        var DecompressTask = Server.Unrar.Tasks[EntryName];
+
+                        while (DecompressTask.SafeTotalDecompressed < LastResource)
+                        {
+                            SetStatus($"Preloading Compressed PKG... ({(double)DecompressTask.SafeTotalDecompressed / LastResource:P})");
+                            await Task.Delay(100);
+                        }
+                        SetStatus(OriStatus);
+
+                        URL = $"http://{Server.IP}:{ServerPort}/unrar/?id={ID}";
+                        break;
+
+                    case Source.URL | Source.Proxy:
+                        URL = $"http://{Server.IP}:{ServerPort}/proxy/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
+                        break;
+
+                    case Source.JSON | Source.Proxy:
+                    case Source.JSON:
+                        URL = $"http://{Server.IP}:{ServerPort}/merge/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
+                        break;
+
+                    case Source.File | Source.Proxy:
+                    case Source.File:
+                        URL = $"http://{Server.IP}:{ServerPort}/file/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
+                        break;
+                    case Source.URL:
+                        break;
+                    default:
+                        MessageBox.Show("Unexpected Install Method: \n" + InputType.ToString());
+                        return false;
                 }
-                else if (miProxyDownloads.Checked || ForceProxy)
-                {
-                    URL = $"http://{Server.IP}:{ServerPort}/proxy/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
-                }
-                else if (JSON)
-                {
-                    URL = $"http://{Server.IP}:{ServerPort}/merge/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
-                }
-                else if (FileInput) 
-                {
-                    URL = $"http://{Server.IP}:{ServerPort}/file/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
-                }//I swear, if I add one more, I will use switch
 
                 try
                 {
@@ -515,6 +528,9 @@ namespace DirectPackageInstaller
                                 }
                                 else
                                 {
+                                    if (Result.Contains("0x80990085"))
+                                        Result += "\nVerify if your PS4 have free space.";
+
                                     MessageBox.Show(this, "Failed:\n" + Result, "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                                     return false;
                                 }
@@ -537,11 +553,6 @@ namespace DirectPackageInstaller
                             }
                         }
                         catch { }
-                    }
-                    
-                    if (Compressed && Retries > 0)
-                    {
-                        return await Install(URL, Silent, Retries - 1);
                     }
 
                     MessageBox.Show("Failed:\n" + Result == null ? ex.ToString() : Result, "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -597,7 +608,7 @@ namespace DirectPackageInstaller
             } + $" ({CatID})";
         }
 
-        public static Dictionary<string, (string[] Links, string Password)> RARInfo = new Dictionary<string, (string[] Links, string Password)>();
+        public static Dictionary<string, (string[] Links, string Password)> CompressInfo = new Dictionary<string, (string[] Links, string Password)>();
         public static (IArchive Archive, Stream Buffer, string Filename, string[] PKGList, long Length) UnrarPKG(Stream Volume, string FirstUrl, string EntryName = null, bool Seekable = true, string Password = null) => UnrarPKG(new Stream[] { Volume }, FirstUrl, EntryName, Seekable, Password);
         public static (IArchive Archive, Stream Buffer, string Filename, string[] PKGList, long Length) UnrarPKG(Stream[] Volumes, string FirstUrl, string EntryName = null, bool Seekable = true, string Password = null)
         {
@@ -613,9 +624,9 @@ namespace DirectPackageInstaller
             {
                 Archive.Dispose();
 
-                if (RARInfo.ContainsKey(FirstUrl))
+                if (CompressInfo.ContainsKey(FirstUrl))
                 {
-                    var List = RARInfo[FirstUrl];
+                    var List = CompressInfo[FirstUrl];
                     return UnrarPKG(List.Links.Select(x => new FileHostStream(x)).ToArray(), FirstUrl, EntryName, Seekable, List.Password);
                 }
                 else
@@ -624,15 +635,16 @@ namespace DirectPackageInstaller
                     if (List.ShowDialog() != DialogResult.OK)
                         throw new Exception();
 
-                    RARInfo[FirstUrl] = (List.Links, List.Password);
+                    CompressInfo[FirstUrl] = (List.Links, List.Password);
 
                     return UnrarPKG(List.Links.Select(x => new FileHostStream(x)).ToArray(), FirstUrl, EntryName, Seekable, List.Password);
                 }
-            } else if (Encrypted)
+            }
+            else if (Encrypted && Password == null && !Archive.IsMultipartVolume())
             {
-                if (RARInfo.ContainsKey(FirstUrl))
+                if (CompressInfo.ContainsKey(FirstUrl))
                 {
-                    var List = RARInfo[FirstUrl];
+                    var List = CompressInfo[FirstUrl];
 
                     var Volume = Volumes.Single();
                     Volume.Seek(0, SeekOrigin.Begin);
@@ -645,7 +657,7 @@ namespace DirectPackageInstaller
                     if (List.ShowDialog() != DialogResult.OK)
                         throw new Exception();
 
-                    RARInfo[FirstUrl] = (List.Links, List.Password);
+                    CompressInfo[FirstUrl] = (List.Links ?? new string[] { FirstUrl }, List.Password);
 
                     var Volume = Volumes.Single();
                     Volume.Seek(0, SeekOrigin.Begin);
@@ -718,8 +730,8 @@ namespace DirectPackageInstaller
 
         private void tbURL_TextChanged(object sender, EventArgs e)
         {
-            Loaded = false; 
-            btnLoadUrl.Text = string.IsNullOrWhiteSpace(tbURL.Text) ? "Open" : "Load";
+            InputType = Source.NONE;
+            btnLoadUrl.Text = (string.IsNullOrWhiteSpace(tbURL.Text) || File.Exists(tbURL.Text)) ? "Open" : "Load";
             CurrentFileList = null;
             miPackages.Visible = false;
 
@@ -835,7 +847,7 @@ namespace DirectPackageInstaller
 
         private void FileDragEnter(object sender, DragEventArgs e)
         {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop)) 
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
                 e.Effect = DragDropEffects.Copy;
         }
 
