@@ -216,7 +216,7 @@ class GitHub {
         for (int i = 0; i < a.Groups.Count; i++) {
             string URL = a.Groups[i].Value;
             URL = URL.Split('?')[0].ToLower();
-            if (URL.EndsWith(Name.ToLower()))
+            if (URL.Replace(".zip", "").EndsWith(Name.ToLower().Replace(".zip", "")))
                 return a.Groups[i].Value;
         }
 
