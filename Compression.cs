@@ -76,7 +76,7 @@ namespace DirectPackageInstaller
 
                 foreach (var Part in DecompressInfo.PartsStream)
                 {
-                    if (Part.Base is not SegmentedStream)
+                    if (!(Part.Base is SegmentedStream))
                         continue;
 
                     SegmentedStream Strm = Part.Base as SegmentedStream;

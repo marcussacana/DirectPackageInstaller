@@ -7,9 +7,9 @@
 export APP=DirectPackageInstallerLinux
 export TARGET=mono-6.0.0-ubuntu-18.04-x64
 
-cp AppLinux.Config bin/Debug/DirectPackageInstallerLinux.exe.config
+cp AppLinux.Config bin/Release/DirectPackageInstallerLinux.exe.config
 
-cd bin/Debug
+cd bin/Release
 
 
 mkbundle --fetch-target $TARGET
