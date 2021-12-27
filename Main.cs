@@ -108,7 +108,7 @@ namespace DirectPackageInstaller
                 new Thread(() => StartServer(Config.LastPS4IP)).Start();
             }
 
-            if (Program.Updater.HaveUpdate() && MessageBox.Show(this, "Update found, Update now?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.OK)
+            if (Program.Updater.HaveUpdate() && MessageBox.Show(this, "Update found, Update now?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
                 Program.Updater.Update();
             }
