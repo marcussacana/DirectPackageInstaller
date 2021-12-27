@@ -210,16 +210,19 @@ class GitHub {
     }
     private string GetDownloadUrl() {
         string Reg = @"\""browser_download_url\"":[\s]*\""(.*)\""";
-        var a = System.Text.RegularExpressions.Regex.Match(GetApiResult(), Reg);
-        if (Name == null)
-            return a.Groups[1].Value;
-        for (int i = 0; i < a.Groups.Count; i++) {
-            string URL = a.Groups[i].Value;
-            URL = URL.Split('?')[0].ToLower();
-            if (URL.Replace(".zip", "").EndsWith(Name.ToLower().Replace(".zip", "")))
-                return a.Groups[i].Value;
+        var Matches = System.Text.RegularExpressions.Regex.Matches(GetApiResult(), Reg);
+        foreach (var Match in Matches.Cast<System.Text.RegularExpressions.Match>())
+        {
+            if (Name == null)
+                return Match.Groups[1].Value;
+            for (int i = 0; i < Match.Groups.Count; i++)
+            {
+                string URL = Match.Groups[i].Value;
+                URL = URL.Split('?')[0].ToLower();
+                if (URL.Replace(".zip", "").EndsWith(Name.ToLower().Replace(".zip", "")))
+                    return Match.Groups[i].Value;
+            }
         }
-
         throw new FileNotFoundException("Github Release File Not Found.");
     }
 
