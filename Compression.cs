@@ -80,6 +80,7 @@ namespace DirectPackageInstaller
                         continue;
 
                     SegmentedStream Strm = Part.Base as SegmentedStream;
+                    Strm.Flush();
 
                     var NewStrm = Strm.OpenSegment();
                     NewStrm.Position = Strm.Position;
@@ -188,13 +189,15 @@ namespace DirectPackageInstaller
                 try
                 {
                     byte[] Buffer = new byte[1024 * 1024 * 1];
-
+                    
                     int Readed;
                     do
                     {
                         Readed = Input.Read(Buffer, 0, Buffer.Length);
                         Output.Write(Buffer, 0, Readed);
+
                         *TaskInfo.TotalDecompressed += Readed;
+
                     } while (Readed > 0);
                 }
                 catch (Exception ex){

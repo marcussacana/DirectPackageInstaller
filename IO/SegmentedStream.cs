@@ -178,7 +178,7 @@ namespace DirectPackageInstaller.IO
             lock (StreamBuffer)
             {
                 StreamBuffer.Position = CurrentPos;
-                int Readed = StreamBuffer.Read(buffer, 0, count);
+                int Readed = StreamBuffer.Read(buffer, offset, count);
                 CurrentPos += Readed;
                 return Readed;
             }

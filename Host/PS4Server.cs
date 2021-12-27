@@ -80,8 +80,6 @@ namespace DirectPackageInstaller.Host
                     await Merge(Context, Query, Url);
                 else if (Path.StartsWith("file"))
                     await File(Context, Query, Url);
-                else
-                    throw new NotImplementedException();
             }
             catch { }
             finally
