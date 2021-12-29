@@ -479,8 +479,8 @@ namespace DirectPackageInstaller
                         URL = $"http://{Server.IP}:{ServerPort}/proxy/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
                         break;
 
-                    case Source.JSON | Source.Proxy:
-                    case Source.JSON:
+                    case Source.URL | Source.JSON | Source.Proxy:
+                    case Source.URL | Source.JSON:
                         URL = $"http://{Server.IP}:{ServerPort}/merge/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
                         break;
 
