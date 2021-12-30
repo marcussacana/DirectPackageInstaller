@@ -8,8 +8,11 @@ namespace DirectPackageInstaller
     
     public class ReadSeekableStream : Stream, IDisposable
     {
+
         private readonly Stream Buffer;
         public readonly Stream InputStream;
+
+        public long? ReportLength = null;
 
         public string TempFile { get; private set; } = TempHelper.GetTempFile(null);
         public ReadSeekableStream(Stream Input, string TempFile)
@@ -151,7 +154,7 @@ namespace DirectPackageInstaller
 
         public override bool CanTimeout { get { return InputStream.CanTimeout; } }
         public override bool CanWrite { get { return InputStream.CanWrite; } }
-        public override long Length { get { return InputStream.Length; } }
+        public override long Length { get { return ReportLength ?? InputStream.Length; } }
         public override void SetLength(long value) { InputStream.SetLength(value); }
         public override void Write(byte[] buffer, int offset, int count) { InputStream.Write(buffer, offset, count); }
         public override void Flush() { InputStream.Flush(); }   

@@ -21,6 +21,8 @@ using Image = System.Drawing.Image;
 using Size = System.Drawing.Size;
 using Point = System.Drawing.Point;
 using DirectPackageInstaller.IO;
+using DirectPackageInstaller.Compression;
+using SharpCompress.Archives.SevenZip;
 
 namespace DirectPackageInstaller
 {
@@ -188,7 +190,7 @@ namespace DirectPackageInstaller
                 PKGStream.Read(Magic, 0, Magic.Length);
                 PKGStream.Position = 0;
 
-                switch (Compression.DetectCompressionFormat(Magic))
+                switch (Common.DetectCompressionFormat(Magic))
                 {
                     case CompressionFormat.RAR:
                         InputType |= Source.RAR;
@@ -198,6 +200,16 @@ namespace DirectPackageInstaller
                         EntryName = Unrar.Filename;
                         EntrySize = Unrar.Length;
                         ListEntries(CurrentFileList = Unrar.PKGList);
+                        break;
+
+                    case CompressionFormat.SevenZip:
+                        InputType |= Source.SevenZip;
+                        SetStatus("Decompressing...");
+                        var Un7z = Un7zPKG(PKGStream, tbURL.Text, sender is string ? (string)sender : null);
+                        PKGStream = Un7z.Buffer;
+                        EntryName = Un7z.Filename;
+                        EntrySize = Un7z.Length;
+                        ListEntries(CurrentFileList = Un7z.PKGList);
                         break;
                 }
 
@@ -410,6 +422,8 @@ namespace DirectPackageInstaller
 
                 switch (InputType)
                 {
+                    case Source.URL | Source.SevenZip | Source.Proxy:
+                    case Source.URL | Source.SevenZip:
                     case Source.URL | Source.RAR | Source.Proxy:
                     case Source.URL | Source.RAR:
                         if (!miProxyDownloads.Checked && !AllowIndirect)
@@ -431,14 +445,14 @@ namespace DirectPackageInstaller
 
                         bool Retry = false;
 
-                        var ID = UnrarService.TaskCache.Count.ToString();
-                        foreach (var Task in UnrarService.TaskCache)
+                        var ID = DecompressService.TaskCache.Count.ToString();
+                        foreach (var Task in DecompressService.TaskCache)
                         {
                             if (Task.Value.Entry == EntryName && Task.Value.Url == URL)
                             {
-                                if (UnrarService.EntryMap.ContainsKey(URL) && Server.Unrar.Tasks.ContainsKey(UnrarService.EntryMap[URL]))
+                                if (DecompressService.EntryMap.ContainsKey(URL) && Server.Decompress.Tasks.ContainsKey(DecompressService.EntryMap[URL]))
                                 {
-                                    if (Server.Unrar.Tasks[UnrarService.EntryMap[URL]].Failed)
+                                    if (Server.Decompress.Tasks[DecompressService.EntryMap[URL]].Failed)
                                         continue;
 
                                     ID = Task.Key;
@@ -453,17 +467,17 @@ namespace DirectPackageInstaller
 
                         if (!Retry)
                         {
-                            UnrarService.TaskCache[ID] = (EntryName, URL);
-                            var Entry = EntryName = await Server.Unrar.Decompressor.CreateUnrar(URL, EntryName);
+                            DecompressService.TaskCache[ID] = (EntryName, URL);
+                            var Entry = EntryName = InputType.HasFlag(Source.SevenZip) ? await Server.Decompress.Decompressor.CreateUn7z(URL, EntryName) : await Server.Decompress.Decompressor.CreateUnrar(URL, EntryName);
 
                             if (Entry == null)
                                 throw new Exception("Failed to decompress");
 
-                            UnrarService.EntryMap[URL] = Entry;
+                            DecompressService.EntryMap[URL] = Entry;
                         }
 
                         uint LastResource = PKGEntries.OrderByDescending(x => x.End).First().End;
-                        var DecompressTask = Server.Unrar.Tasks[EntryName];
+                        var DecompressTask = Server.Decompress.Tasks[EntryName];
 
                         while (DecompressTask.SafeTotalDecompressed < LastResource)
                         {
@@ -472,7 +486,7 @@ namespace DirectPackageInstaller
                         }
                         SetStatus(OriStatus);
 
-                        URL = $"http://{Server.IP}:{ServerPort}/unrar/?id={ID}";
+                        URL = $"http://{Server.IP}:{ServerPort}/{(InputType.HasFlag(Source.SevenZip) ? "un7z" : "unrar")}/?id={ID}";
                         break;
 
                     case Source.URL | Source.Proxy:
@@ -673,31 +687,105 @@ namespace DirectPackageInstaller
                 return (null, null, null, null, 0);
             }
 
-            var RARs = Archive.Entries.Where(x => Path.GetExtension(x.Key).StartsWith(".r", StringComparison.OrdinalIgnoreCase));
-            
-            var PKGs = Archive.Entries.Where(x => x.Key.EndsWith(".pkg", StringComparison.OrdinalIgnoreCase));
-            
-            //if (RARs.Any() && !PKGs.Any())
-            //{
-            //    Archive = RarArchive.Open(RARs.ToList().Select(x => x.OpenEntryStream()));
-            //}
+            return UnArchive(Archive, Silent, EntryName, Seekable);
+        }
 
-            //PKGs = Archive.Entries.Where(x => x.Key.EndsWith(".pkg", StringComparison.OrdinalIgnoreCase));
-            
+        public static (IArchive Achive, Stream Buffer, string Filename, string[] PKGList, long Length) Un7zPKG(Stream Volume, string FirstUrl, string EntryName = null, bool Seekable = true, string Password = null) => Un7zPKG(new Stream[] { Volume }, FirstUrl, EntryName, Seekable, Password);
+        public static (IArchive Achive, Stream Buffer, string Filename, string[] PKGList, long Length) Un7zPKG(Stream[] Volumes, string FirstUrl, string EntryName = null, bool Seekable = true, string Password = null)
+        {
+            bool Silent = EntryName != null;
+            var Options = new ReaderOptions()
+            {
+                Password = Password,
+                DisableCheckIncomplete = Volumes.Length > 1
+            };
+
+            var Archive = SevenZipArchive.Open(new MergedStream(Volumes), Options);
+
+            bool Encrypted = true;
+            bool Multipart = false;
+
+            if (Volumes.First() is FileHostStream || Volumes.First() is PartialHttpStream)
+                Multipart = ((PartialHttpStream)Volumes.First()).Filename.EndsWith("1");
+
+            if (Multipart && Volumes.Count() == 1)
+            {
+                Archive.Dispose();
+
+                if (CompressInfo.ContainsKey(FirstUrl))
+                {
+                    var List = CompressInfo[FirstUrl];
+                    return Un7zPKG(List.Links.Select(x => new FileHostStream(x)).ToArray(), FirstUrl, EntryName, Seekable, List.Password);
+                }
+                else
+                {
+                    var List = new LinkList(true, Encrypted, FirstUrl);
+                    if (List.ShowDialog() != DialogResult.OK)
+                        throw new Exception();
+
+                    CompressInfo[FirstUrl] = (List.Links, List.Password);
+
+                    return Un7zPKG(List.Links.Select(x => new FileHostStream(x)).ToArray(), FirstUrl, EntryName, Seekable, List.Password);
+                }
+            }
+            else if (Encrypted && Password == null && !Multipart)
+            {
+                if (CompressInfo.ContainsKey(FirstUrl))
+                {
+                    var List = CompressInfo[FirstUrl];
+
+                    var Volume = Volumes.Single();
+                    Volume.Seek(0, SeekOrigin.Begin);
+
+                    return Un7zPKG(Volume, FirstUrl, EntryName, Seekable, List.Password);
+                }
+                else
+                {
+                    var List = new LinkList(false, Encrypted, FirstUrl);
+                    if (List.ShowDialog() != DialogResult.OK)
+                        throw new Exception();
+
+                    CompressInfo[FirstUrl] = (List.Links ?? new string[] { FirstUrl }, List.Password);
+
+                    var Volume = Volumes.Single();
+                    Volume.Seek(0, SeekOrigin.Begin);
+
+                    return Un7zPKG(Volume, FirstUrl, EntryName, Seekable, List.Password);
+                }
+            }
+
+            if (!Archive.IsComplete)
+            {
+                if (!Silent)
+                    MessageBox.Show("Corrupted or missing 7z parts.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return (null, null, null, null, 0);
+            }
+
+            return UnArchive(Archive, Silent, EntryName, Seekable);
+        }
+
+        public static (IArchive Achive, Stream Buffer, string Filename, string[] PKGList, long Length) UnArchive(IArchive Archive, bool Silent, string EntryName, bool Seekable)
+        {
+
+            var Compressions = Archive.Entries.Where(x => Path.GetExtension(x.Key).StartsWith(".r", StringComparison.OrdinalIgnoreCase) || x.Key.Contains(".7z"));
+
+            var PKGs = Archive.Entries.Where(x => x.Key.EndsWith(".pkg", StringComparison.OrdinalIgnoreCase));
+
             if (!PKGs.Any())
             {
                 if (!Silent)
-                    MessageBox.Show("No PKG Found in the given file" + (RARs.Any() ? "\nIt looks like this file has been redundantly compressed." : ""), "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("No PKG Found in the given file" + (Compressions.Any() ? "\nIt looks like this file has been redundantly compressed." : ""), "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return (null, null, null, null, 0);
             }
 
             if (PKGs.Count() == 1)
             {
                 var Entry = PKGs.Single();
-                
+
                 var FileStream = Entry.OpenEntryStream();
+
                 if (Seekable)
-                    FileStream = new ReadSeekableStream(FileStream, TempHelper.GetTempFile(null));
+                    FileStream = new ReadSeekableStream(FileStream, TempHelper.GetTempFile(null)) { ReportLength = Entry.Size };
 
                 return (Archive, FileStream, Path.GetFileName(Entry.Key), new[] { Entry.Key }, Entry.Size);
             }
@@ -716,13 +804,15 @@ namespace DirectPackageInstaller
 
             var SelectedEntry = PKGs.Where(x => Path.GetFileName(x.Key) == EntryName).Single();
             var SelectedFile = Path.GetFileName(SelectedEntry.Key);
-            
+
             var Stream = SelectedEntry.OpenEntryStream();
+
             if (Seekable)
-               Stream = new ReadSeekableStream(Stream, TempHelper.GetTempFile(null));
-            
+                Stream = new ReadSeekableStream(Stream, TempHelper.GetTempFile(null)) { ReportLength = SelectedEntry.Size };
+
             return (Archive, Stream, SelectedFile, Files, SelectedEntry.Size);
         }
+
         private void SetStatus(string Status) {
             lblStatus.Text = Status;
             Application.DoEvents();

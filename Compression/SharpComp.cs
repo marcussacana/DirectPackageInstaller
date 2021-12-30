@@ -1,6 +1,9 @@
 ﻿using DirectPackageInstaller.IO;
 using SharpCompress.Archives;
 using SharpCompress.Archives.Rar;
+using SharpCompress.Archives.SevenZip;
+using SharpCompress.Archives.Zip;
+using SharpCompress.Common.SevenZip;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -8,15 +11,12 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace DirectPackageInstaller
+namespace DirectPackageInstaller.Compression
 {
-    class Compression
+    class SharpComp
     {
-        public static CompressionFormat DetectCompressionFormat(byte[] Magic) {
-            if (BitConverter.ToUInt32(Magic, 0) == 0x21726152)
-                return CompressionFormat.RAR;
-            return CompressionFormat.None;
-        }
+
+        Common CompCommon = new Common();
 
         public Dictionary<string, DecompressTaskInfo> Tasks = new Dictionary<string, DecompressTaskInfo>();
 
@@ -30,23 +30,23 @@ namespace DirectPackageInstaller
             if (Main.CompressInfo.ContainsKey(Url))
             {
                 var Info = Main.CompressInfo[Url];
-                Inputs = Info.Links.Select(x => new DecompressorHelperStream(new FileHostStream(x, 1024 * 100), MultipartHelper)).ToArray();
+                Inputs = Info.Links.Select(x => new DecompressorHelperStream(new FileHostStream(x, 1024 * 100), CompCommon.MultipartHelper)).ToArray();
                 Password = Info.Password;
                 Links = Info.Links;
             }
             else {
-                Inputs = new Stream[] { new DecompressorHelperStream(new FileHostStream(Url, 1024 * 100), MultipartHelper) };
+                Inputs = new Stream[] { new DecompressorHelperStream(new FileHostStream(Url, 1024 * 100), CompCommon.MultipartHelper) };
                 Links = new string[] { Url };
             }
 
-            var Archive = RarArchive.Open(Inputs, new SharpCompress.Readers.ReaderOptions() {
+            var Archive = RarArchive.Open(Inputs, new global::SharpCompress.Readers.ReaderOptions() {
                 Password = Password,
                 DisableCheckIncomplete = true
             });
             
             IArchiveEntry PKG;
             var PKGs = Archive.Entries.Where(x => x.Key.EndsWith(".pkg", StringComparison.OrdinalIgnoreCase));
-            
+
             if (PKGs.Count() == 1)
                 PKG = PKGs.Single();
             else
@@ -58,93 +58,47 @@ namespace DirectPackageInstaller
             return Path.GetFileName(PKG.Key);
         }
 
-        public void MultipartHelper((DecompressorHelperStream This, long Readed) Args)
+        public async Task<string> CreateUn7z(string Url, string Entry)
         {
-            if (Args.This.Info == null)
-                return;
-            
-            var DecompressInfo = Args.This.Info ?? default;
+            string EntryName = Entry;
+            Stream[] Inputs;
+            string[] Links;
 
-            bool Buffering = Args.This.Base is SegmentedStream;
-
-            if (!Buffering && Args.This.TotalReaded > 1024 * 1024 * 2)
+            string Password = null;
+            if (Main.CompressInfo.ContainsKey(Url))
             {
-                if (DecompressInfo.SafeInSegmentTranstion)
-                        return;
+                var Info = Main.CompressInfo[Url];
+                Inputs = Info.Links.Select(x => new DecompressorHelperStream(new FileHostStream(x, 1024 * 100), CompCommon.MultipartHelper)).ToArray();
 
-                DecompressInfo.SafeInSegmentTranstion = true;
-
-                foreach (var Part in DecompressInfo.PartsStream)
-                {
-                    if (!(Part.Base is SegmentedStream))
-                        continue;
-
-                    SegmentedStream Strm = Part.Base as SegmentedStream;
-                    Strm.Flush();
-
-                    var NewStrm = Strm.OpenSegment();
-                    NewStrm.Position = Strm.Position;
-                    Part.Base = NewStrm;
-
-                    Strm.Close();
-                }
-
-                var FileStream = Args.This.Base as FileHostStream;
-
-                var Position = FileStream.Position;
-                var Url = FileStream.PageUrl;
-
-                bool BufferToMemory = FileStream.Length < int.MaxValue && (ulong)FileStream.Length + (1024 * 1024 * 300) < MemoryInfo.GetAvaiablePhysicalMemory();
-
-                //if (!BufferToMemory)
-                //    return;
-
-                var TempFile = TempHelper.GetTempFile(Url + DecompressInfo.EntryName + "PartBuffer");
-
-                try
-                {
-                    Stream Buffer = null;
-
-                    if (BufferToMemory)
-                    {
-                        try
-                        {
-                            Buffer = new MemoryStream();
-                            Buffer.SetLength(FileStream.Length);
-                        }
-                        catch
-                        {
-                            BufferToMemory = false;
-                        }
-                    }
-
-                    if (!BufferToMemory)
-                    {
-                        Buffer = new FileStream(TempFile, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite, 1024 * 1024 * 2, FileOptions.DeleteOnClose | FileOptions.RandomAccess);
-                        //Buffer = File.Open(TempFile, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite);
-                        Buffer.SetLength(FileStream.Length);
-                    }
-
-                    if (Buffer == null)
-                        throw new InternalBufferOverflowException();
-
-                    var SegStream = new SegmentedStream(() => new FileHostStream(Url, 1024 * 100), Buffer, true);
-                    SegStream.Position = Position;
-                    Args.This.Base = SegStream;
-
-                    FileStream?.Flush();
-                    FileStream?.Close();
-                }
-                catch
-                {
-                    return;
-                }
-                finally
-                {
-                    DecompressInfo.SafeInSegmentTranstion = false;
-                }
+                Password = Info.Password;
+                Links = Info.Links;
             }
-            
+            else
+            {
+                Inputs = new Stream[] { new DecompressorHelperStream(new FileHostStream(Url, 1024 * 100), CompCommon.MultipartHelper) };
+                Links = new string[] { Url };
+            }
+
+            var Options = new SharpCompress.Readers.ReaderOptions()
+            {
+                Password = Password,
+                DisableCheckIncomplete = true
+            };
+
+            var Archive = SevenZipArchive.Open(new MergedStream(Inputs), Options);
+
+            IArchiveEntry PKG;
+            var PKGs = Archive.Entries.Where(x => x.Key.EndsWith(".pkg", StringComparison.OrdinalIgnoreCase));
+
+            if (PKGs.Count() == 1)
+                PKG = PKGs.Single();
+            else
+                PKG = PKGs.Where(x => Path.GetFileName(x.Key) == EntryName).Single();
+
+            if (!StartDecompressor(PKG, Inputs, Links))
+                return null;
+
+            return Path.GetFileName(PKG.Key);
         }
 
         public unsafe bool StartDecompressor(IArchiveEntry Entry, Stream[] Inputs, string[] Links)

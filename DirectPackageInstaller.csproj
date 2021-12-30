@@ -101,7 +101,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Compression.cs" />
+    <Compile Include="Compression\Common.cs" />
+    <Compile Include="Compression\SharpComp.cs" />
     <Compile Include="Enums.cs" />
     <Compile Include="FileHosts\FileHostBase.cs" />
     <Compile Include="FileHosts\GoogleDrive.cs" />
@@ -112,7 +113,7 @@
     <Compile Include="Host\ClientInfo.cs" />
     <Compile Include="Host\HttpRange.cs" />
     <Compile Include="Host\PS4Server.cs" />
-    <Compile Include="Host\Unrar.cs" />
+    <Compile Include="Host\DecompressService.cs" />
     <Compile Include="Ini.cs" />
     <Compile Include="IO\FileHostStream.cs" />
     <Compile Include="IO\MergedStream.cs" />

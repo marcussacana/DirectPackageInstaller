@@ -19,7 +19,7 @@ namespace DirectPackageInstaller.Host
         
         Webserver Server;
 
-        public UnrarService Unrar = new UnrarService();
+        public DecompressService Decompress = new DecompressService();
 
         public string IP { get => Server.Settings.Hostname; }
         public PS4Server(string IP, int Port = 9898)
@@ -70,7 +70,10 @@ namespace DirectPackageInstaller.Host
                 Connections++;
 
                 if (Path.StartsWith("unrar"))
-                    await Unrar.Unrar(Context, Query, FromPS4);
+                    await Decompress.Unrar(Context, Query, FromPS4);
+                else
+                if (Path.StartsWith("un7z"))
+                    await Decompress.Un7z(Context, Query, FromPS4);
                 else if (Url == null)
                     throw new Exception("Missing Download Url");
 

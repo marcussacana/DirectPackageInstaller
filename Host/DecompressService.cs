@@ -1,4 +1,5 @@
-﻿using HttpServerLite;
+﻿using DirectPackageInstaller.Compression;
+using HttpServerLite;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -7,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace DirectPackageInstaller.Host
 {
-    public class UnrarService
+    public class DecompressService
     {
         const long MaxSkipBufferSize = 1024 * 1024 * 10;
 
@@ -16,7 +17,7 @@ namespace DirectPackageInstaller.Host
         public static Dictionary<string, string> EntryMap = new Dictionary<string, string>();
         public static Dictionary<string, (string Entry, string Url)> TaskCache = new Dictionary<string, (string Entry, string Url)>();
 
-        internal Compression Decompressor = new Compression();
+        internal SharpComp Decompressor = new SharpComp();
 
         internal Dictionary<string, DecompressTaskInfo> Tasks => Decompressor.Tasks;
 
@@ -41,11 +42,6 @@ namespace DirectPackageInstaller.Host
                 Entry = Task.Entry;
             }
 
-            HttpRange? Range = null;
-            bool Partial = Context.Request.HeaderExists("Range", true);
-            if (Partial)
-                Range = new HttpRange(Context.Request.Headers["Range"]);
-
             if (!EntryMap.ContainsKey(Url) || !Tasks.ContainsKey(EntryMap[Url]))
             {
                 if ((Entry = await Decompressor.CreateUnrar(Url, Entry)) == null)
@@ -53,6 +49,48 @@ namespace DirectPackageInstaller.Host
 
                 EntryMap[Url] = Entry;
             }
+
+            await Decompress(Context, Url, Entry, FromPS4);
+        }
+
+        public async Task Un7z(HttpContext Context, NameValueCollection Query, bool FromPS4)
+        {
+            if (!Query.AllKeys.Contains("url") && !Query.AllKeys.Contains("id"))
+                return;
+
+            string Url = null;
+            string Entry = "";
+
+            if (Query.AllKeys.Contains("entry"))
+                Entry = Query["entry"];
+
+            if (Query.AllKeys.Contains("url"))
+                Url = Query["url"];
+
+            if (Query.AllKeys.Contains("id") && TaskCache.ContainsKey(Query["id"]))
+            {
+                var Task = TaskCache[Query["id"]];
+                Url = Task.Url;
+                Entry = Task.Entry;
+            }
+
+            if (!EntryMap.ContainsKey(Url) || !Tasks.ContainsKey(EntryMap[Url]))
+            {
+                if ((Entry = await Decompressor.CreateUn7z(Url, Entry)) == null)
+                    throw new NotSupportedException();
+
+                EntryMap[Url] = Entry;
+            }
+
+            await Decompress(Context, Url, Entry, FromPS4);
+        }
+
+        async Task Decompress(HttpContext Context, string Url, string Entry, bool FromPS4)
+        {
+            HttpRange? Range = null;
+            bool Partial = Context.Request.HeaderExists("Range", true);
+            if (Partial)
+                Range = new HttpRange(Context.Request.Headers["Range"]);
 
             var InstanceID = Url + Entry;
 
@@ -69,7 +107,7 @@ namespace DirectPackageInstaller.Host
             {
                 if (System.Diagnostics.Debugger.IsAttached)
                     System.Diagnostics.Debugger.Break();
-                System.IO.File.WriteAllText("unrar.log", $"{Tasks[EntryMap[Url]].Error}");
+                System.IO.File.WriteAllText("decompress.log", $"{Tasks[EntryMap[Url]].Error}");
                 Tasks.Remove(EntryMap[Url]);
             }
 
@@ -77,8 +115,6 @@ namespace DirectPackageInstaller.Host
             {
                 if (!Instances.ContainsKey(InstanceID))
                     Instances[InstanceID] = 0;
-                //else if (Instances[InstanceID] > 0 && SeekRequest)
-                //    throw new Exception();
 
                 Instances[InstanceID]++;
             }

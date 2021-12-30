@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DirectPackageInstaller.Compression;
+using System;
 using System.IO;
 
 namespace DirectPackageInstaller.IO

@@ -440,7 +440,9 @@ namespace DirectPackageInstaller.IO
                 {
                     _fn = response.Headers["Content-Disposition"];
                     const string prefix = "filename=";
-                    _fn = _fn.Substring(_fn.IndexOf(prefix) + prefix.Length).Trim('"');
+                    _fn = _fn.Substring(_fn.IndexOf(prefix) + prefix.Length);
+                    if (_fn.StartsWith("\""))
+                        _fn = _fn.Substring(1, _fn.IndexOf('"', 1) - 1);
                     _fn = HttpUtility.UrlDecode(_fn.Split(';').First().Trim('"'));
                 }
 
