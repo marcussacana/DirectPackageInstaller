@@ -702,11 +702,17 @@ namespace DirectPackageInstaller
 
             var Archive = SevenZipArchive.Open(new MergedStream(Volumes), Options);
 
-            bool Encrypted = true;
+            bool Encrypted = false;
             bool Multipart = false;
 
             if (Volumes.First() is FileHostStream || Volumes.First() is PartialHttpStream)
                 Multipart = ((PartialHttpStream)Volumes.First()).Filename.EndsWith("1");
+
+            try
+            {
+                Encrypted = Archive.Entries.Where(x => x.IsEncrypted).Any();
+            }
+            catch { }
 
             if (Multipart && Volumes.Count() == 1)
             {
@@ -752,6 +758,19 @@ namespace DirectPackageInstaller
 
                     return Un7zPKG(Volume, FirstUrl, EntryName, Seekable, List.Password);
                 }
+            } 
+            
+            if (Encrypted && Password == null) {
+                var List = new LinkList(false, Encrypted, FirstUrl);
+                if (List.ShowDialog() != DialogResult.OK)
+                    throw new Exception();
+
+                CompressInfo[FirstUrl] = (List.Links ?? new string[] { FirstUrl }, List.Password);
+
+                foreach (var Volume in Volumes)
+                    Volume.Seek(0, SeekOrigin.Begin);
+
+                return Un7zPKG(Volumes, FirstUrl, EntryName, Seekable, List.Password);
             }
 
             if (!Archive.IsComplete)

@@ -121,6 +121,9 @@ class GitHub {
         if (MainExecutable.Contains("\\GitHubRelease\\"))
             return true;
 
+        if (Directory.Exists(TempUpdateDir))
+            Directory.Delete(TempUpdateDir, true);    
+        
         return false;
     }
     public void Update() {

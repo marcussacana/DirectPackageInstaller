@@ -243,6 +243,7 @@ namespace DirectPackageInstaller.IO
                     req.ConnectionGroupName = new Guid().ToString();
                     req.CookieContainer = Cookies;
                     req.KeepAlive = false;
+                    req.CachePolicy = new System.Net.Cache.RequestCachePolicy(System.Net.Cache.RequestCacheLevel.NoCacheNoStore);
                     req.ServicePoint.SetTcpKeepAlive(false, 1000 * 120, 1000 * 5);
 
                     foreach (var Header in Headers)
@@ -266,7 +267,6 @@ namespace DirectPackageInstaller.IO
                     FinalContentType = resp.ContentType;
 
                     ResponseStream = resp.GetResponseStream();
-                    ResponseStream.ReadTimeout = (int)TimeSpan.FromMinutes(1).TotalMilliseconds;
                     ResponseStream = new BufferedStream(ResponseStream);
                 }
 
@@ -283,7 +283,7 @@ namespace DirectPackageInstaller.IO
 
                 offset += nread;
                 count -= nread;
-
+                
                 if (Program.IsUnix && nread == 0 && count > 0)
                     throw new WebException();
 
@@ -440,9 +440,7 @@ namespace DirectPackageInstaller.IO
                 {
                     _fn = response.Headers["Content-Disposition"];
                     const string prefix = "filename=";
-                    _fn = _fn.Substring(_fn.IndexOf(prefix) + prefix.Length);
-                    if (_fn.StartsWith("\""))
-                        _fn = _fn.Substring(1, _fn.IndexOf('"', 1) - 1);
+                    _fn = _fn.Substring(_fn.IndexOf(prefix) + prefix.Length).Trim('"');
                     _fn = HttpUtility.UrlDecode(_fn.Split(';').First().Trim('"'));
                 }
 

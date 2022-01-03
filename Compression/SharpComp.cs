@@ -2,8 +2,6 @@
 using SharpCompress.Archives;
 using SharpCompress.Archives.Rar;
 using SharpCompress.Archives.SevenZip;
-using SharpCompress.Archives.Zip;
-using SharpCompress.Common.SevenZip;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -30,12 +28,12 @@ namespace DirectPackageInstaller.Compression
             if (Main.CompressInfo.ContainsKey(Url))
             {
                 var Info = Main.CompressInfo[Url];
-                Inputs = Info.Links.Select(x => new DecompressorHelperStream(new FileHostStream(x, 1024 * 100), CompCommon.MultipartHelper)).ToArray();
+                Inputs = Info.Links.Select(x => new DecompressorHelperStream(new FileHostStream(x, 1024 * 512), CompCommon.MultipartHelper)).ToArray();
                 Password = Info.Password;
                 Links = Info.Links;
             }
             else {
-                Inputs = new Stream[] { new DecompressorHelperStream(new FileHostStream(Url, 1024 * 100), CompCommon.MultipartHelper) };
+                Inputs = new Stream[] { new DecompressorHelperStream(new FileHostStream(Url, 1024 * 512), CompCommon.MultipartHelper) };
                 Links = new string[] { Url };
             }
 
@@ -68,14 +66,14 @@ namespace DirectPackageInstaller.Compression
             if (Main.CompressInfo.ContainsKey(Url))
             {
                 var Info = Main.CompressInfo[Url];
-                Inputs = Info.Links.Select(x => new DecompressorHelperStream(new FileHostStream(x, 1024 * 100), CompCommon.MultipartHelper)).ToArray();
+                Inputs = Info.Links.Select(x => new DecompressorHelperStream(new FileHostStream(x, 1024 * 512), CompCommon.MultipartHelper)).ToArray();
 
                 Password = Info.Password;
                 Links = Info.Links;
             }
             else
             {
-                Inputs = new Stream[] { new DecompressorHelperStream(new FileHostStream(Url, 1024 * 100), CompCommon.MultipartHelper) };
+                Inputs = new Stream[] { new DecompressorHelperStream(new FileHostStream(Url, 1024 * 512), CompCommon.MultipartHelper) };
                 Links = new string[] { Url };
             }
 
@@ -200,6 +198,7 @@ namespace DirectPackageInstaller.Compression
         public bool* InSegmentTranstion;
         public bool SafeInSegmentTranstion { get => *InSegmentTranstion; set => *InSegmentTranstion = value; }
     }
+
     enum CompressionFormat { 
         RAR, ZIP, SevenZip, None
     }

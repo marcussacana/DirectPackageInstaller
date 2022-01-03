@@ -9,6 +9,8 @@ namespace DirectPackageInstaller.IO
 {
     public class SegmentedStream : Stream
     {
+        public int BufferSize = 1024 * 1024;
+
         bool CloseBuffer;
 
         Stream StreamBuffer;
@@ -18,13 +20,26 @@ namespace DirectPackageInstaller.IO
         List<VirtualStream> Segments = new List<VirtualStream>();
         List<long> SegmentProgress = new List<long>();
 
+        public long TotalProgress {
+            get
+            {
+                lock (SegmentProgress) {
+                    return SegmentProgress.Sum();
+                }
+            } 
+        }
+        public bool Finished => TotalProgress >= TotalSize && TotalConcurrency == 0;
+
         BackgroundWorker Worker;
 
         public Func<Stream> OpenSegment { get; private set; }
 
-        int Concurrency = 4;
+        public int Concurrency;
 
-        long TotalSize;
+        public long TotalSize { get; private set; }
+
+        int Connections => Segments.Select(x => x.Position > 0).Count();
+
         long TotalBuffered => Segments.Select(x => x.Position).Sum();
 
         long TotalConcurrency => Segments.Where(x => x.Position < x.Length).Count();
@@ -32,8 +47,9 @@ namespace DirectPackageInstaller.IO
         int BiggestSegment => Segments.Select((x, i) => (Reaming: ReamingSegmentLength(i), ID: i))
                                               .OrderByDescending(x => x.Reaming).First().ID;
 
-        public SegmentedStream(Func<Stream> Open, Stream Buffer, bool CloseBuffer)
+        public SegmentedStream(Func<Stream> Open, Stream Buffer, int BufferSize = 1024 * 1024, bool CloseBuffer = false, int Concurrency = 4)
         {
+            this.BufferSize = BufferSize;
             this.CloseBuffer = CloseBuffer;
             OpenSegment = Open;
             var First = OpenSegment();
@@ -43,11 +59,17 @@ namespace DirectPackageInstaller.IO
             if (Buffer.Length != TotalSize)
                 Buffer.SetLength(TotalSize);
 
-            Segments.Add(new VirtualStream(First, 0, First.Length)
+            lock (SegmentProgress)
             {
-                ForceAmount = true
-            });
-            SegmentProgress.Add(0);
+                Segments.Add(new VirtualStream(new BufferedStream(First), 0, First.Length)
+                {
+                    ForceAmount = true
+                });
+                SegmentProgress.Add(0);
+            }
+
+            this.Concurrency = Concurrency;
+
 
             StreamBuffer = Buffer;
 
@@ -55,6 +77,7 @@ namespace DirectPackageInstaller.IO
             Worker.DoWork += ConcurrencyRead;
             Worker.WorkerSupportsCancellation = true;
             Worker.RunWorkerAsync();
+
         }
 
         ~SegmentedStream()
@@ -70,6 +93,9 @@ namespace DirectPackageInstaller.IO
             {
                 while (TotalConcurrency < Concurrency && !e.Cancel)
                 {
+                    if (Connections < TotalConcurrency)
+                        break;
+
                     int NextSegment = BiggestSegment;
                     long Reaming = ReamingSegmentLength(NextSegment);//Segment.Length - Segment.Position
 
@@ -96,10 +122,14 @@ namespace DirectPackageInstaller.IO
                     //if (NewSegOffset + NewReaming != OldSegment.Length + OldSegment.FilePos)
                     //    break;
 
-                    Segments.Add(new VirtualStream(OpenSegment(), NewSegOffset, NewReaming) { 
-                        ForceAmount = true
-                    });
-                    SegmentProgress.Add(0);
+                    lock (SegmentProgress)
+                    {
+                        Segments.Add(new VirtualStream(new BufferedStream(OpenSegment()), NewSegOffset, NewReaming)
+                        {
+                            ForceAmount = true
+                        });
+                        SegmentProgress.Add(0);
+                    }
 
                     OldSegment.SetLength(NewSize);
 
@@ -111,8 +141,11 @@ namespace DirectPackageInstaller.IO
 
         private void SegmentBuffer(int ID)
         {
-            Processors.Add(new SegmentProcessor(Segments[ID], StreamBuffer, (Readed) => {
-                SegmentProgress[ID] += Readed;
+            Processors.Add(new SegmentProcessor(Segments[ID], StreamBuffer, BufferSize, (Readed) => {
+                lock (SegmentProgress)
+                {
+                    SegmentProgress[ID] += Readed;
+                }
             }));
         }
 
@@ -142,7 +175,10 @@ namespace DirectPackageInstaller.IO
             if (ID == -1)
                 return -1;
 
-            return Segments[ID].FilePos + SegmentProgress[ID];
+            lock (SegmentProgress)
+            {
+                return Segments[ID].FilePos + SegmentProgress[ID];
+            }
         }
 
         public override bool CanRead => true;
@@ -230,6 +266,7 @@ namespace DirectPackageInstaller.IO
 
     class SegmentProcessor
     {
+        int BufferSize;
         Stream StreamBuffer;
 
         Action<long> ProgressCallback;
@@ -237,10 +274,11 @@ namespace DirectPackageInstaller.IO
 
         VirtualStream Input;
 
-        public SegmentProcessor(VirtualStream Segment, Stream Buffer, Action<long> ProgressCallback)
+        public SegmentProcessor(VirtualStream Segment, Stream Buffer, int BufferSize, Action<long> ProgressCallback)
         {
             Input = Segment;
             StreamBuffer = Buffer;
+            this.BufferSize = BufferSize;
             this.ProgressCallback = ProgressCallback;
 
             Worker = new BackgroundWorker();
@@ -258,7 +296,7 @@ namespace DirectPackageInstaller.IO
 
         private void Worker_DoWork(object sender, DoWorkEventArgs e)
         {
-            byte[] Buffer = new byte[1024 * 1024 * 2];
+            byte[] Buffer = new byte[BufferSize];
             int Readed;
 
             long UndoPos = 0;

@@ -182,6 +182,8 @@ namespace DirectPackageInstaller.Host
                     Origin = new VirtualStream(Origin, Range?.Begin ?? 0, Context.Response.ContentLength.Value);
                 }
 
+                Origin = new BufferedStream(Origin);
+
                 var Token = new CancellationTokenSource();
                 await Context.Response.SendAsync(Context.Response.ContentLength.Value, Origin, Token.Token);
             }

@@ -1,10 +1,6 @@
 ﻿using DirectPackageInstaller.IO;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DirectPackageInstaller.Compression
 {
@@ -83,7 +79,7 @@ namespace DirectPackageInstaller.Compression
 
                     if (!BufferToMemory)
                     {
-                        Buffer = new FileStream(TempFile, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite, 1024 * 1024 * 2, FileOptions.DeleteOnClose | FileOptions.RandomAccess);
+                        Buffer = new FileStream(TempFile, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite, 1024 * 1024 * 2, FileOptions.DeleteOnClose | FileOptions.RandomAccess | FileOptions.WriteThrough);
                         //Buffer = File.Open(TempFile, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite);
                         Buffer.SetLength(FileStream.Length);
                     }
@@ -91,7 +87,7 @@ namespace DirectPackageInstaller.Compression
                     if (Buffer == null)
                         throw new InternalBufferOverflowException();
 
-                    var SegStream = new SegmentedStream(() => new FileHostStream(Url, 1024 * 100), Buffer, true);
+                    var SegStream = new SegmentedStream(() => new FileHostStream(Url, 1024 * 1024), Buffer, 1024 * 1024, true);
                     SegStream.Position = Position;
                     Args.This.Base = SegStream;
 

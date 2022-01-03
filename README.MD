@@ -6,7 +6,7 @@ A tool to preview and send PKG to your PS4 Remote Package Installer HB from dire
 - Preview PKGs Files
 - Standalone PS4 package downloads
 - Auto Proxy PS4 Downloads to Speed up
-- Support for RAR files as well.
+- Support for RAR/7z files as well.
 - Resumable Downloads (Only from uncompressed files)
 - Support for few file hosting links (GDrive, Mediafire, Zippyshare)
 - Support for PSN update manifest (Splited PKGs)
