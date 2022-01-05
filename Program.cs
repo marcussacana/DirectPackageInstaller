@@ -12,6 +12,8 @@ namespace DirectPackageInstaller
 {
     static class Program
     {
+        public static WebClient HttpClient = new WebClient();
+
         public static bool IsUnix => (int)Environment.OSVersion.Platform == 4 || (int)Environment.OSVersion.Platform == 6 || (int)Environment.OSVersion.Platform == 128;
         public static string WorkingDirectory => Environment.GetEnvironmentVariable("CD") ?? Path.GetDirectoryName(Application.ExecutablePath);
 

@@ -64,6 +64,9 @@ namespace DirectPackageInstaller.IO
                     DirectLink = false;
                 }
             }
+
+            if (Info.Proxy != null)
+                Proxy = Info.Proxy;
         }
     }
 }

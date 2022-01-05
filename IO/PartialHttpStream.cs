@@ -11,6 +11,8 @@ namespace DirectPackageInstaller.IO
     //96% Stolen From: https://codereview.stackexchange.com/a/204766
     public class PartialHttpStream : Stream, IDisposable
     {
+        public WebProxy Proxy = null;
+
         public Action RefreshUrl = null;
         private string FinalURL;
         private string FinalContentType;
@@ -217,7 +219,6 @@ namespace DirectPackageInstaller.IO
 
         private int HttpRead(byte[] buffer, ref int offset, ref int count, int Tries = 0)
         {
-            bool URLChanged = false;
             try
             {
                 if (RespPos != Position || ResponseStream == null)
@@ -242,6 +243,7 @@ namespace DirectPackageInstaller.IO
                     req = HttpWebRequest.CreateHttp(Url);
                     req.ConnectionGroupName = new Guid().ToString();
                     req.CookieContainer = Cookies;
+                    req.Proxy = Proxy;
                     req.KeepAlive = false;
                     req.CachePolicy = new System.Net.Cache.RequestCachePolicy(System.Net.Cache.RequestCacheLevel.NoCacheNoStore);
                     req.ServicePoint.SetTcpKeepAlive(false, 1000 * 120, 1000 * 5);
@@ -254,7 +256,6 @@ namespace DirectPackageInstaller.IO
 
                     if (FinalURL != resp.ResponseUri.AbsoluteUri)
                     {
-                        URLChanged = true;
                         if (resp.ContentType.Contains("text/html") && resp.ContentType != FinalContentType)
                         {
                             FinalURL = resp.ResponseUri.AbsoluteUri;
@@ -328,7 +329,6 @@ namespace DirectPackageInstaller.IO
 
         private async Task<(int Readed, int Offset, int Count)> HttpReadAsync(byte[] buffer, int offset, int count, int Tries = 0)
         {
-            bool URLChanged = false;
             try
             {
                 if (RespPos != Position || ResponseStream == null)
@@ -349,6 +349,7 @@ namespace DirectPackageInstaller.IO
 
                     req = HttpWebRequest.CreateHttp(Url);
                     req.CookieContainer = Cookies;
+                    req.Proxy = Proxy;
 
                     foreach (var Header in Headers)
                         req.Headers[Header.Key] = Header.Value;
@@ -358,7 +359,6 @@ namespace DirectPackageInstaller.IO
 
                     if (FinalURL != resp.ResponseUri.AbsoluteUri)
                     {
-                        URLChanged = true;
                         if (resp.ContentType.Contains("text/html") && resp.ContentType != FinalContentType)
                         {
                             FinalURL = resp.ResponseUri.AbsoluteUri;
@@ -425,6 +425,7 @@ namespace DirectPackageInstaller.IO
                 request.ConnectionGroupName = new Guid().ToString();
                 request.KeepAlive = false;
                 request.CookieContainer = Cookies;
+                request.Proxy = Proxy;
                 request.Method = NoHead ? "GET" : "HEAD";
 
 

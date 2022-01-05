@@ -104,6 +104,7 @@
     <Compile Include="Compression\Common.cs" />
     <Compile Include="Compression\SharpComp.cs" />
     <Compile Include="Enums.cs" />
+    <Compile Include="FileHosts\1Fichier.cs" />
     <Compile Include="FileHosts\FileHostBase.cs" />
     <Compile Include="FileHosts\GoogleDrive.cs" />
     <Compile Include="FileHosts\Mediafire.cs" />
@@ -136,6 +137,10 @@
     <Compile Include="MemoryInfo.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Proxy\IProxy.cs" />
+    <Compile Include="Proxy\ProxyHelper.cs" />
+    <Compile Include="Proxy\ProxyScrape.cs" />
+    <Compile Include="Proxy\ProxyScan.cs" />
     <Compile Include="PS4IP.cs">
       <SubType>Form</SubType>
     </Compile>
