@@ -25,9 +25,9 @@ namespace DirectPackageInstaller.Compression
             string[] Links;
 
             string Password = null;
-            if (Main.CompressInfo.ContainsKey(Url))
+            if (DirectPackageInstaller.Tasks.Decompressor.CompressInfo.ContainsKey(Url))
             {
-                var Info = Main.CompressInfo[Url];
+                var Info = DirectPackageInstaller.Tasks.Decompressor.CompressInfo[Url];
                 Inputs = Info.Links.Select(x => new DecompressorHelperStream(new FileHostStream(x, 1024 * 512), CompCommon.MultipartHelper)).ToArray();
                 Password = Info.Password;
                 Links = Info.Links;
@@ -63,17 +63,17 @@ namespace DirectPackageInstaller.Compression
             string[] Links;
 
             string Password = null;
-            if (Main.CompressInfo.ContainsKey(Url))
+            if (DirectPackageInstaller.Tasks.Decompressor.CompressInfo.ContainsKey(Url))
             {
-                var Info = Main.CompressInfo[Url];
-                Inputs = Info.Links.Select(x => new DecompressorHelperStream(new FileHostStream(x, 1024 * 512), CompCommon.MultipartHelper)).ToArray();
+                var Info = DirectPackageInstaller.Tasks.Decompressor.CompressInfo[Url];
+                Inputs = Info.Links.Select(x => new DecompressorHelperStream(new FileHostStream(x, 1024 * 512) { TryBypassProxy = true }, CompCommon.MultipartHelper)).ToArray();
 
                 Password = Info.Password;
                 Links = Info.Links;
             }
             else
             {
-                Inputs = new Stream[] { new DecompressorHelperStream(new FileHostStream(Url, 1024 * 512), CompCommon.MultipartHelper) };
+                Inputs = new Stream[] { new DecompressorHelperStream(new FileHostStream(Url, 1024 * 512) { TryBypassProxy = true }, CompCommon.MultipartHelper) };
                 Links = new string[] { Url };
             }
 

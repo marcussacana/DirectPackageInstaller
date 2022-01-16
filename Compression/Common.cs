@@ -26,6 +26,11 @@ namespace DirectPackageInstaller.Compression
 
             bool Buffering = Args.This.Base is SegmentedStream;
 
+            bool CantBuffer = !Buffering && Args.This.Base is FileHostStream && (Args.This.Base as FileHostStream).SingleConnection;
+            
+            if (CantBuffer)
+                return;
+
             if (!Buffering && Args.This.TotalReaded > 1024 * 1024 * 2)
             {
                 if (DecompressInfo.SafeInSegmentTranstion)

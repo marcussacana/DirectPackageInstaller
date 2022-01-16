@@ -52,11 +52,12 @@ namespace DirectPackageInstaller.FileHosts
             {
                 Headers = new System.Collections.Generic.List<(string Key, string Value)>()
                 {
-                    ("user-agent", UserAgent),
-                    ("referer", HttpUtility.UrlEncode(URL))
+                    ("User-Agent", UserAgent),
+                    ("Referer", HttpUtility.UrlEncode(URL))
                 },
                 Url = FinalUrl,
-                Proxy = Proxy
+                Proxy = Proxy,
+                SingleConnection = true
             };
         }
 

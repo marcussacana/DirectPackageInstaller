@@ -10,6 +10,7 @@ namespace DirectPackageInstaller.IO
         public string PageUrl;
         public FileHostBase Host;
         public bool DirectLink { get; private set; } = true;
+        public bool SingleConnection { get; private set; } = false;
 
         public FileHostStream(string Url, int cacheLen = 8192) : base(Url, cacheLen)
         {
@@ -49,6 +50,8 @@ namespace DirectPackageInstaller.IO
             }
 
             Url = Info.Url;
+
+            SingleConnection = Info.SingleConnection;
 
             if (Info.Headers != null)
             {

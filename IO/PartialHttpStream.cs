@@ -8,7 +8,6 @@ using System.Web;
 
 namespace DirectPackageInstaller.IO
 {
-    //96% Stolen From: https://codereview.stackexchange.com/a/204766
     public class PartialHttpStream : Stream, IDisposable
     {
         public WebProxy Proxy = null;
@@ -30,6 +29,8 @@ namespace DirectPackageInstaller.IO
         }
 
         public int Timeout { get; set; }
+
+        public bool TryBypassProxy { get; set; } = false;
 
         private const int CacheLen = 1024 * 8;
 
@@ -243,10 +244,12 @@ namespace DirectPackageInstaller.IO
                     req = HttpWebRequest.CreateHttp(Url);
                     req.ConnectionGroupName = new Guid().ToString();
                     req.CookieContainer = Cookies;
-                    req.Proxy = Proxy;
                     req.KeepAlive = false;
                     req.CachePolicy = new System.Net.Cache.RequestCachePolicy(System.Net.Cache.RequestCacheLevel.NoCacheNoStore);
                     req.ServicePoint.SetTcpKeepAlive(false, 1000 * 120, 1000 * 5);
+
+                    if (!TryBypassProxy || (TryBypassProxy && Tries >= 2))
+                        req.Proxy = Proxy;
 
                     foreach (var Header in Headers)
                         req.Headers[Header.Key] = Header.Value;
@@ -298,7 +301,7 @@ namespace DirectPackageInstaller.IO
                 ResponseStream?.Dispose();
                 ResponseStream = null;
 
-                if (Tries < 2)
+                if (TryBypassProxy ? Tries < 5 : Tries < 3)
                 {
                     RefreshUrl?.Invoke();
                     return HttpRead(buffer, ref offset, ref count, Tries + 1);
@@ -314,7 +317,7 @@ namespace DirectPackageInstaller.IO
                 ResponseStream?.Dispose();
                 ResponseStream = null;
 
-                if (Tries < 2)
+                if (TryBypassProxy ? Tries < 5 : Tries < 3)
                 {
                     RefreshUrl?.Invoke();
                     return HttpRead(buffer, ref offset, ref count, Tries + 1);
@@ -349,7 +352,10 @@ namespace DirectPackageInstaller.IO
 
                     req = HttpWebRequest.CreateHttp(Url);
                     req.CookieContainer = Cookies;
-                    req.Proxy = Proxy;
+
+                    if (!TryBypassProxy || (TryBypassProxy && Tries >= 2))
+                        req.Proxy = Proxy;
+
 
                     foreach (var Header in Headers)
                         req.Headers[Header.Key] = Header.Value;
@@ -389,13 +395,26 @@ namespace DirectPackageInstaller.IO
                 return (nread, offset, count);
 
             }
+            catch (IOException ex)
+            {
+                ResponseStream?.Dispose();
+                ResponseStream = null;
+
+                if (TryBypassProxy ? Tries < 5 : Tries < 3)
+                {
+                    RefreshUrl?.Invoke();
+                    return await HttpReadAsync(buffer, offset, count, Tries + 1).ConfigureAwait(false);
+                }
+
+                throw ex;
+            }
             catch (WebException ex)
             {
                 ResponseStream?.Close();
                 ResponseStream?.Dispose();
                 ResponseStream = null;
 
-                if (Tries < 2)
+                if (TryBypassProxy ? Tries < 5 : Tries < 3)
                 {
                     RefreshUrl?.Invoke();
                     return await HttpReadAsync(buffer, offset, count, Tries + 1).ConfigureAwait(false);

@@ -8,7 +8,7 @@ A tool to preview and send PKG to your PS4 Remote Package Installer HB from dire
 - Auto Proxy PS4 Downloads to Speed up
 - Support for RAR/7z files as well.
 - Resumable Downloads (Only from uncompressed files)
-- Support for few file hosting links (GDrive, Mediafire, Zippyshare)
+- Support for few file hosting links (GDrive, Mediafire, Zippyshare, PixelDrain)
 - Support for PSN update manifest (Splited PKGs)
 
 ### How to Use 
@@ -45,6 +45,11 @@ With that said, the tool can do more than that as well, the PS4 have a very poor
 
 The tool allow you to install pkgs from RAR as well, in this case the tool will work in a very similar way to the other existing ones, but with the advantage that everything is done simultaneously, while the file is downloaded from the internet, it is being decompressed to your disk temporarily and is sent to your PS4, in this scenario you don't need to waste time extracting large PKGs or depending on your file manager downloads, doing the post-download file reconstruction, everything is done simultaneously saving a lot of time of your life.
 
+
+### Build on Linux
+- Install MonoDevelop
+- Build the DirectPackageInstallerLinux.sln project as Release with the MonoDevelop
+- [Optional] Run ./build.sh in the repo main directory to create the AppImage (You can need edit the script a bit before)
 
 ### Warnings
 - The proxy feature in turn has proven to work in games over 90 GB, and I believe it is relatively stable as it depends on your internet connection and download server.

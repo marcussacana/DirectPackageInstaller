@@ -126,11 +126,13 @@ namespace DirectPackageInstaller.Host
             Context.Response.StatusDescription = Partial ? "Partial Content" : "OK";
 
             FileHostStream HttpStream;
-            Stream Origin = HttpStream = new FileHostStream(Url, 1024 * 8);
+            HttpStream = new FileHostStream(Url, 1024 * 8);
+            HttpStream.TryBypassProxy = true;
+                
 
             try
             {
-                await SendStream(Context, Origin, Range);
+                await SendStream(Context, HttpStream.SingleConnection ? (Stream) new ReadSeekableStream(HttpStream) : HttpStream, Range);
             }
             finally {
                 HttpStream.Close();

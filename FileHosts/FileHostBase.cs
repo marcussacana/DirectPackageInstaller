@@ -62,5 +62,7 @@ namespace DirectPackageInstaller.FileHosts
         public List<(string Key, string Value)> Headers;
         public Cookie[] Cookies;
         public WebProxy Proxy;
+
+        public bool SingleConnection;
     }
 }
