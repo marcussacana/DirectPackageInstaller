@@ -19,6 +19,7 @@ using ManagedImage = SixLabors.ImageSharp.Image;
 using Image = System.Drawing.Image;
 using Size = System.Drawing.Size;
 using Point = System.Drawing.Point;
+using System.Collections.Generic;
 
 namespace DirectPackageInstaller
 {
@@ -426,8 +427,16 @@ namespace DirectPackageInstaller
             if (tbURL.Text.StartsWith("http") && !Uri.IsWellFormedUriString(tbURL.Text, UriKind.Absolute)) {
                 int PathOrQueryPos = tbURL.Text.IndexOfAny(new char[] { '/', '?' }, tbURL.Text.IndexOf("://") + 3);
                 var Host = tbURL.Text.Substring(0, PathOrQueryPos);
+
                 var PathAndQuery = HttpUtility.UrlDecode(tbURL.Text.Substring(PathOrQueryPos));
-                PathAndQuery = HttpUtility.UrlEncode(PathAndQuery).Replace("%2f", "/").Replace("%26", "&").Replace("%3f", "?").Replace("%3d", "=");
+                PathAndQuery = HttpUtility.UrlEncode(PathAndQuery);
+
+                Dictionary<string, string> Replaces = new Dictionary<string, string>()
+                { { "%2f", "/" }, { "%26", "&" }, { "%3f", "?" }, { "%3d", "=" }, { "+", "%20" } };
+
+                foreach (var Pair in Replaces)
+                    PathAndQuery = PathAndQuery.Replace(Pair.Key, Pair.Value);
+
                 var NewUrl = $"{Host}{PathAndQuery}";
                 if (Uri.IsWellFormedUriString(NewUrl, UriKind.Absolute))
                     tbURL.Text = NewUrl;

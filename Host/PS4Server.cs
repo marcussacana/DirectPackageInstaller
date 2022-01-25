@@ -15,6 +15,9 @@ namespace DirectPackageInstaller.Host
 {
     public class PS4Server
     {
+#if DEBUG
+        static TextWriter LOGWRITER = System.IO.File.CreateText("DPIServer.log");
+#endif
         public int Connections { get; private set; } = 0;
         
         Webserver Server;
@@ -33,18 +36,35 @@ namespace DirectPackageInstaller.Host
                 }
             });
             Server.Routes.Default = Process;
+
+            LOG("Server Address: {0}:{1}", IP, Port);
         }
+
+        public void LOG(string Message, params object[] Format) {
+#if DEBUG
+            LOGWRITER.WriteLine(string.Format(Message, Format));
+            LOGWRITER.Flush();
+#endif
+        }
+
         public void Start()
         {
             Server.Start();
+            LOG("Server Started");
         }
+
         public void Stop()
         {
             Server.Stop();
+            LOG("Server Stopped");
         }
 
         async Task Process(HttpContext Context)
         {
+            LOG("Request Received: {0}", Context.Request.Url.Full);
+            foreach (var Header in Context.Request.Headers)
+                LOG("Request Header: {0}: {1}", Header.Key, Header.Value);
+
             bool FromPS4 = false;
             var Path = Context.Request.Url.Full;
             var QueryStr = Path.Substring(Path.IndexOf('?') + 1);
@@ -54,9 +74,13 @@ namespace DirectPackageInstaller.Host
                 FromPS4 = true;
             }
 
+            LOG("Request Client Identified as {0}", FromPS4 ? "Shell App Downloader" : "RemotePackageInstaller");
+
             var Query = HttpUtility.ParseQueryString(QueryStr);
             Path = Path.Substring(0, Path.IndexOf('?')).Trim('/');
 
+            foreach (var Param in Query.AllKeys)
+                LOG("Query Param: {0}={1}", Param, Query[Param]);
 
             string Url = null;
 
@@ -71,8 +95,7 @@ namespace DirectPackageInstaller.Host
 
                 if (Path.StartsWith("unrar"))
                     await Decompress.Unrar(Context, Query, FromPS4);
-                else
-                if (Path.StartsWith("un7z"))
+                else if (Path.StartsWith("un7z"))
                     await Decompress.Un7z(Context, Query, FromPS4);
                 else if (Url == null)
                     throw new Exception("Missing Download Url");
@@ -84,7 +107,10 @@ namespace DirectPackageInstaller.Host
                 else if (Path.StartsWith("file"))
                     await File(Context, Query, Url);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                LOG("ERROR: {0}", ex);
+            }
             finally
             {
                 Connections--;
@@ -183,6 +209,12 @@ namespace DirectPackageInstaller.Host
 
                     Origin = new VirtualStream(Origin, Range?.Begin ?? 0, Context.Response.ContentLength.Value);
                 }
+
+                LOG("Response Context: {0}", Context.Request.Url.Full);
+                LOG("Content Length: {0}", Context.Response.ContentLength);
+
+                foreach (var Header in Context.Response.Headers)
+                    LOG("Header: {0}: {1}", Header.Key, Header.Value);
 
                 Origin = new BufferedStream(Origin);
 
