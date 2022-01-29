@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
@@ -7,7 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using DirectPackageInstaller.IO;
-//using WatsonWebserver;
+using DirectPackageInstaller.Tasks;
 using HttpServerLite;
 using HttpContext = HttpServerLite.HttpContext;
 
@@ -15,6 +16,10 @@ namespace DirectPackageInstaller.Host
 {
     public class PS4Server
     {
+        const long MaxSkipBufferSize = 1024 * 1024 * 100;
+
+        Dictionary<string, int> Instances = new Dictionary<string, int>();
+
 #if DEBUG
         static TextWriter LOGWRITER = System.IO.File.CreateText("DPIServer.log");
 #endif
@@ -32,7 +37,7 @@ namespace DirectPackageInstaller.Host
                 IO = new WebserverSettings.IOSettings()
                 {
                     ReadTimeoutMs = 1000 * 60 * 5,
-                    StreamBufferSize = 1024 * 8
+                    StreamBufferSize = 1024 * 1024 * 2
                 }
             });
             Server.Routes.Default = Process;
@@ -42,8 +47,11 @@ namespace DirectPackageInstaller.Host
 
         public void LOG(string Message, params object[] Format) {
 #if DEBUG
-            LOGWRITER.WriteLine(string.Format(Message, Format));
-            LOGWRITER.Flush();
+            lock (LOGWRITER)
+            {
+                LOGWRITER.WriteLine(string.Format(Message, Format));
+                LOGWRITER.Flush();
+            }
 #endif
         }
 
@@ -106,6 +114,8 @@ namespace DirectPackageInstaller.Host
                     await Merge(Context, Query, Url);
                 else if (Path.StartsWith("file"))
                     await File(Context, Query, Url);
+                else if (Path.StartsWith("cache"))
+                    await Cache(Context, Query, Url, FromPS4);
             }
             catch (Exception ex)
             {
@@ -138,6 +148,77 @@ namespace DirectPackageInstaller.Host
             finally
             {
                 Origin.Close();
+            }
+        }
+
+        async Task Cache(HttpContext Context, NameValueCollection Query, string Url, bool FromPS4)
+        {
+            HttpRange? Range = null;
+            bool Partial = Context.Request.HeaderExists("Range", true);
+            if (Partial)
+                Range = new HttpRange(Context.Request.Headers["Range"]);
+
+            Context.Response.StatusCode = Partial ? 206 : 200;
+            Context.Response.StatusDescription = Partial ? "Partial Content" : "OK";
+
+            var Task = Downloader.CreateTask(Url);
+
+            var Stream = Task.OpenRead();
+
+            var Length = (Stream as SegmentedStream)?.Length ?? Task.SafeLength;
+
+            while (Length == 0)
+                await System.Threading.Tasks.Task.Delay(100);
+
+            if (FromPS4)
+            {
+                if (!Instances.ContainsKey(Url))
+                    Instances[Url] = 0;
+
+                Instances[Url]++;
+            }
+
+            var SeekRequest = (Range?.Begin ?? 0) > Task.SafeReadyLength + MaxSkipBufferSize;
+
+            if (FromPS4 && SeekRequest && Instances[Url] > 1)
+            {
+                try
+                {
+
+                    Context.Response.StatusCode = 429;
+                    Context.Response.Headers["Connection"] = "close";
+                    Context.Response.Headers["Retry-After"] = (60 * 5).ToString();
+
+                    LOG("TOO MANY REQUESTS");
+                    LOG("Response Context: {0}", Context.Request.Url.Full);
+                    LOG("Content Length: {0}", Context.Response.ContentLength);
+
+                    foreach (var Header in Context.Response.Headers)
+                        LOG("Header: {0}: {1}", Header.Key, Header.Value);
+
+                    Context.Response.Send(true);
+                }
+                catch { }
+                finally
+                {
+                    if (FromPS4)
+                        Instances[Url]--;
+                }
+                return;
+            }
+
+            Stream = new VirtualStream(Stream, 0, Length) { ForceAmount = true };
+
+            try
+            {
+                await SendStream(Context, Stream, Range);
+            }
+            finally
+            {
+                Stream.Close();
+
+                if (FromPS4)
+                    Instances[Url]--;
             }
         }
 
@@ -193,8 +274,12 @@ namespace DirectPackageInstaller.Host
 
             try
             {
-
+                Context.Response.BufferSize = 1024 * 1024 * 2;
                 Context.Response.ContentLength = Origin.Length;
+
+                Context.Response.Headers["Connection"] = "Keep-Alive";
+                Context.Response.Headers["Accept-Ranges"] = "none";
+                Context.Response.Headers["Content-Type"] = "application/octet-stream";
 
                 if (Origin is FileHostStream)
                     Context.Response.Headers["Content-Disposition"] = $"attachment; filename=\"{((FileHostStream)Origin).Filename}\"";

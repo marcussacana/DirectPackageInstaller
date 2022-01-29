@@ -8,8 +8,19 @@ A tool to preview and send PKG to your PS4 Remote Package Installer HB from dire
 - Auto Proxy PS4 Downloads to Speed up
 - Support for RAR/7z files as well.
 - Resumable Downloads (Only from uncompressed files)
-- Support for few file hosting links (GDrive, Mediafire, Zippyshare, PixelDrain)
+- Segmented Downloads (Only from uncompressed files) **[WIP]**
+- Support for few file hosting links
 - Support for PSN update manifest (Splited PKGs)
+
+
+### Supported File Hostings
+- Any direct link (Without Authentication)
+- Google Drive (With or Without Authentication)
+- Mediafire (Without Authentication)
+- Zippyshare
+- PixelDrain
+- 1Fichier (Must wait 60 minutes after downloaded)
+
 
 ### How to Use 
 - Direct Download Mode
@@ -20,7 +31,7 @@ A tool to preview and send PKG to your PS4 Remote Package Installer HB from dire
 	- Click at "Install" and wait again.
 	- It's done, you can close the DirectPackageInstaller or turn off your computer.
 
-- Proxied Download Mode (Usually Faster)
+- Proxied Download Mode (Faster)
 	- Open the Remote Package Installer HB in your PS4.
 	- Open the DirectPackageInstaller.
 	- Go to `Options -> Proxy Downloads` and check the option.
@@ -28,8 +39,19 @@ A tool to preview and send PKG to your PS4 Remote Package Installer HB from dire
 	- Click at "Load" and wait.
 	- Click at "Install" and wait again.
 	- It's done, you can't close the DirectPackageInstaller
+	
+- Segmented Download Mode (Fastest)
+	- Ensure you have enough free space in your computer disk
+	- Open the Remote Package Installer HB in your PS4.
+	- Open the DirectPackageInstaller.
+	- Go to `Options -> Segmented Downloads` and check the option.
+	- Put a direct download URL in the "PKG URL" field in the window.
+	- Click at "Load" and wait.
+	- Click at "Install" and wait the PKG be pre-loaded.
+	- It's done, you can't close the DirectPackageInstaller
 
 - Download from Compressed Files (Allways Proxied)
+	- Ensure you have enough free space in your computer disk
 	- Open the Remote Package Installer HB in your PS4.
 	- Open the DirectPackageInstaller.
 	- Put direct URL to your compressed file in the "PKG URL" field.
@@ -45,6 +67,7 @@ With that said, the tool can do more than that as well, the PS4 have a very poor
 
 The tool allow you to install pkgs from RAR as well, in this case the tool will work in a very similar way to the other existing ones, but with the advantage that everything is done simultaneously, while the file is downloaded from the internet, it is being decompressed to your disk temporarily and is sent to your PS4, in this scenario you don't need to waste time extracting large PKGs or depending on your file manager downloads, doing the post-download file reconstruction, everything is done simultaneously saving a lot of time of your life.
 
+The Segmented Download mode will start a background multithreaded download of the PKG to your computer and send to your PS4 at the same time, this should be faster than the Proxied Mode with the disadvantage of having to allocate the PKG on your HD.
 
 ### Build on Linux
 - Install MonoDevelop

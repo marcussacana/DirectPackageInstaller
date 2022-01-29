@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Reflection;
 using System.Windows.Forms;
 
@@ -12,7 +13,7 @@ namespace DirectPackageInstaller
 {
     static class Program
     {
-        public static WebClient HttpClient = new WebClient();
+        public static WebClientWithCookies HttpClient = new WebClientWithCookies();
 
         public static bool IsUnix => (int)Environment.OSVersion.Platform == 4 || (int)Environment.OSVersion.Platform == 6 || (int)Environment.OSVersion.Platform == 128;
         public static string WorkingDirectory => Environment.GetEnvironmentVariable("CD") ?? Path.GetDirectoryName(Application.ExecutablePath);
@@ -35,8 +36,11 @@ namespace DirectPackageInstaller
                 return;
             }
 
-            UnlockHeaders();
+            UnlockHeaders(); 
+            
+            ServicePointManager.MaxServicePointIdleTime = 100000;
             ServicePointManager.DefaultConnectionLimit = 100;
+
             TempHelper.Clear();
 
             Application.EnableVisualStyles();

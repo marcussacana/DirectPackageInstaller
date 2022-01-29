@@ -1,18 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 
 namespace DirectPackageInstaller
 {
-    static class TempHelper
+    public static class TempHelper
     {
         static string GetHash(string Content) {
-            SHA512 Hasher = SHA512.Create();
+            SHA256 Hasher = SHA256.Create();
             var Hash = Hasher.ComputeHash(Encoding.UTF8.GetBytes(Content));
             return string.Join("", Hash.Select(x => x.ToString("X2")));
         }

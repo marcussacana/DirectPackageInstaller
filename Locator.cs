@@ -108,8 +108,13 @@ namespace DirectPackageInstaller
         {
             Timeout = TimeSpan.FromMilliseconds(1000)
         };
+
         public static bool IsValidPS4IP(string IP)
         {
+#if DEBUG
+            if (System.Diagnostics.Debugger.IsAttached)
+                return true;
+#endif
             var APIUrl = $"http://{IP}:12800/api";
             try
             {

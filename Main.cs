@@ -6,7 +6,6 @@ using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Web;
 using System.Windows.Forms;
 using DirectPackageInstaller.Host;
 using LibOrbisPkg.PKG;
@@ -20,11 +19,14 @@ using Image = System.Drawing.Image;
 using Size = System.Drawing.Size;
 using Point = System.Drawing.Point;
 using System.Collections.Generic;
+using DirectPackageInstaller.Tasks;
 
 namespace DirectPackageInstaller
 {
     public partial class Main : Form
     {
+        bool BadHostAlert = false;
+
         Settings Config;
 
         string SettingsPath => Path.Combine(Environment.GetEnvironmentVariable("CD") ?? AppDomain.CurrentDomain.BaseDirectory, "Settings.ini");
@@ -69,13 +71,15 @@ namespace DirectPackageInstaller
                 Config.LastPS4IP = IniReader.GetValue("LastPS4IP");
                 Config.SearchPS4 = IniReader.GetBooleanValue("SearchPS4");
                 Config.ProxyDownload = IniReader.GetBooleanValue("ProxyDownload");
+                Config.SegmentedDownload = IniReader.GetBooleanValue("SegmentedDownload");
             }
             else
             {
                 Config = new Settings() { 
                     LastPS4IP = null,
                     SearchPS4 = true,
-                    ProxyDownload = false
+                    ProxyDownload = false,
+                    SegmentedDownload = true
                 };
 
                 MessageBox.Show($"Hello User, The focus of this tool is download PKGs from direct links but we have others minor features as well.\n\nGood to know:\nWhen using the direct download mode, you can turn off the computer or close the DirectPakcageInstaller and your PS4 will continue the download alone.\n\nWhen using the \"Proxy Downloads\" feature, the PS4 can't download the game alone and the DirectPackageInstaller must keep open.\n\nDirect PKG urls, using the \"Proxy Download\" feature or not, can be resumed anytime by just selecting 'resume' in your PS4 download list.\n\nThe DirectPackageInstaller use the port {Tasks.Installer.ServerPort} in the \"Proxy Downloads\" feature, maybe you will need to open the ports in your firewall.\n\nWhen downloading directly from compressed files, you can't resume the download after the DirectPackageInstaller is closed, but before close the DirectPackageInstaller you still can pause and resume the download in your PS4.\n\nIf your download speed is very slow, you can try enable the \"Proxy Downloads\" feature, since this feature has been created just to optimize the download speed.\n\nCreated by marcussacana", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -83,6 +87,7 @@ namespace DirectPackageInstaller
 
             miAutoDetectPS4.Checked = Config.SearchPS4;
             miProxyDownloads.Checked = Config.ProxyDownload;
+            miSegmentedDownloads.Checked = Config.SegmentedDownload;
 
 
             if (Config.SearchPS4 || Config.LastPS4IP == null)
@@ -102,7 +107,7 @@ namespace DirectPackageInstaller
             if (Config.LastPS4IP != null)
             {
                 tbPS4IP.Text = Config.LastPS4IP;
-                new Thread(() => Tasks.Installer.StartServer(Config.LastPS4IP)).Start();
+                new Thread(() => Installer.StartServer(Config.LastPS4IP)).Start();
             }
 
             if (Program.Updater.HaveUpdate() && MessageBox.Show(this, "Update found, Update now?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
@@ -147,8 +152,8 @@ namespace DirectPackageInstaller
             PKGParser = null;
             PKGStream = null;
 
-            Tasks.Installer.EntryName = null;
-            Tasks.Installer.CurrentFileList = null;
+            Installer.EntryName = null;
+            Installer.CurrentFileList = null;
 
             GC.Collect();
 
@@ -181,10 +186,30 @@ namespace DirectPackageInstaller
                     var FHStream = new FileHostStream(tbURL.Text);
                     LimitedFHost = FHStream.SingleConnection;
 
-                    if (FHStream.SingleConnection)
-                        PKGStream = new ReadSeekableStream(FHStream);
-                    else
-                        PKGStream = FHStream;
+                    PKGStream = FHStream;
+                }
+                
+                if (LimitedFHost && !BadHostAlert)
+                {
+                    MessageBox.Show("This Filehosting is limited, Even though it is compatible with DirectPackageInstaller it is not recommended for use, prefer services like alldebrid to download from this server, otherwise you may have connection and/or speed problems.", "Bad File Hosting Service", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    BadHostAlert = true;
+                }
+
+                if (LimitedFHost)
+                {
+                    if (PKGStream is FileHostStream)
+                    {
+                        ((FileHostStream)PKGStream).TryBypassProxy = true;
+                        ((FileHostStream)PKGStream).KeepAlive = true;
+                    }
+
+                    var DownTask = Downloader.CreateTask(tbURL.Text, PKGStream);
+                    
+                    while (DownTask.SafeLength == 0)
+                        await Task.Delay(100);
+
+                    InputType |= Source.DiskCache;
+                    PKGStream = new VirtualStream(DownTask.OpenRead(), 0, DownTask.SafeLength) { ForceAmount = true };
                 }
 
                 byte[] Magic = new byte[4];
@@ -196,21 +221,21 @@ namespace DirectPackageInstaller
                     case CompressionFormat.RAR:
                         InputType |= Source.RAR;
                         SetStatus("Decompressing...");
-                        var Unrar = Tasks.Decompressor.UnrarPKG(PKGStream, tbURL.Text, sender is string ? (string)sender : null);
+                        var Unrar = Decompressor.UnrarPKG(PKGStream, tbURL.Text, sender is string ? (string)sender : null);
                         PKGStream = Unrar.Buffer;
-                        Tasks.Installer.EntryName = Unrar.Filename;
-                        Tasks.Installer.EntrySize = Unrar.Length;
-                        ListEntries(Tasks.Installer.CurrentFileList = Unrar.PKGList);
+                        Installer.EntryName = Unrar.Filename;
+                        Installer.EntrySize = Unrar.Length;
+                        ListEntries(Installer.CurrentFileList = Unrar.PKGList);
                         break;
 
                     case CompressionFormat.SevenZip:
                         InputType |= Source.SevenZip;
                         SetStatus("Decompressing...");
-                        var Un7z = Tasks.Decompressor.Un7zPKG(PKGStream, tbURL.Text, sender is string ? (string)sender : null);
+                        var Un7z = Decompressor.Un7zPKG(PKGStream, tbURL.Text, sender is string ? (string)sender : null);
                         PKGStream = Un7z.Buffer;
-                        Tasks.Installer.EntryName = Un7z.Filename;
-                        Tasks.Installer.EntrySize = Un7z.Length;
-                        ListEntries(Tasks.Installer.CurrentFileList = Un7z.PKGList);
+                        Installer.EntryName = Un7z.Filename;
+                        Installer.EntrySize = Un7z.Length;
+                        ListEntries(Installer.CurrentFileList = Un7z.PKGList);
                         break;
                 }
 
@@ -219,7 +244,7 @@ namespace DirectPackageInstaller
                 PKGParser = new PkgReader(PKGStream);
                 PKG = PKGParser.ReadPkg();
 
-                Tasks.Installer.PKGEntries = PKG.Metas.Metas.Select(x => (x.DataOffset, x.DataOffset + x.DataSize, x.DataSize, x.id)).ToArray();
+                Installer.PKGEntries = PKG.Metas.Metas.Select(x => (x.DataOffset, x.DataOffset + x.DataSize, x.DataSize, x.id)).ToArray();
 
                 var SystemVer = PKG.ParamSfo.ParamSfo.HasName("SYSTEM_VER") ? PKG.ParamSfo.ParamSfo["SYSTEM_VER"].ToByteArray() : new byte[4];
                 var TitleName = Encoding.UTF8.GetString(PKG.ParamSfo.ParamSfo.HasName("TITLE") ? PKG.ParamSfo.ParamSfo["TITLE"].ToByteArray() : new byte[0]).Trim('\x0');
@@ -297,9 +322,6 @@ namespace DirectPackageInstaller
                 }
 
                 btnLoadUrl.Text = "Install";
-
-                if (LimitedFHost)
-                    MessageBox.Show("This Filehosting is limited, Even though it is compatible with DirectPackageInstaller it is not recommended for use, prefer services like alldebrid to download from this server, otherwise you may have connection and/or speed problems.", "Bad File Hosting Service", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
             catch {
                 
@@ -374,7 +396,10 @@ namespace DirectPackageInstaller
                     return false;
                 };
 
-                return await Tasks.Installer.PushPackage(Config, InputType, PKGStream, URL, SetStatus, () => lblStatus.Text, Silent);
+                Config.ProxyDownload = miProxyDownloads.Checked;
+                Config.SegmentedDownload = miSegmentedDownloads.Checked;
+
+                return await Installer.PushPackage(Config, InputType, PKGStream, URL, SetStatus, () => lblStatus.Text, Silent);
             }
             finally {
                 miPackages.Enabled = true;
@@ -428,16 +453,28 @@ namespace DirectPackageInstaller
                 int PathOrQueryPos = tbURL.Text.IndexOfAny(new char[] { '/', '?' }, tbURL.Text.IndexOf("://") + 3);
                 var Host = tbURL.Text.Substring(0, PathOrQueryPos);
 
-                var PathAndQuery = HttpUtility.UrlDecode(tbURL.Text.Substring(PathOrQueryPos));
-                PathAndQuery = HttpUtility.UrlEncode(PathAndQuery);
+                var PathAndQuery = tbURL.Text.Substring(PathOrQueryPos);
 
-                Dictionary<string, string> Replaces = new Dictionary<string, string>()
-                { { "%2f", "/" }, { "%26", "&" }, { "%3f", "?" }, { "%3d", "=" }, { "+", "%20" } };
 
-                foreach (var Pair in Replaces)
-                    PathAndQuery = PathAndQuery.Replace(Pair.Key, Pair.Value);
+                var PathOnly = Uri.UnescapeDataString(PathAndQuery.Split('?').First());
+                var QueryOnly = PathAndQuery.Contains('?') ? PathAndQuery.Substring(PathAndQuery.IndexOf('?')) : "";
 
-                var NewUrl = $"{Host}{PathAndQuery}";
+                PathOnly = Uri.EscapeDataString(PathOnly);
+
+                Dictionary<string, string> PathReplaces = new Dictionary<string, string>()
+                { { "%2f", "/" }, { "%2F", "/" }, { "[", "%5b" }, { "]", "%5d" }, { "%2b", "+" }, { "%2B", "+" },
+                  { "%28", "(" }, { "%29", ")" } };
+
+                Dictionary<string, string> QueryReplaces = new Dictionary<string, string>()
+                { { "%2f", "/" }, { "%2F", "/" }, { "[", "%5b" }, { "]", "%5d" }  };
+
+                foreach (var Pair in PathReplaces)
+                    PathOnly = PathOnly.Replace(Pair.Key, Pair.Value);
+
+                foreach (var Pair in QueryReplaces)
+                    QueryOnly = QueryOnly.Replace(Pair.Key, Pair.Value);
+
+                var NewUrl = $"{Host}{PathOnly}{QueryOnly}";
                 if (Uri.IsWellFormedUriString(NewUrl, UriKind.Absolute))
                     tbURL.Text = NewUrl;
             }
@@ -463,6 +500,7 @@ namespace DirectPackageInstaller
                 Ini.SetValue("LastPS4IP", Config.LastPS4IP);
                 Ini.SetValue("SearchPS4", Config.SearchPS4 ? "true" : "false");
                 Ini.SetValue("ProxyDownload", miProxyDownloads.Checked ? "true" : "false");
+                Ini.SetValue("SegmentedDownload", miSegmentedDownloads.Checked ? "true" : "false");
                 Ini.Save();
             }
 

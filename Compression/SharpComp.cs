@@ -127,7 +127,8 @@ namespace DirectPackageInstaller.Compression
                     TotalDecompressed = &TDecomp,
                     InSegmentTranstion = &InTrans,
                     PartsStream = Inputs.Cast<DecompressorHelperStream>().ToArray(),
-                    PartsLinks = Links
+                    PartsLinks = Links,
+                    Error = null
                 };
 
                 foreach (var Strm in Inputs.Cast<DecompressorHelperStream>())
@@ -151,6 +152,10 @@ namespace DirectPackageInstaller.Compression
                         *TaskInfo.TotalDecompressed += Readed;
 
                     } while (Readed > 0);
+
+                    Output.Flush();
+
+                    *TaskInfo.TotalDecompressed = Output.Length;
                 }
                 catch (Exception ex){
                     TaskInfo.Error = ex;

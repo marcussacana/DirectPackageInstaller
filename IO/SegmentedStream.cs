@@ -13,12 +13,34 @@ namespace DirectPackageInstaller.IO
 
         bool CloseBuffer;
 
-        Stream StreamBuffer;
+        Func<Stream> OpenBuffer;
+        Stream ReaderStream;
 
         List<SegmentProcessor> Processors = new List<SegmentProcessor>();
 
         List<VirtualStream> Segments = new List<VirtualStream>();
         List<long> SegmentProgress = new List<long>();
+
+        public long ScanProgress
+        {
+            get
+            {
+                lock (SegmentProgress)
+                {
+                    long Total = 0;
+                    for (int i = 0; i < SegmentProgress.Count; i++)
+                    {
+                        var SegId = GetSegmentByOffset(Total);
+                        if (SegId == -1)
+                            return 0;
+                        Total += SegmentProgress[SegId];
+                        if (ReamingSegmentLength(SegId) > 0)
+                            break;
+                    }
+                    return Total;
+                }
+            }
+        }
 
         public long TotalProgress {
             get
@@ -47,8 +69,26 @@ namespace DirectPackageInstaller.IO
         int BiggestSegment => Segments.Select((x, i) => (Reaming: ReamingSegmentLength(i), ID: i))
                                               .OrderByDescending(x => x.Reaming).First().ID;
 
-        public SegmentedStream(Func<Stream> Open, Stream Buffer, int BufferSize = 1024 * 1024, bool CloseBuffer = false, int Concurrency = 4)
+        public SegmentedStream(Func<Stream> Open, Func<Stream> OpenBuffer, int BufferSize = 1024 * 1024, bool CloseBuffer = false, int Concurrency = 4)
         {
+            Stream Buffer;
+            if (OpenBuffer == null)
+            {
+                var TempFile = TempHelper.GetTempFile(null);
+                Buffer           = new FileStream(TempFile, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite, 1024 * 1024 * 2, FileOptions.RandomAccess | FileOptions.WriteThrough);
+                OpenBuffer = () => new FileStream(TempFile, FileMode.Open,      FileAccess.ReadWrite, FileShare.ReadWrite, 1024 * 1024 * 2, FileOptions.RandomAccess | FileOptions.WriteThrough);
+
+                ReaderStream = OpenBuffer();
+            }
+            else
+            {
+                Buffer = OpenBuffer();
+                ReaderStream = OpenBuffer();
+            }
+
+            this.OpenBuffer = OpenBuffer;
+
+
             this.BufferSize = BufferSize;
             this.CloseBuffer = CloseBuffer;
             OpenSegment = Open;
@@ -69,9 +109,6 @@ namespace DirectPackageInstaller.IO
             }
 
             this.Concurrency = Concurrency;
-
-
-            StreamBuffer = Buffer;
 
             Worker = new BackgroundWorker();
             Worker.DoWork += ConcurrencyRead;
@@ -135,13 +172,14 @@ namespace DirectPackageInstaller.IO
 
                     SegmentBuffer(Segments.Count() - 1);
                 }
+
                 await Task.Delay(500);
             }
         }
 
         private void SegmentBuffer(int ID)
         {
-            Processors.Add(new SegmentProcessor(Segments[ID], StreamBuffer, BufferSize, (Readed) => {
+            Processors.Add(new SegmentProcessor(Segments[ID], OpenBuffer(), this, BufferSize, (Readed) => {
                 lock (SegmentProgress)
                 {
                     SegmentProgress[ID] += Readed;
@@ -170,14 +208,14 @@ namespace DirectPackageInstaller.IO
             return IDs.Single();
         }
 
-        long SegmentReadyOffset(int ID)
+        (long Offset, long Ready, long ReadyOffset) SegmentReadyOffset(int ID)
         {
             if (ID == -1)
-                return -1;
+                return (-1, -1, -1);
 
             lock (SegmentProgress)
             {
-                return Segments[ID].FilePos + SegmentProgress[ID];
+                return (Segments[ID].FilePos, SegmentProgress[ID], Segments[ID].FilePos + SegmentProgress[ID]);
             }
         }
 
@@ -199,23 +237,24 @@ namespace DirectPackageInstaller.IO
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            long ReadyOffset;
-            while ((ReadyOffset = SegmentReadyOffset(GetSegmentByOffset(Position))) <= CurrentPos)
+            (long Offset, long Ready, long ReadyOffset) ReadyInfo;
+            while (((ReadyInfo = SegmentReadyOffset(GetSegmentByOffset(Position))).ReadyOffset <= Position) || ReadyInfo.ReadyOffset == -1 || Position < ReadyInfo.Offset)
             {
-                if (ReadyOffset == -1)
+                if (ReadyInfo.ReadyOffset == -1)
                     return 0;
 
                 Task.Delay(30).Wait();
             }
 
-            if (CurrentPos + count > ReadyOffset)
-                count = (int)(ReadyOffset - CurrentPos);
+            if (Position + count > ReadyInfo.ReadyOffset)
+                count = (int)(ReadyInfo.ReadyOffset - Position);
 
-            lock (StreamBuffer)
+            lock (this)
             {
-                StreamBuffer.Position = CurrentPos;
-                int Readed = StreamBuffer.Read(buffer, offset, count);
-                CurrentPos += Readed;
+                ReaderStream.Seek(Position, SeekOrigin.Begin);
+                int Readed = ReaderStream.Read(buffer, offset, count);
+
+                Position += Readed;
                 return Readed;
             }
         }
@@ -248,7 +287,7 @@ namespace DirectPackageInstaller.IO
             Worker?.CancelAsync();
 
             if (CloseBuffer)
-                StreamBuffer?.Close();
+                ReaderStream?.Close();
 
             base.Close();
         }
@@ -266,6 +305,8 @@ namespace DirectPackageInstaller.IO
 
     class SegmentProcessor
     {
+        object Locker;
+
         int BufferSize;
         Stream StreamBuffer;
 
@@ -274,10 +315,11 @@ namespace DirectPackageInstaller.IO
 
         VirtualStream Input;
 
-        public SegmentProcessor(VirtualStream Segment, Stream Buffer, int BufferSize, Action<long> ProgressCallback)
+        public SegmentProcessor(VirtualStream Segment, Stream Buffer, object Locker, int BufferSize, Action<long> ProgressCallback)
         {
             Input = Segment;
             StreamBuffer = Buffer;
+            this.Locker = Locker;
             this.BufferSize = BufferSize;
             this.ProgressCallback = ProgressCallback;
 
@@ -312,11 +354,9 @@ namespace DirectPackageInstaller.IO
                     if (e.Cancel)
                         break;
 
-                    lock (StreamBuffer)
+                    lock (Locker)
                     {
-                        if (StreamBuffer.Position != WritePos)
-                            StreamBuffer.Seek(WritePos, SeekOrigin.Begin);
-
+                        StreamBuffer.Seek(WritePos, SeekOrigin.Begin);
                         StreamBuffer.Write(Buffer, 0, Readed);
                         StreamBuffer.Flush();
                     }
@@ -331,6 +371,7 @@ namespace DirectPackageInstaller.IO
             } while (Input.Position < Input.Length && !e.Cancel);
 
             Input.Close();
+            StreamBuffer.Close();
         }
     }
 

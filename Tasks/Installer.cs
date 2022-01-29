@@ -66,13 +66,20 @@ namespace DirectPackageInstaller.Tasks
                 }
             }
 
-            if (Config.ProxyDownload || ForceProxy)
+            if ((Config.ProxyDownload || ForceProxy) && !InputType.HasFlag(Source.DiskCache))
                 InputType |= Source.Proxy;
+
+            if (Config.SegmentedDownload && !InputType.HasFlag(Source.DiskCache))
+                InputType |= Source.Segmented | Source.Proxy;
+
+            uint LastResource = PKGEntries.OrderByDescending(x => x.End).First().End;
 
             switch (InputType)
             {
+                case Source.URL | Source.SevenZip | Source.Proxy | Source.Segmented:
                 case Source.URL | Source.SevenZip | Source.Proxy:
                 case Source.URL | Source.SevenZip:
+                case Source.URL | Source.RAR | Source.Proxy | Source.Segmented:
                 case Source.URL | Source.RAR | Source.Proxy:
                 case Source.URL | Source.RAR:
                     if (!Config.ProxyDownload && !AllowIndirect)
@@ -125,7 +132,6 @@ namespace DirectPackageInstaller.Tasks
                         DecompressService.EntryMap[URL] = Entry;
                     }
 
-                    uint LastResource = PKGEntries.OrderByDescending(x => x.End).First().End;
                     var DecompressTask = Server.Decompress.Tasks[EntryName];
 
                     while (DecompressTask.SafeTotalDecompressed < LastResource)
@@ -138,21 +144,42 @@ namespace DirectPackageInstaller.Tasks
                     URL = $"http://{Server.IP}:{ServerPort}/{(InputType.HasFlag(Source.SevenZip) ? "un7z" : "unrar")}/?id={ID}";
                     break;
 
+                
                 case Source.URL | Source.Proxy:
                     URL = $"http://{Server.IP}:{ServerPort}/proxy/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
                     break;
 
+                case Source.URL | Source.JSON | Source.Proxy | Source.Segmented:
                 case Source.URL | Source.JSON | Source.Proxy:
                 case Source.URL | Source.JSON:
                     URL = $"http://{Server.IP}:{ServerPort}/merge/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
                     break;
 
+                case Source.File | Source.Proxy | Source.Segmented:
                 case Source.File | Source.Proxy:
                 case Source.File:
                     URL = $"http://{Server.IP}:{ServerPort}/file/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
                     break;
+
+                case Source.URL | Source.Proxy | Source.Segmented:
+                case Source.URL | Source.Segmented:
+                case Source.URL | Source.DiskCache:
+                    var CacheTask = Downloader.CreateTask(URL);
+                    
+                    OriStatus = GetStatus();
+                    while (CacheTask.SafeReadyLength < LastResource)
+                    {
+                        SetStatus($"Preloading PKG... ({(double)(CacheTask.SafeReadyLength) / LastResource:P})");
+                        await Task.Delay(100);
+                    }
+                    SetStatus(OriStatus);
+
+                    URL = $"http://{Server.IP}:{ServerPort}/cache/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
+                    break;
+
                 case Source.URL:
                     break;
+
                 default:
                     MessageBox.Show("Unexpected Install Method: \n" + InputType.ToString());
                     return false;

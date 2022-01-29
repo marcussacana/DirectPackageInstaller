@@ -31,6 +31,7 @@ namespace DirectPackageInstaller.IO
         public int Timeout { get; set; }
 
         public bool TryBypassProxy { get; set; } = false;
+        public bool KeepAlive { get; set; } = false;
 
         private const int CacheLen = 1024 * 8;
 
@@ -39,7 +40,6 @@ namespace DirectPackageInstaller.IO
         private readonly int cacheLen;
         private Stream stream;
         //private WebResponse response;
-        private long position = 0;
         private long? length;
         private long cachePosition;
         private int cacheCount;
@@ -226,14 +226,16 @@ namespace DirectPackageInstaller.IO
                 {
                     HttpRequestsCount++;
 
-                    if (req != null)
-                        req.ServicePoint.CloseConnectionGroup(req.ConnectionGroupName);
-
                     if (ResponseStream != null)
                     {
                         ResponseStream?.Close();
                         ResponseStream?.Dispose();
                     }
+
+
+                    if (req != null)
+                        req.ServicePoint.CloseConnectionGroup(req.ConnectionGroupName);
+
 
                     if (resp != null)
                     {
@@ -244,9 +246,11 @@ namespace DirectPackageInstaller.IO
                     req = HttpWebRequest.CreateHttp(Url);
                     req.ConnectionGroupName = new Guid().ToString();
                     req.CookieContainer = Cookies;
-                    req.KeepAlive = false;
                     req.CachePolicy = new System.Net.Cache.RequestCachePolicy(System.Net.Cache.RequestCacheLevel.NoCacheNoStore);
-                    req.ServicePoint.SetTcpKeepAlive(false, 1000 * 120, 1000 * 5);
+
+                    req.KeepAlive = KeepAlive;
+                    req.ServicePoint.SetTcpKeepAlive(KeepAlive, 1000 * 60 * 5, 1000);
+
 
                     if (!TryBypassProxy || (TryBypassProxy && Tries >= 2))
                         req.Proxy = Proxy;
@@ -254,10 +258,12 @@ namespace DirectPackageInstaller.IO
                     foreach (var Header in Headers)
                         req.Headers[Header.Key] = Header.Value;
 
-                    req.AddRange(Position, Length - 1);
+                    if (length != null || Position > 0)
+                        req.AddRange(Position, Length - 1);
+
                     resp = req.GetResponse();
 
-                    if (FinalURL != resp.ResponseUri.AbsoluteUri)
+                    if (length != null && FinalURL != resp.ResponseUri.AbsoluteUri)
                     {
                         if (resp.ContentType.Contains("text/html") && resp.ContentType != FinalContentType)
                         {
@@ -269,6 +275,9 @@ namespace DirectPackageInstaller.IO
 
                     FinalURL = resp.ResponseUri.AbsoluteUri;
                     FinalContentType = resp.ContentType;
+
+                    if (length == null)
+                        ReadResponseInfo(resp);
 
                     ResponseStream = resp.GetResponseStream();
                     ResponseStream = new BufferedStream(ResponseStream);
@@ -307,9 +316,9 @@ namespace DirectPackageInstaller.IO
                     return HttpRead(buffer, ref offset, ref count, Tries + 1);
                 }
 
-                throw ex;
+                throw;
             }
-            catch (WebException ex)
+            catch (Exception ex)
             {
                 if (req != null)
                     req.ServicePoint.CloseConnectionGroup(req.ConnectionGroupName);
@@ -322,11 +331,15 @@ namespace DirectPackageInstaller.IO
                     RefreshUrl?.Invoke();
                     return HttpRead(buffer, ref offset, ref count, Tries + 1);
                 }
+                
+                if (ex is WebException)
+                {
+                    var response = (HttpWebResponse)((WebException)ex).Response;
+                    if (response?.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable)
+                        return 0;
+                }
 
-                var response = (HttpWebResponse)ex.Response;
-                if (response?.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable)
-                    return 0;
-                throw ex;
+                throw;
             }
         }
 
@@ -344,6 +357,9 @@ namespace DirectPackageInstaller.IO
                         ResponseStream?.Dispose();
                     }
 
+                    if (req != null)
+                        req.ServicePoint.CloseConnectionGroup(req.ConnectionGroupName);
+
                     if (resp != null)
                     {
                         resp?.Close();
@@ -352,6 +368,13 @@ namespace DirectPackageInstaller.IO
 
                     req = HttpWebRequest.CreateHttp(Url);
                     req.CookieContainer = Cookies;
+                    req.ConnectionGroupName = new Guid().ToString();
+                    req.CachePolicy = new System.Net.Cache.RequestCachePolicy(System.Net.Cache.RequestCacheLevel.NoCacheNoStore);
+
+
+
+                    req.KeepAlive = KeepAlive;
+                    req.ServicePoint.SetTcpKeepAlive(KeepAlive, 1000 * 60 * 5, 1000);
 
                     if (!TryBypassProxy || (TryBypassProxy && Tries >= 2))
                         req.Proxy = Proxy;
@@ -360,10 +383,12 @@ namespace DirectPackageInstaller.IO
                     foreach (var Header in Headers)
                         req.Headers[Header.Key] = Header.Value;
 
-                    req.AddRange(Position, Length - 1);
+                    if (length != null || Position > 0)
+                        req.AddRange(Position, Length - 1);
+
                     resp = await req.GetResponseAsync();
 
-                    if (FinalURL != resp.ResponseUri.AbsoluteUri)
+                    if (length != null && FinalURL != resp.ResponseUri.AbsoluteUri)
                     {
                         if (resp.ContentType.Contains("text/html") && resp.ContentType != FinalContentType)
                         {
@@ -372,6 +397,12 @@ namespace DirectPackageInstaller.IO
                             throw new WebException("Link Expired?");
                         }
                     }
+
+                    FinalURL = resp.ResponseUri.AbsoluteUri;
+                    FinalContentType = resp.ContentType;
+
+                    if (length == null)
+                        ReadResponseInfo(resp);
 
                     ResponseStream = resp.GetResponseStream();
                     ResponseStream.ReadTimeout = (int)TimeSpan.FromMinutes(1).TotalMilliseconds;
@@ -397,19 +428,9 @@ namespace DirectPackageInstaller.IO
             }
             catch (IOException ex)
             {
-                ResponseStream?.Dispose();
-                ResponseStream = null;
+                if (req != null)
+                    req.ServicePoint.CloseConnectionGroup(req.ConnectionGroupName);
 
-                if (TryBypassProxy ? Tries < 5 : Tries < 3)
-                {
-                    RefreshUrl?.Invoke();
-                    return await HttpReadAsync(buffer, offset, count, Tries + 1).ConfigureAwait(false);
-                }
-
-                throw ex;
-            }
-            catch (WebException ex)
-            {
                 ResponseStream?.Close();
                 ResponseStream?.Dispose();
                 ResponseStream = null;
@@ -420,10 +441,31 @@ namespace DirectPackageInstaller.IO
                     return await HttpReadAsync(buffer, offset, count, Tries + 1).ConfigureAwait(false);
                 }
 
-                var response = (HttpWebResponse)ex.Response;
-                if (response?.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable)
-                    return (0, offset, count);
-                throw ex;
+                throw;
+            }
+            catch (Exception ex)
+            {
+                if (req != null)
+                    req.ServicePoint.CloseConnectionGroup(req.ConnectionGroupName);
+
+                ResponseStream?.Close();
+                ResponseStream?.Dispose();
+                ResponseStream = null;
+
+                if (TryBypassProxy ? Tries < 5 : Tries < 3)
+                {
+                    RefreshUrl?.Invoke();
+                    return await HttpReadAsync(buffer, offset, count, Tries + 1).ConfigureAwait(false);
+                }
+
+                if (ex is WebException)
+                {
+                    var response = (HttpWebResponse)((WebException)ex).Response;
+                    if (response?.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable)
+                        return (0, offset, count);
+                }
+
+                throw;
             }
         }
 
@@ -452,24 +494,10 @@ namespace DirectPackageInstaller.IO
                     request.Headers[Header.Key] = Header.Value;
 
                 using var response = request.GetResponse();
-
-                FinalURL = response.ResponseUri.AbsoluteUri;
-                FinalContentType = response.ContentType;
-
-                if (response.Headers.AllKeys.Contains("Content-Disposition"))
-                {
-                    _fn = response.Headers["Content-Disposition"];
-                    const string prefix = "filename=";
-                    _fn = _fn.Substring(_fn.IndexOf(prefix) + prefix.Length).Trim('"');
-                    _fn = HttpUtility.UrlDecode(_fn.Split(';').First().Trim('"'));
-                }
-
-                var Length = response.ContentLength;
+                ReadResponseInfo(response);
                 response?.Close();
 
                 request.ServicePoint.CloseConnectionGroup(request.ConnectionGroupName);
-
-                HeadCache[Url] = (_fn, Length);
             }
             catch
             {
@@ -477,6 +505,26 @@ namespace DirectPackageInstaller.IO
             }
 
             return Length;
+        }
+
+        void ReadResponseInfo(WebResponse Response)
+        {
+            FinalURL = Response.ResponseUri.AbsoluteUri;
+            FinalContentType = Response.ContentType;
+
+            if (Response.Headers.AllKeys.Contains("Content-Disposition"))
+            {
+                _fn = Response.Headers["Content-Disposition"];
+                const string prefix = "filename=";
+                _fn = _fn.Substring(_fn.IndexOf(prefix) + prefix.Length).Trim('"');
+                _fn = HttpUtility.UrlDecode(_fn.Split(';').First().Trim('"'));
+            }
+
+            var Length = Response.ContentLength;
+
+            length = Length;
+
+            HeadCache[Url] = (_fn, Length);
         }
 
         private new void Dispose()

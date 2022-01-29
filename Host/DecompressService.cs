@@ -10,7 +10,7 @@ namespace DirectPackageInstaller.Host
 {
     public class DecompressService
     {
-        const long MaxSkipBufferSize = 1024 * 1024 * 10;
+        const long MaxSkipBufferSize = 1024 * 1024 * 100;
 
         Dictionary<string, int> Instances = new Dictionary<string, int>();
 
@@ -103,7 +103,7 @@ namespace DirectPackageInstaller.Host
                 SeekRequest = (Range?.Begin ?? 0) > TaskInfo.SafeTotalDecompressed + MaxSkipBufferSize;
             }
 
-            if (TaskInfo.Failed)
+            if (TaskInfo.Failed && TaskInfo.Error != null)
             {
                 if (System.Diagnostics.Debugger.IsAttached)
                     System.Diagnostics.Debugger.Break();
@@ -119,10 +119,33 @@ namespace DirectPackageInstaller.Host
                 Instances[InstanceID]++;
             }
 
+            if (FromPS4 && SeekRequest && Instances[InstanceID] > 1)
+            {
+                try
+                {
+
+                    Context.Response.StatusCode = 429;
+                    Context.Response.Headers["Connection"] = "close";
+                    Context.Response.Headers["Retry-After"] = (60 * 5).ToString();
+                    Context.Response.Send(true);
+                }
+                catch { }
+                finally {
+                    if (FromPS4)
+                        Instances[InstanceID]--;
+                }
+                return;
+            }
+
             var RespData = TaskInfo.Content();
 
             try
             {
+                Context.Response.BufferSize = 1024 * 1024 * 2;
+
+                Context.Response.Headers["Connection"] = "Keep-Alive";
+                Context.Response.Headers["Accept-Ranges"] = "none";
+                Context.Response.Headers["Content-Type"] = "application/octet-stream";
 
                 if (Partial)
                 {

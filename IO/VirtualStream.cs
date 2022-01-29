@@ -12,6 +12,9 @@ namespace DirectPackageInstaller
 
         internal VirtualStream(Stream Package, long Pos, long Len)
         {
+            if (!Package.CanRead)
+                throw new IOException("The Stream bust be Readable");
+
             this.Package = Package;
             FilePos = Pos;
             this.Len = Len;
@@ -34,7 +37,7 @@ namespace DirectPackageInstaller
         {
             get
             {
-                return false;
+                return true;
             }
         }
 
@@ -76,23 +79,34 @@ namespace DirectPackageInstaller
         public override int Read(byte[] buffer, int offset, int count)
         {
             long ReadPos = FilePos + Pos;
+
+            while (ForceAmount && ReadPos >= Package.Length)
+                Task.Delay(10).Wait();
+
             if (ReadPos != Package.Position)
                 Package.Position = ReadPos;
 
             if (Pos + count > Length)
                 count = (int)(Length - Pos);
 
+            if (count + offset >= buffer.Length)
+                count = buffer.Length - offset;
+
             if (count < 0)
                 count = 0;
 
             int Readed = 0;
+
             do
             {
-                int lReaded = Package.Read(buffer, offset, count);
+                
+                int lReaded = Package.Read(buffer, offset + Readed, count);
                 Readed += lReaded;
                 count -= lReaded;
+
                 if (lReaded == 0)
                     Task.Delay(10).Wait();
+
             } while (count > 0 && ForceAmount);
 
             Pos += Readed;

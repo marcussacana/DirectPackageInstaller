@@ -49,6 +49,7 @@ namespace DirectPackageInstaller
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.miInstallAll = new System.Windows.Forms.ToolStripMenuItem();
             this.OpenFileDialog = new System.Windows.Forms.OpenFileDialog();
+            this.miSegmentedDownloads = new System.Windows.Forms.ToolStripMenuItem();
             this.StatusStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.IconBox)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.SplitPanel)).BeginInit();
@@ -183,6 +184,7 @@ namespace DirectPackageInstaller
             // 
             this.miOptions.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.miProxyDownloads,
+            this.miSegmentedDownloads,
             this.miAutoDetectPS4,
             this.miRestartServer});
             this.miOptions.Name = "miOptions";
@@ -193,7 +195,7 @@ namespace DirectPackageInstaller
             // 
             this.miProxyDownloads.CheckOnClick = true;
             this.miProxyDownloads.Name = "miProxyDownloads";
-            this.miProxyDownloads.Size = new System.Drawing.Size(207, 26);
+            this.miProxyDownloads.Size = new System.Drawing.Size(247, 26);
             this.miProxyDownloads.Text = "Proxy Downloads";
             // 
             // miAutoDetectPS4
@@ -202,7 +204,7 @@ namespace DirectPackageInstaller
             this.miAutoDetectPS4.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.tbPS4IP});
             this.miAutoDetectPS4.Name = "miAutoDetectPS4";
-            this.miAutoDetectPS4.Size = new System.Drawing.Size(207, 26);
+            this.miAutoDetectPS4.Size = new System.Drawing.Size(247, 26);
             this.miAutoDetectPS4.Text = "Auto Detect PS4";
             this.miAutoDetectPS4.Click += new System.EventHandler(this.miAutoDetectPS4_Click);
             // 
@@ -216,7 +218,7 @@ namespace DirectPackageInstaller
             // miRestartServer
             // 
             this.miRestartServer.Name = "miRestartServer";
-            this.miRestartServer.Size = new System.Drawing.Size(207, 26);
+            this.miRestartServer.Size = new System.Drawing.Size(247, 26);
             this.miRestartServer.Text = "Restart Server";
             this.miRestartServer.Click += new System.EventHandler(this.miRestartServer_Click);
             // 
@@ -246,6 +248,13 @@ namespace DirectPackageInstaller
             // 
             this.OpenFileDialog.Filter = "All PKG Files|*.pkg";
             this.OpenFileDialog.FileOk += new System.ComponentModel.CancelEventHandler(this.OpenFileDialog_FileOk);
+            // 
+            // miSegmentedDownloads
+            // 
+            this.miSegmentedDownloads.CheckOnClick = true;
+            this.miSegmentedDownloads.Name = "miSegmentedDownloads";
+            this.miSegmentedDownloads.Size = new System.Drawing.Size(247, 26);
+            this.miSegmentedDownloads.Text = "Segmented Downloads";
             // 
             // Main
             // 
@@ -300,6 +309,7 @@ namespace DirectPackageInstaller
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
         private System.Windows.Forms.ToolStripMenuItem miInstallAll;
         private System.Windows.Forms.OpenFileDialog OpenFileDialog;
+        private System.Windows.Forms.ToolStripMenuItem miSegmentedDownloads;
     }
 }
 

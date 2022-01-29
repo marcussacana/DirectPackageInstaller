@@ -58,39 +58,12 @@ namespace DirectPackageInstaller.Compression
                 var Position = FileStream.Position;
                 var Url = FileStream.PageUrl;
 
-                bool BufferToMemory = FileStream.Length < int.MaxValue && (ulong)FileStream.Length + (1024 * 1024 * 300) < MemoryInfo.GetAvaiablePhysicalMemory();
-
-                //if (!BufferToMemory)
-                //    return;
-
                 var TempFile = TempHelper.GetTempFile(Url + DecompressInfo.EntryName + "PartBuffer");
 
                 try
                 {
-                    Stream Buffer = null;
+                    Func<Stream> Buffer = () => new FileStream(TempFile, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite, 1024 * 1024 * 2, FileOptions.RandomAccess | FileOptions.WriteThrough);
 
-                    if (BufferToMemory)
-                    {
-                        try
-                        {
-                            Buffer = new MemoryStream();
-                            Buffer.SetLength(FileStream.Length);
-                        }
-                        catch
-                        {
-                            BufferToMemory = false;
-                        }
-                    }
-
-                    if (!BufferToMemory)
-                    {
-                        Buffer = new FileStream(TempFile, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite, 1024 * 1024 * 2, FileOptions.DeleteOnClose | FileOptions.RandomAccess | FileOptions.WriteThrough);
-                        //Buffer = File.Open(TempFile, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite);
-                        Buffer.SetLength(FileStream.Length);
-                    }
-
-                    if (Buffer == null)
-                        throw new InternalBufferOverflowException();
 
                     var SegStream = new SegmentedStream(() => new FileHostStream(Url, 1024 * 1024), Buffer, 1024 * 1024, true);
                     SegStream.Position = Position;

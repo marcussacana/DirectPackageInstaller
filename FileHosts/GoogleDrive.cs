@@ -3,21 +3,25 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
-using System.Threading.Tasks;
 using System.Web;
 
 namespace DirectPackageInstaller.FileHosts
 {
     class GoogleDrive : FileHostBase
     {
+        bool CookieAsked = false;
+        static List<Cookie> UserCookies = new List<Cookie>();
+
         public override DownloadInfo GetDownloadInfo(string URL)
         {
             if (!IsValidUrl(URL))
                 throw new Exception("Invalid Url");
 
-            var Response = DownloadRequest($"https://drive.google.com/u/0/uc?id={GetFileID(URL)}&export=download");
-
             List<Cookie> Cookies = new List<Cookie>();
+            Cookies.AddRange(UserCookies);
+
+            var Response = DownloadRequest($"https://drive.google.com/u/0/uc?id={GetFileID(URL)}&export=download", Cookies.ToArray());
+
 
             foreach (var Cookie in Response.Headers.GetValues("set-cookie"))
             {
@@ -33,11 +37,28 @@ namespace DirectPackageInstaller.FileHosts
 
             var HTML = Encoding.UTF8.GetString(Response.Data);
             if (HTML.Contains("Quota exceeded"))
+            {
+                if (!CookieAsked)
+                {
+                    var OldCount = UserCookies.Count;
+                    UserCookies = CookieManager.GetUserCookies("google.com");
+
+                    if (OldCount == UserCookies.Count && (UserCookies.Count == 0 || !CookieAsked))
+                    {
+                        CookieAsked = true;
+                        var CManager = new CookieManager();
+                        CManager.ShowDialog();
+                    }
+
+                    return GetDownloadInfo(URL);
+                }
+
                 throw new Exception();
+            }
 
             HTML = HTML.Substring("goog-inline-block jfk-button jfk-button-action");
 
-            string DownURL = HttpUtility.HtmlDecode(HTML.Substring("href=\"", "\">"));
+            string DownURL = HttpUtility.HtmlDecode(HTML.Substring("href=\"", "\">")).Replace("/u/0", "");
             if (!DownURL.StartsWith("http"))
                 DownURL = "https://drive.google.com/u/0" + DownURL;
 

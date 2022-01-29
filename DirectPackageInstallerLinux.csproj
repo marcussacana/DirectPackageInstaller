@@ -43,6 +43,7 @@
     <None Include="Select.resx" />
     <None Include="DirectPackageInstallerLinux.csproj" />
     <None Include="DirectPackageInstallerLinux.sln" />
+    <None Include="CookieManager.resx" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="LibOrbisPkg">
@@ -194,6 +195,11 @@
     <Compile Include="Proxy\ProxyHelper.cs" />
     <Compile Include="Proxy\ProxyScan.cs" />
     <Compile Include="Proxy\ProxyScrape.cs" />
+    <Compile Include="CookieManager.cs" />
+    <Compile Include="CookieManager.Designer.cs" />
+    <Compile Include="WebClientWithCookies.cs" />
+    <Compile Include="Tasks\Downloader.cs" />
+    <Compile Include="HttpServerLite\HttpServerLite\RouteTypeEnum.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Import Project="packages\Fody.6.0.0\build\Fody.targets" Condition="Exists('packages\Fody.6.0.0\build\Fody.targets')" />

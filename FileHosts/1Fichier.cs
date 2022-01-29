@@ -21,8 +21,8 @@ namespace DirectPackageInstaller.FileHosts
             if (!IsValidUrl(URL))
                 throw new Exception("Invalid Url");
 
-            string FinalUrl = null;
-            WebProxy Proxy = null;
+            string FinalUrl;
+            WebProxy Proxy;
 
             while (true)
             {
