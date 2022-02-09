@@ -44,7 +44,7 @@ namespace DirectPackageInstaller.Host
 
             if (!EntryMap.ContainsKey(Url) || !Tasks.ContainsKey(EntryMap[Url]))
             {
-                if ((Entry = await Decompressor.CreateUnrar(Url, Entry)) == null)
+                if ((Entry = Decompressor.CreateUnrar(Url, Entry)) == null)
                     throw new NotSupportedException();
 
                 EntryMap[Url] = Entry;
@@ -76,7 +76,7 @@ namespace DirectPackageInstaller.Host
 
             if (!EntryMap.ContainsKey(Url) || !Tasks.ContainsKey(EntryMap[Url]))
             {
-                if ((Entry = await Decompressor.CreateUn7z(Url, Entry)) == null)
+                if ((Entry = Decompressor.CreateUn7z(Url, Entry)) == null)
                     throw new NotSupportedException();
 
                 EntryMap[Url] = Entry;

@@ -9,6 +9,8 @@ namespace DirectPackageInstaller.FileHosts
 {
     class GoogleDrive : FileHostBase
     {
+        public override string HostName => "GoogleDrive";
+
         bool CookieAsked = false;
         static List<Cookie> UserCookies = new List<Cookie>();
 

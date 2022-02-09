@@ -7,7 +7,7 @@ namespace DirectPackageInstaller.FileHosts
 {
     public abstract class FileHostBase
     {
-        string HostName { get; }
+        public abstract string HostName { get; }
 
         public abstract bool IsValidUrl(string URL);
         public abstract DownloadInfo GetDownloadInfo(string URL);
@@ -73,8 +73,8 @@ namespace DirectPackageInstaller.FileHosts
         }
 
         public static FileHostBase[] Hosts => new FileHostBase[] {
-                new ZippyShare(), new Mediafire(), new GoogleDrive(), 
-                new PixelDrain(), new OneFichier()
+                new ZippyShare(), new Mediafire(), new GoogleDrive(),
+                new PixelDrain(), new AllDebrid(), new OneFichier()
         };
     }
 

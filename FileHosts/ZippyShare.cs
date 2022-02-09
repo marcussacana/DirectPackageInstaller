@@ -1,16 +1,13 @@
 ﻿using NCalc;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DirectPackageInstaller.FileHosts
 {
     class ZippyShare : FileHostBase
     {
-        public string HostName => "Zippyshare";
+        public override string HostName => "Zippyshare";
 
         public override DownloadInfo GetDownloadInfo(string URL)
         {

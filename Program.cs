@@ -13,6 +13,9 @@ namespace DirectPackageInstaller
 {
     static class Program
     {
+
+        public static Settings Config;
+
         public static WebClientWithCookies HttpClient = new WebClientWithCookies();
 
         public static bool IsUnix => (int)Environment.OSVersion.Platform == 4 || (int)Environment.OSVersion.Platform == 6 || (int)Environment.OSVersion.Platform == 128;

@@ -15,6 +15,7 @@ A tool to preview and send PKG to your PS4 Remote Package Installer HB from dire
 
 ### Supported File Hostings
 - Any direct link (Without Authentication)
+- AllDebrid (API Key Required)
 - Google Drive (With or Without Authentication)
 - Mediafire (Without Authentication)
 - Zippyshare

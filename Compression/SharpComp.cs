@@ -18,7 +18,7 @@ namespace DirectPackageInstaller.Compression
 
         public Dictionary<string, DecompressTaskInfo> Tasks = new Dictionary<string, DecompressTaskInfo>();
 
-        public async Task<string> CreateUnrar(string Url, string Entry)
+        public string CreateUnrar(string Url, string Entry)
         {
             string EntryName = Entry;
             Stream[] Inputs;
@@ -32,16 +32,29 @@ namespace DirectPackageInstaller.Compression
                 Password = Info.Password;
                 Links = Info.Links;
             }
-            else {
+            else
+            {
                 Inputs = new Stream[] { new DecompressorHelperStream(new FileHostStream(Url, 1024 * 512), CompCommon.MultipartHelper) };
                 Links = new string[] { Url };
             }
 
-            var Archive = RarArchive.Open(Inputs, new global::SharpCompress.Readers.ReaderOptions() {
+            for (int i = 0; i < Links.Length; i++)
+            {
+                if (DirectPackageInstaller.Tasks.Downloader.Tasks.ContainsKey(Links[i]))
+                    Inputs[i] = DirectPackageInstaller.Tasks.Downloader.Tasks[Links[i]].OpenRead();
+            }
+
+            return CreateUnrar(Inputs, Links, EntryName, Password);
+        }
+
+        public string CreateUnrar(Stream[] Inputs, string[] Links, string EntryName, string Password)
+        {
+            var Archive = RarArchive.Open(Inputs, new global::SharpCompress.Readers.ReaderOptions()
+            {
                 Password = Password,
                 DisableCheckIncomplete = true
             });
-            
+
             IArchiveEntry PKG;
             var PKGs = Archive.Entries.Where(x => x.Key.EndsWith(".pkg", StringComparison.OrdinalIgnoreCase));
 
@@ -56,13 +69,14 @@ namespace DirectPackageInstaller.Compression
             return Path.GetFileName(PKG.Key);
         }
 
-        public async Task<string> CreateUn7z(string Url, string Entry)
+        public string CreateUn7z(string Url, string Entry)
         {
             string EntryName = Entry;
             Stream[] Inputs;
             string[] Links;
 
             string Password = null;
+           
             if (DirectPackageInstaller.Tasks.Decompressor.CompressInfo.ContainsKey(Url))
             {
                 var Info = DirectPackageInstaller.Tasks.Decompressor.CompressInfo[Url];
@@ -77,6 +91,17 @@ namespace DirectPackageInstaller.Compression
                 Links = new string[] { Url };
             }
 
+            for (int i = 0; i < Links.Length; i++)
+            {
+                if (DirectPackageInstaller.Tasks.Downloader.Tasks.ContainsKey(Links[i]))
+                    Inputs[i] = DirectPackageInstaller.Tasks.Downloader.Tasks[Links[i]].OpenRead();
+            }
+
+            return CreateUn7z(Inputs, Links, EntryName, Password);
+        }
+
+        public string CreateUn7z(Stream[] Inputs, string[] Links, string EntryName, string Password)
+        {
             var Options = new SharpCompress.Readers.ReaderOptions()
             {
                 Password = Password,
@@ -142,7 +167,7 @@ namespace DirectPackageInstaller.Compression
                 try
                 {
                     byte[] Buffer = new byte[1024 * 1024 * 1];
-                    
+
                     int Readed;
                     do
                     {
@@ -157,13 +182,17 @@ namespace DirectPackageInstaller.Compression
 
                     *TaskInfo.TotalDecompressed = Output.Length;
                 }
-                catch (Exception ex){
+                catch (Exception ex)
+                {
                     TaskInfo.Error = ex;
                 }
                 finally
                 {
                     TaskInfo.Running = false;
                     Tasks[TaskKey] = TaskInfo;
+
+                    foreach (var InBuffer in Inputs)
+                        InBuffer.Dispose();
                 }
                 
             };

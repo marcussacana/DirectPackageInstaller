@@ -42,6 +42,7 @@ namespace DirectPackageInstaller
             this.MenuStrip = new System.Windows.Forms.MenuStrip();
             this.miOptions = new System.Windows.Forms.ToolStripMenuItem();
             this.miProxyDownloads = new System.Windows.Forms.ToolStripMenuItem();
+            this.miSegmentedDownloads = new System.Windows.Forms.ToolStripMenuItem();
             this.miAutoDetectPS4 = new System.Windows.Forms.ToolStripMenuItem();
             this.tbPS4IP = new System.Windows.Forms.ToolStripTextBox();
             this.miRestartServer = new System.Windows.Forms.ToolStripMenuItem();
@@ -49,7 +50,6 @@ namespace DirectPackageInstaller
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.miInstallAll = new System.Windows.Forms.ToolStripMenuItem();
             this.OpenFileDialog = new System.Windows.Forms.OpenFileDialog();
-            this.miSegmentedDownloads = new System.Windows.Forms.ToolStripMenuItem();
             this.StatusStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.IconBox)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.SplitPanel)).BeginInit();
@@ -198,6 +198,14 @@ namespace DirectPackageInstaller
             this.miProxyDownloads.Size = new System.Drawing.Size(247, 26);
             this.miProxyDownloads.Text = "Proxy Downloads";
             // 
+            // miSegmentedDownloads
+            // 
+            this.miSegmentedDownloads.CheckOnClick = true;
+            this.miSegmentedDownloads.Name = "miSegmentedDownloads";
+            this.miSegmentedDownloads.Size = new System.Drawing.Size(247, 26);
+            this.miSegmentedDownloads.Text = "Segmented Downloads";
+            this.miSegmentedDownloads.CheckedChanged += new System.EventHandler(this.miSegmentedDownloads_CheckedChanged);
+            // 
             // miAutoDetectPS4
             // 
             this.miAutoDetectPS4.CheckOnClick = true;
@@ -248,13 +256,6 @@ namespace DirectPackageInstaller
             // 
             this.OpenFileDialog.Filter = "All PKG Files|*.pkg";
             this.OpenFileDialog.FileOk += new System.ComponentModel.CancelEventHandler(this.OpenFileDialog_FileOk);
-            // 
-            // miSegmentedDownloads
-            // 
-            this.miSegmentedDownloads.CheckOnClick = true;
-            this.miSegmentedDownloads.Name = "miSegmentedDownloads";
-            this.miSegmentedDownloads.Size = new System.Drawing.Size(247, 26);
-            this.miSegmentedDownloads.Text = "Segmented Downloads";
             // 
             // Main
             // 

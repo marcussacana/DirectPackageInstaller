@@ -1,6 +1,7 @@
 ﻿using DirectPackageInstaller.IO;
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace DirectPackageInstaller.Compression
 {
@@ -28,8 +29,16 @@ namespace DirectPackageInstaller.Compression
 
             bool CantBuffer = !Buffering && Args.This.Base is FileHostStream && (Args.This.Base as FileHostStream).SingleConnection;
             
-            if (CantBuffer)
+            if (CantBuffer || !Program.Config.SegmentedDownload)
                 return;
+
+            if (Buffering)
+            {
+                SegmentedStream Strm = Args.This.Base as SegmentedStream;
+
+                while (Strm.Position + 1024 * 1024 * 2 < Strm.ScanProgress && !Strm.Finished)
+                     System.Threading.Tasks.Task.Delay(30).Wait();
+            }
 
             if (!Buffering && Args.This.TotalReaded > 1024 * 1024 * 2)
             {
@@ -51,6 +60,11 @@ namespace DirectPackageInstaller.Compression
                     Part.Base = NewStrm;
 
                     Strm.Close();
+
+                    foreach (var Ptr in Args.This.UnmanagedPointers)
+                        try { Marshal.FreeHGlobal(Ptr); } catch { }
+
+                    Args.This.UnmanagedPointers.Clear();
                 }
 
                 var FileStream = Args.This.Base as FileHostStream;
@@ -62,8 +76,29 @@ namespace DirectPackageInstaller.Compression
 
                 try
                 {
-                    Func<Stream> Buffer = () => new FileStream(TempFile, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite, 1024 * 1024 * 2, FileOptions.RandomAccess | FileOptions.WriteThrough);
+                    Func<Stream> Buffer = null;
 
+                    if (MemoryInfo.GetAvaiablePhysicalMemory() > (ulong)FileStream.Length + (1024ul * 1024 * 500))
+                    {
+                        try
+                        {
+                            var Stream = new UnsafeMemoryStream(FileStream.Length);
+
+                            Buffer = () => Stream;
+
+                            Args.This.Instances.Add(Stream);
+                        }
+                        catch { }
+                    }
+
+                    if (Buffer == null)
+                        Buffer = () =>
+                        {
+                            var Stream = new FileStream(TempFile, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite, 1024 * 1024 * 2, FileOptions.RandomAccess | FileOptions.WriteThrough);
+                            Args.This.Instances.Add(Stream);
+                            return Stream;
+                        };
+                    
 
                     var SegStream = new SegmentedStream(() => new FileHostStream(Url, 1024 * 1024), Buffer, 1024 * 1024, true);
                     SegStream.Position = Position;

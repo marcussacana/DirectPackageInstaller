@@ -27,13 +27,17 @@ namespace DirectPackageInstaller
     {
         bool BadHostAlert = false;
 
-        Settings Config;
-
         string SettingsPath => Path.Combine(Environment.GetEnvironmentVariable("CD") ?? AppDomain.CurrentDomain.BaseDirectory, "Settings.ini");
 
         public Main()
         {
             InitializeComponent();
+
+            if (Program.Updater.HaveUpdate() && MessageBox.Show(this, "Update found, Update now?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            {
+                Program.Updater.Update();
+                return;
+            }
 
             if (Program.IsUnix)
             {
@@ -64,55 +68,72 @@ namespace DirectPackageInstaller
                 SplitPanel.Location = tmpPoint;
             }
 
-            if (File.Exists(SettingsPath)) {
-                Config = new Settings();
+            if (File.Exists(SettingsPath))
+            {
+                Program.Config = new Settings();
                 var IniReader = new Ini(SettingsPath, "Settings");
 
-                Config.LastPS4IP = IniReader.GetValue("LastPS4IP");
-                Config.SearchPS4 = IniReader.GetBooleanValue("SearchPS4");
-                Config.ProxyDownload = IniReader.GetBooleanValue("ProxyDownload");
-                Config.SegmentedDownload = IniReader.GetBooleanValue("SegmentedDownload");
+                Program.Config.LastPS4IP = IniReader.GetValue("LastPS4IP");
+                Program.Config.SearchPS4 = IniReader.GetBooleanValue("SearchPS4");
+                Program.Config.ProxyDownload = IniReader.GetBooleanValue("ProxyDownload");
+                Program.Config.SegmentedDownload = IniReader.GetBooleanValue("SegmentedDownload");
+                Program.Config.AllDebridApiKey = IniReader.GetValue("AllDebridApiKey");
             }
             else
             {
-                Config = new Settings() { 
+                Program.Config = new Settings()
+                {
                     LastPS4IP = null,
                     SearchPS4 = true,
                     ProxyDownload = false,
-                    SegmentedDownload = true
+                    SegmentedDownload = true,
+                    AllDebridApiKey = null
                 };
 
                 MessageBox.Show($"Hello User, The focus of this tool is download PKGs from direct links but we have others minor features as well.\n\nGood to know:\nWhen using the direct download mode, you can turn off the computer or close the DirectPakcageInstaller and your PS4 will continue the download alone.\n\nWhen using the \"Proxy Downloads\" feature, the PS4 can't download the game alone and the DirectPackageInstaller must keep open.\n\nDirect PKG urls, using the \"Proxy Download\" feature or not, can be resumed anytime by just selecting 'resume' in your PS4 download list.\n\nThe DirectPackageInstaller use the port {Tasks.Installer.ServerPort} in the \"Proxy Downloads\" feature, maybe you will need to open the ports in your firewall.\n\nWhen downloading directly from compressed files, you can't resume the download after the DirectPackageInstaller is closed, but before close the DirectPackageInstaller you still can pause and resume the download in your PS4.\n\nIf your download speed is very slow, you can try enable the \"Proxy Downloads\" feature, since this feature has been created just to optimize the download speed.\n\nCreated by marcussacana", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
 
-            miAutoDetectPS4.Checked = Config.SearchPS4;
-            miProxyDownloads.Checked = Config.ProxyDownload;
-            miSegmentedDownloads.Checked = Config.SegmentedDownload;
+            miAutoDetectPS4.Checked = Program.Config.SearchPS4;
+            miProxyDownloads.Checked = Program.Config.ProxyDownload;
+            miSegmentedDownloads.Checked = Program.Config.SegmentedDownload;
 
 
-            if (Config.SearchPS4 || Config.LastPS4IP == null)
+            if (Program.Config.SearchPS4 || Program.Config.LastPS4IP == null)
             {
-                Locator.OnPS4DeviceFound = (IP) => {
-                    if (Config.LastPS4IP == null)
+                Locator.OnPS4DeviceFound = (IP) =>
+                {
+                    if (Program.Config.LastPS4IP == null)
                     {
-                        tbPS4IP.Text = Config.LastPS4IP = IP;
-                        Tasks.Installer.StartServer(IP);
+                        tbPS4IP.Text = Program.Config.LastPS4IP = IP;
+                        Installer.StartServer(IP);
                     }
                 };
             }
 
-            if (Config.LastPS4IP == null || !Locator.IsValidPS4IP(Config.LastPS4IP))
-                new Thread(() => Locator.Locate(Config.LastPS4IP == null)).Start();
+            if (Program.Config.LastPS4IP == null || !Locator.IsValidPS4IP(Program.Config.LastPS4IP))
+                new Thread(() => Locator.Locate(Program.Config.LastPS4IP == null)).Start();
 
-            if (Config.LastPS4IP != null)
+            if (Program.Config.LastPS4IP != null)
             {
-                tbPS4IP.Text = Config.LastPS4IP;
-                new Thread(() => Installer.StartServer(Config.LastPS4IP)).Start();
+                tbPS4IP.Text = Program.Config.LastPS4IP;
+                new Thread(() => Installer.StartServer(Program.Config.LastPS4IP)).Start();
             }
 
-            if (Program.Updater.HaveUpdate() && MessageBox.Show(this, "Update found, Update now?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            if (string.IsNullOrEmpty(Program.Config.AllDebridApiKey))
             {
-                Program.Updater.Update();
+                if (MessageBox.Show("Do you have an AllDebrid account?", "AllDebrid Integration", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                {
+                    System.Diagnostics.Process.Start("https://alldebrid.com/apikeys/");
+                    var Input = new InputWindow("AllDebrid Integration", "API Key:");
+                    Input.Value = string.Empty;
+                    
+                    if (Input.ShowDialog() == DialogResult.OK)
+                    {
+                        Program.Config.AllDebridApiKey = Input.Value;
+                    }
+                }
+
+                MessageBox.Show("If you need, You can set the API key in the Settings.ini file at anytime", "AllDebrid Integration", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
@@ -191,7 +212,7 @@ namespace DirectPackageInstaller
                 
                 if (LimitedFHost && !BadHostAlert)
                 {
-                    MessageBox.Show("This Filehosting is limited, Even though it is compatible with DirectPackageInstaller it is not recommended for use, prefer services like alldebrid to download from this server, otherwise you may have connection and/or speed problems.", "Bad File Hosting Service", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("This Filehosting is limited, Even though it is compatible with DirectPackageInstaller it is not recommended for use, prefer services like alldebrid to download from this server, otherwise you may have connection and/or speed problems.\nDon't expect to compressed files works as expected as well, the DirectPackageInstaller will need download the entire file before can do anything", "Bad File Hosting Service", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     BadHostAlert = true;
                 }
 
@@ -216,11 +237,14 @@ namespace DirectPackageInstaller
                 PKGStream.Read(Magic, 0, Magic.Length);
                 PKGStream.Position = 0;
 
+                if (LimitedFHost && Common.DetectCompressionFormat(Magic) != CompressionFormat.None)
+                    MessageBox.Show("You're trying open a compressed file from a limited file hosting,\nMaybe the compressed file must be fully downloaded to open it.", "Bad File Hosting Service", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
                 switch (Common.DetectCompressionFormat(Magic))
                 {
                     case CompressionFormat.RAR:
                         InputType |= Source.RAR;
-                        SetStatus("Decompressing...");
+                        SetStatus(LimitedFHost ? "Downloading... (It may take a while)" : "Decompressing...");
                         var Unrar = Decompressor.UnrarPKG(PKGStream, tbURL.Text, sender is string ? (string)sender : null);
                         PKGStream = Unrar.Buffer;
                         Installer.EntryName = Unrar.Filename;
@@ -230,7 +254,7 @@ namespace DirectPackageInstaller
 
                     case CompressionFormat.SevenZip:
                         InputType |= Source.SevenZip;
-                        SetStatus("Decompressing...");
+                        SetStatus(LimitedFHost ? "Downloading... (It may take a while)" : "Decompressing...");
                         var Un7z = Decompressor.Un7zPKG(PKGStream, tbURL.Text, sender is string ? (string)sender : null);
                         PKGStream = Un7z.Buffer;
                         Installer.EntryName = Un7z.Filename;
@@ -388,18 +412,18 @@ namespace DirectPackageInstaller
             tbURL.Enabled = false;
             try
             {
-                tbPS4IP.Text = Config.LastPS4IP;
+                tbPS4IP.Text = Program.Config.LastPS4IP;
 
-                if (!Locator.IsValidPS4IP(Config.LastPS4IP))
+                if (!Locator.IsValidPS4IP(Program.Config.LastPS4IP))
                 {
-                    MessageBox.Show($"Remote Package Installer Not Found at {Config.LastPS4IP}, Ensure if he is open.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show($"Remote Package Installer Not Found at {Program.Config.LastPS4IP}, Ensure if he is open.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return false;
                 };
 
-                Config.ProxyDownload = miProxyDownloads.Checked;
-                Config.SegmentedDownload = miSegmentedDownloads.Checked;
+                Program.Config.ProxyDownload = miProxyDownloads.Checked;
+                Program.Config.SegmentedDownload = miSegmentedDownloads.Checked;
 
-                return await Installer.PushPackage(Config, InputType, PKGStream, URL, SetStatus, () => lblStatus.Text, Silent);
+                return await Installer.PushPackage(Program.Config, InputType, PKGStream, URL, SetStatus, () => lblStatus.Text, Silent);
             }
             finally {
                 miPackages.Enabled = true;
@@ -445,7 +469,7 @@ namespace DirectPackageInstaller
             InputType = Source.NONE;
             
             btnLoadUrl.Text = (string.IsNullOrWhiteSpace(tbURL.Text) || File.Exists(tbURL.Text)) ? "Open" : "Load";
-            Tasks.Installer.CurrentFileList = null;
+            Installer.CurrentFileList = null;
 
             miPackages.Visible = false;
 
@@ -485,7 +509,7 @@ namespace DirectPackageInstaller
 
         private void Closing(object sender, FormClosingEventArgs e)
         {
-            if (Tasks.Installer.Server?.Connections > 0)
+            if (Installer.Server?.Connections > 0)
             {
                 var Reply = MessageBox.Show("The PS4 still downloading, do you really want exit?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
                 if (Reply != DialogResult.Yes)
@@ -495,10 +519,11 @@ namespace DirectPackageInstaller
                 }
             }
 
-            if (IPAddress.TryParse(Config.LastPS4IP, out _)) {
+            if (IPAddress.TryParse(Program.Config.LastPS4IP, out _)) {
                 var Ini = new Ini(SettingsPath, "Settings");
-                Ini.SetValue("LastPS4IP", Config.LastPS4IP);
-                Ini.SetValue("SearchPS4", Config.SearchPS4 ? "true" : "false");
+                Ini.SetValue("AllDebridApiKey", Program.Config.AllDebridApiKey);
+                Ini.SetValue("LastPS4IP", Program.Config.LastPS4IP);
+                Ini.SetValue("SearchPS4", Program.Config.SearchPS4 ? "true" : "false");
                 Ini.SetValue("ProxyDownload", miProxyDownloads.Checked ? "true" : "false");
                 Ini.SetValue("SegmentedDownload", miSegmentedDownloads.Checked ? "true" : "false");
                 Ini.Save();
@@ -513,24 +538,25 @@ namespace DirectPackageInstaller
             if (!IPAddress.TryParse(tbPS4IP.Text, out _))
                 return;
 
-            Config.LastPS4IP = tbPS4IP.Text;
+            Program.Config.LastPS4IP = tbPS4IP.Text;
         }
 
         private void miAutoDetectPS4_Click(object sender, EventArgs e)
         {
-            Config.SearchPS4 = miAutoDetectPS4.Checked;
+            Program.Config.SearchPS4 = miAutoDetectPS4.Checked;
         }
 
         private void miRestartServer_Click(object sender, EventArgs e)
         {
             try
             {
-                Tasks.Installer.Server?.Stop();
+                Installer.Server?.Stop();
             }
             catch { }
 
-            Tasks.Installer.Server = new PS4Server(Locator.FindLocalIP(Config.LastPS4IP) ?? PS4IP.AskIP("What is your Local IP?"));
-            Tasks.Installer.Server.Start();
+            PS4Server pS4Server = new PS4Server(Locator.FindLocalIP(Program.Config.LastPS4IP) ?? InputWindow.AskIP("What is your Local IP?"));
+            Installer.Server = pS4Server;
+            Installer.Server.Start();
         }       
 
         private void TbUrlKeyDown(object sender, KeyEventArgs e)
@@ -561,6 +587,11 @@ namespace DirectPackageInstaller
         private void OpenFileDialog_FileOk(object sender, System.ComponentModel.CancelEventArgs e)
         {
             tbURL.Text = OpenFileDialog.FileName;
+        }
+
+        private void miSegmentedDownloads_CheckedChanged(object sender, EventArgs e)
+        {
+            Program.Config.SegmentedDownload = miSegmentedDownloads.Checked;
         }
     }
 }

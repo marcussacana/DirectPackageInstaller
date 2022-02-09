@@ -14,6 +14,8 @@ namespace DirectPackageInstaller.FileHosts
 {
     class OneFichier : FileHostBase
     {
+        public override string HostName => "1Fichier";
+
         public override DownloadInfo GetDownloadInfo(string URL)
         {
             URL = URL.Split('&').First();
@@ -22,16 +24,18 @@ namespace DirectPackageInstaller.FileHosts
                 throw new Exception("Invalid Url");
 
             string FinalUrl;
-            WebProxy Proxy;
+            WebProxy Proxy = null;
 
             while (true)
             {
                 try
                 {
-                    HttpClient.Proxy = ProxyHelper.WebProxy;
                     var HTML = DownloadString(URL);
                     if (HTML.Contains("Without subscription"))
+                    {
+                        HttpClient.Proxy = ProxyHelper.WebProxy;
                         continue;
+                    }
 
                     var ADZ = HTML.Substring("name=\"adz\"").Substring("value=\"", "\"");
                     HTML = PostString(URL, "application/x-www-form-urlencoded", $"adz={ADZ}&did=0&dl_no_ssl=on&dlinline=on");

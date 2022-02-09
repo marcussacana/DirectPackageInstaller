@@ -1,13 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DirectPackageInstaller.FileHosts
 {
     class Mediafire : FileHostBase
     {
+        public override string HostName => "Mediafire";
+
         public override DownloadInfo GetDownloadInfo(string URL)
         {
             if (!IsValidUrl(URL))

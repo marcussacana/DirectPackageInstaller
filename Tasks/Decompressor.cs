@@ -75,7 +75,7 @@ namespace DirectPackageInstaller.Tasks
             if (!Archive.IsComplete)
             {
                 if (!Silent)
-                    MessageBox.Show("Corrupted or missing RAR parts.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Corrupted, missing or RAR parts with wrong sorting.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return (null, null, null, null, 0);
             }
 
@@ -169,7 +169,7 @@ namespace DirectPackageInstaller.Tasks
             if (!Archive.IsComplete)
             {
                 if (!Silent)
-                    MessageBox.Show("Corrupted or missing 7z parts.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Corrupted, missing or 7z parts with wrong sorting", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return (null, null, null, null, 0);
             }
 

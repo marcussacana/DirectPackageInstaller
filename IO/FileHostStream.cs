@@ -25,6 +25,7 @@ namespace DirectPackageInstaller.IO
                 RefreshUrl = Refresh;
 
                 GetUrl();
+                break;
             }
         }
 

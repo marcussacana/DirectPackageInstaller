@@ -164,11 +164,14 @@ namespace DirectPackageInstaller
             throw new NotImplementedException();
         }
 
-        public new void Dispose()
+        protected override void Dispose(bool Disposing)
         {
             Close();
             Package?.Dispose();
+
+            base.Dispose(Disposing);
         }
+
         public override void Close()
         {
             Package?.Close();

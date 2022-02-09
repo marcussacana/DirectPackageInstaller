@@ -72,15 +72,35 @@ namespace DirectPackageInstaller.Tasks
             if (Config.SegmentedDownload && !InputType.HasFlag(Source.DiskCache))
                 InputType |= Source.Segmented | Source.Proxy;
 
+            
+            
+            //InputType is DiskCache when the file hosting is limited
+            //Then segmented option must be ignored to works
+            if (InputType.HasFlag(Source.DiskCache))
+                InputType &= ~(Source.Segmented | Source.Proxy);
+
+
+            //Just to reduce the switch cases
+            if (InputType.HasFlag(Source.SevenZip) || InputType.HasFlag(Source.RAR))
+                InputType &= ~(Source.Proxy | Source.Segmented);
+
+            if (InputType.HasFlag(Source.JSON))
+                InputType &= ~(Source.Proxy | Source.Segmented);
+
+            if (InputType.HasFlag(Source.File))
+                InputType &= ~(Source.Proxy | Source.Segmented | Source.DiskCache);
+
+            if (InputType.HasFlag(Source.DiskCache) || InputType.HasFlag(Source.Segmented))
+                InputType &= ~Source.Proxy;
+
+            
             uint LastResource = PKGEntries.OrderByDescending(x => x.End).First().End;
 
             switch (InputType)
             {
-                case Source.URL | Source.SevenZip | Source.Proxy | Source.Segmented:
-                case Source.URL | Source.SevenZip | Source.Proxy:
+                case Source.URL | Source.SevenZip | Source.DiskCache:
                 case Source.URL | Source.SevenZip:
-                case Source.URL | Source.RAR | Source.Proxy | Source.Segmented:
-                case Source.URL | Source.RAR | Source.Proxy:
+                case Source.URL | Source.RAR | Source.DiskCache:
                 case Source.URL | Source.RAR:
                     if (!Config.ProxyDownload && !AllowIndirect)
                     {
@@ -124,7 +144,15 @@ namespace DirectPackageInstaller.Tasks
                     if (!Retry)
                     {
                         DecompressService.TaskCache[ID] = (EntryName, URL);
-                        var Entry = EntryName = InputType.HasFlag(Source.SevenZip) ? await Server.Decompress.Decompressor.CreateUn7z(URL, EntryName) : await Server.Decompress.Decompressor.CreateUnrar(URL, EntryName);
+                        
+                        string Entry = null;
+
+                        if (InputType.HasFlag(Source.SevenZip))
+                            Entry = Server.Decompress.Decompressor.CreateUn7z(URL, EntryName);
+                        else 
+                            Entry = Server.Decompress.Decompressor.CreateUnrar(URL, EntryName);
+
+                        EntryName = Entry;
 
                         if (Entry == null)
                             throw new Exception("Failed to decompress");
@@ -144,26 +172,8 @@ namespace DirectPackageInstaller.Tasks
                     URL = $"http://{Server.IP}:{ServerPort}/{(InputType.HasFlag(Source.SevenZip) ? "un7z" : "unrar")}/?id={ID}";
                     break;
 
-                
-                case Source.URL | Source.Proxy:
-                    URL = $"http://{Server.IP}:{ServerPort}/proxy/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
-                    break;
-
-                case Source.URL | Source.JSON | Source.Proxy | Source.Segmented:
-                case Source.URL | Source.JSON | Source.Proxy:
-                case Source.URL | Source.JSON:
-                    URL = $"http://{Server.IP}:{ServerPort}/merge/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
-                    break;
-
-                case Source.File | Source.Proxy | Source.Segmented:
-                case Source.File | Source.Proxy:
-                case Source.File:
-                    URL = $"http://{Server.IP}:{ServerPort}/file/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
-                    break;
-
-                case Source.URL | Source.Proxy | Source.Segmented:
-                case Source.URL | Source.Segmented:
                 case Source.URL | Source.DiskCache:
+                case Source.URL | Source.Segmented:
                     var CacheTask = Downloader.CreateTask(URL);
                     
                     OriStatus = GetStatus();
@@ -175,6 +185,17 @@ namespace DirectPackageInstaller.Tasks
                     SetStatus(OriStatus);
 
                     URL = $"http://{Server.IP}:{ServerPort}/cache/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
+                    break;
+
+                case Source.URL | Source.Proxy:
+                    URL = $"http://{Server.IP}:{ServerPort}/proxy/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
+                    break;
+
+                case Source.URL | Source.JSON:
+                    URL = $"http://{Server.IP}:{ServerPort}/merge/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
+                    break;
+                case Source.File:
+                    URL = $"http://{Server.IP}:{ServerPort}/file/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
                     break;
 
                 case Source.URL:

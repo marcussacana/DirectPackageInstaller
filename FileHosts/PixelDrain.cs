@@ -5,6 +5,8 @@ namespace DirectPackageInstaller.FileHosts
 {
     class PixelDrain : FileHostBase
     {
+        public override string HostName => "PixelDrain";
+
         public override DownloadInfo GetDownloadInfo(string URL)
         {
             if (!IsValidUrl(URL))
