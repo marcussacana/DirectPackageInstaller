@@ -23,19 +23,30 @@ namespace DirectPackageInstaller
                 SearchInterfaces();
 
                 foreach (NetworkInterface Interface in NetworkInterface.GetAllNetworkInterfaces().Where(x => x.NetworkInterfaceType == NetworkInterfaceType.Wireless80211 || x.NetworkInterfaceType == NetworkInterfaceType.Ethernet))
-                    foreach (UnicastIPAddressInformation IpInfo in Interface.GetIPProperties().UnicastAddresses.Where(x => x.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork))
+                {
+
+                    try
                     {
-                        if (Interface.OperationalStatus != OperationalStatus.Up)
-                            continue;
+                        foreach (UnicastIPAddressInformation IpInfo in Interface.GetIPProperties().UnicastAddresses.Where(x => x.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork))
+                        {
+                            try
+                            {
+                                if (Interface.OperationalStatus != OperationalStatus.Up)
+                                    continue;
 
-                        if (Devices.Count > 0)
-                            return;
+                                if (Devices.Count > 0)
+                                    return;
 
-                        var Address = IpInfo.Address.GetAddressBytes();
+                                var Address = IpInfo.Address.GetAddressBytes();
 
-                        if (!FindPS4(Address, 100, 256))
-                            FindPS4(Address, 0, 100);                        
+                                if (!FindPS4(Address, 100, 256))
+                                    FindPS4(Address, 0, 100);
+                            }
+                            catch { }
+                        }
                     }
+                    catch { }
+                }
 
                 Thread.Sleep(3000);
             } while (Devices.Count == 0 && Persist);
@@ -83,8 +94,13 @@ namespace DirectPackageInstaller
                 string RemotePartial = RemoteIP.Substring(0, RemoteIP.LastIndexOf('.'));
                 return LocalIPs.Where(x => x.StartsWith(RemotePartial)).Single();
             }
-            catch
+            catch (Exception ex)
             {
+#if DEBUG
+                MessageBox.Show(ex.ToString(), "");
+#else
+                System.IO.File.WriteAllText("DPI.log", "Error: " + ex.ToString());
+#endif
                 return null;
             }
         }
@@ -92,14 +108,24 @@ namespace DirectPackageInstaller
         static void SearchInterfaces()
         {
             foreach (NetworkInterface Interface in NetworkInterface.GetAllNetworkInterfaces().Where(x => x.NetworkInterfaceType == NetworkInterfaceType.Wireless80211 || x.NetworkInterfaceType == NetworkInterfaceType.Ethernet))
-                foreach (UnicastIPAddressInformation IpInfo in Interface.GetIPProperties().UnicastAddresses.Where(x => x.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork))
+            {
+                try
                 {
-                    if (Interface.OperationalStatus != OperationalStatus.Up)
-                        continue;
+                    foreach (UnicastIPAddressInformation IpInfo in Interface.GetIPProperties().UnicastAddresses.Where(x => x.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork))
+                    {
+                        try
+                        {
+                            if (Interface.OperationalStatus != OperationalStatus.Up)
+                                continue;
 
-                    if (!LocalIPs.Contains(IpInfo.Address.ToString()))
-                        LocalIPs.Add(IpInfo.Address.ToString());
+                            if (!LocalIPs.Contains(IpInfo.Address.ToString()))
+                                LocalIPs.Add(IpInfo.Address.ToString());
+                        }
+                        catch { }
+                    }
                 }
+                catch { }
+            }
 
             Searching = false;
         }

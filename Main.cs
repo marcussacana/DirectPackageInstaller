@@ -66,6 +66,11 @@ namespace DirectPackageInstaller
                 tmpPoint = SplitPanel.Location;
                 tmpPoint.Y += 10;
                 SplitPanel.Location = tmpPoint;
+            } 
+            else
+            {
+                ElevatedDragDropManager.Instance.ElevatedDragDrop += DragAndDrop;
+                ElevatedDragDropManager.Instance.EnableDragDrop(Handle);
             }
 
             if (File.Exists(SettingsPath))
@@ -126,14 +131,29 @@ namespace DirectPackageInstaller
                     System.Diagnostics.Process.Start("https://alldebrid.com/apikeys/");
                     var Input = new InputWindow("AllDebrid Integration", "API Key:");
                     Input.Value = string.Empty;
-                    
+
                     if (Input.ShowDialog() == DialogResult.OK)
                     {
                         Program.Config.AllDebridApiKey = Input.Value;
                     }
                 }
+                else
+                {
+                    Program.Config.AllDebridApiKey = "null";
+                }
 
                 MessageBox.Show("If you need, You can set the API key in the Settings.ini file at anytime", "AllDebrid Integration", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
+        private void DragAndDrop(object sender, ElevatedDragDropArgs e)
+        {
+            if (e.Files?.Count > 0)
+            {
+                ListEntries(Installer.CurrentFileList = e.Files.ToArray());
+
+                InputType = Source.NONE;
+                btnLoadUrl_Click(e.Files.First(), null);
             }
         }
 
@@ -146,13 +166,25 @@ namespace DirectPackageInstaller
 
         Source InputType = Source.NONE;
 
+        string LastForcedSource = null;
+
         private async void btnLoadUrl_Click(object sender, EventArgs e)
         {
             PKGStream?.Close();
             PKGStream?.Dispose();
 
+            string ForcedSource = sender is string ? (string)sender : null;
+
+            string SourcePackage = tbURL.Text;
+
+            if (ForcedSource != null && ForcedSource.Length > 2 && (ForcedSource[1] == ':' || ForcedSource[0] == '/'))
+                SourcePackage = LastForcedSource = ForcedSource;
+
+            if (string.IsNullOrWhiteSpace(SourcePackage) && !string.IsNullOrWhiteSpace(LastForcedSource))
+                SourcePackage = LastForcedSource;
+
             if (InputType != Source.NONE) {
-                var Success = await Install(tbURL.Text, false);
+                var Success = await Install(SourcePackage, false);
 
                 if (InputType.HasFlag(Source.File) && Success)
                     tbURL.Text = string.Empty;
@@ -160,7 +192,7 @@ namespace DirectPackageInstaller
                 return;
             }
 
-            if (string.IsNullOrEmpty(tbURL.Text)) {
+            if (string.IsNullOrEmpty(SourcePackage)) {
                 OpenFileDialog.ShowDialog();
                 return;
             }
@@ -174,14 +206,18 @@ namespace DirectPackageInstaller
             PKGStream = null;
 
             Installer.EntryName = null;
-            Installer.CurrentFileList = null;
 
             GC.Collect();
 
-            miPackages.Visible = false;
+            if (ForcedSource == null)
+            {
+                miPackages.Visible = false;
+                Installer.CurrentFileList = null;
+            }
+
             InputType = Source.NONE;
 
-            if (!Uri.IsWellFormedUriString(tbURL.Text, UriKind.Absolute) && !File.Exists(tbURL.Text)) {
+            if (!Uri.IsWellFormedUriString(SourcePackage, UriKind.Absolute) && !File.Exists(SourcePackage)) {
                 MessageBox.Show(this, "Invalid URL or File Path", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
 
                 return;
@@ -190,21 +226,21 @@ namespace DirectPackageInstaller
             {
                 PKGStream = null;
 
-                if (tbURL.Text.EndsWith(".json", StringComparison.InvariantCultureIgnoreCase))
+                if (SourcePackage.EndsWith(".json", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    PKGStream = SplitHelper.OpenRemoteJSON(tbURL.Text);
+                    PKGStream = SplitHelper.OpenRemoteJSON(SourcePackage);
                     InputType = Source.URL | Source.JSON;
                 }
-                else if (tbURL.Text.Length > 2 && (tbURL.Text[1] == ':' || tbURL.Text[0] == '/'))
+                else if (SourcePackage.Length > 2 && (SourcePackage[1] == ':' || SourcePackage[0] == '/'))
                 {
-                    PKGStream = File.Open(tbURL.Text, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    PKGStream = File.Open(SourcePackage, FileMode.Open, FileAccess.Read, FileShare.Read);
                     InputType = Source.File;
                 }
                 else
                 {
                     InputType = Source.URL;
                     
-                    var FHStream = new FileHostStream(tbURL.Text);
+                    var FHStream = new FileHostStream(SourcePackage);
                     LimitedFHost = FHStream.SingleConnection;
 
                     PKGStream = FHStream;
@@ -224,7 +260,7 @@ namespace DirectPackageInstaller
                         ((FileHostStream)PKGStream).KeepAlive = true;
                     }
 
-                    var DownTask = Downloader.CreateTask(tbURL.Text, PKGStream);
+                    var DownTask = Downloader.CreateTask(SourcePackage, PKGStream);
                     
                     while (DownTask.SafeLength == 0)
                         await Task.Delay(100);
@@ -245,7 +281,7 @@ namespace DirectPackageInstaller
                     case CompressionFormat.RAR:
                         InputType |= Source.RAR;
                         SetStatus(LimitedFHost ? "Downloading... (It may take a while)" : "Decompressing...");
-                        var Unrar = Decompressor.UnrarPKG(PKGStream, tbURL.Text, sender is string ? (string)sender : null);
+                        var Unrar = Decompressor.UnrarPKG(PKGStream, SourcePackage, ForcedSource);
                         PKGStream = Unrar.Buffer;
                         Installer.EntryName = Unrar.Filename;
                         Installer.EntrySize = Unrar.Length;
@@ -255,7 +291,7 @@ namespace DirectPackageInstaller
                     case CompressionFormat.SevenZip:
                         InputType |= Source.SevenZip;
                         SetStatus(LimitedFHost ? "Downloading... (It may take a while)" : "Decompressing...");
-                        var Un7z = Decompressor.Un7zPKG(PKGStream, tbURL.Text, sender is string ? (string)sender : null);
+                        var Un7z = Decompressor.Un7zPKG(PKGStream, SourcePackage, ForcedSource);
                         PKGStream = Un7z.Buffer;
                         Installer.EntryName = Un7z.Filename;
                         Installer.EntrySize = Un7z.Length;
@@ -320,6 +356,7 @@ namespace DirectPackageInstaller
                         {
                             if (Program.IsUnix)
                             {
+                                #if UNIX
                                 //I can't trust in the libgdiplus so much, so Let's make the image more simple before draw
                                 using (Stream NewImgBuffer = new MemoryStream())
                                 {
@@ -334,6 +371,7 @@ namespace DirectPackageInstaller
                                     Bitmap IconBitmap = Image.FromStream(NewImgBuffer) as Bitmap;
                                     IconBox.Image = IconBitmap;
                                 }
+                                #endif
                             }
                             else
                             {   
@@ -363,6 +401,7 @@ namespace DirectPackageInstaller
 
             PKGStream?.Close();
         }
+
         private void ListEntries(string[] PKGList)
         {
             if (PKGList == null)
@@ -376,11 +415,11 @@ namespace DirectPackageInstaller
 
                 foreach (var Entry in PKGList.OrderByDescending(x=>x))
                 {
-                    var Item = new ToolStripMenuItem(Entry);
+                    var Item = new ToolStripMenuItem(Path.GetFileName(Entry));
                     Item.Click += (sender, e) =>
                     {
                         InputType = Source.NONE;
-                        btnLoadUrl_Click(Item.Text, null);
+                        btnLoadUrl_Click(Entry, null);
                     };
 
                     miPackages.DropDownItems.Insert(0, Item);
@@ -389,18 +428,25 @@ namespace DirectPackageInstaller
         }
         private async void miInstallAll_Click(object sender, EventArgs e)
         {
-            if (Tasks.Installer.CurrentFileList == null)
+            if (Installer.CurrentFileList == null)
                 return;
 
-            foreach (var File in Tasks.Installer.CurrentFileList)
+            foreach (var File in Installer.CurrentFileList)
             {
-                Tasks.Installer.EntryName = File;
-                if (!await Install(tbURL.Text, true)) {
+                var Source = tbURL.Text;
+                
+                if (string.IsNullOrWhiteSpace(Source))
+                    Source = File;
+                else
+                    Installer.EntryName = File;
+
+                if (!await Install(Source, true)) {
                     var Reply = MessageBox.Show("Continue trying install the others packages?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                     if (Reply != DialogResult.Yes)
                         break;
                 }
             }
+
             MessageBox.Show("Packages Sent!", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
@@ -470,6 +516,7 @@ namespace DirectPackageInstaller
             
             btnLoadUrl.Text = (string.IsNullOrWhiteSpace(tbURL.Text) || File.Exists(tbURL.Text)) ? "Open" : "Load";
             Installer.CurrentFileList = null;
+            LastForcedSource = null;
 
             miPackages.Visible = false;
 

@@ -36,7 +36,7 @@ namespace DirectPackageInstaller.FileHosts
 
         public override bool IsValidUrl(string URL)
         {
-            if (Program.Config.AllDebridApiKey == "null" || string.IsNullOrEmpty(Program.Config.AllDebridApiKey))
+            if (Program.Config.AllDebridApiKey.ToLowerInvariant() == "null" || string.IsNullOrEmpty(Program.Config.AllDebridApiKey))
                 return false;
 
             if (Info == null)

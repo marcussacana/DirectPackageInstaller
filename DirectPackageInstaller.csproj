@@ -38,6 +38,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -107,6 +108,7 @@
     <Compile Include="CookieManager.Designer.cs">
       <DependentUpon>CookieManager.cs</DependentUpon>
     </Compile>
+    <Compile Include="ElevatedDragDropManager.cs" />
     <Compile Include="Enums.cs" />
     <Compile Include="FileHosts\1Fichier.cs" />
     <Compile Include="FileHosts\AllDebrid.cs" />
