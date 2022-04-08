@@ -1,4 +1,6 @@
 ﻿
+using System.Windows.Forms;
+
 namespace DirectPackageInstaller
 {
     partial class CookieManager
@@ -47,6 +49,7 @@ namespace DirectPackageInstaller
             this.tbCookies.Text = resources.GetString("tbCookies.Text");
             this.tbCookies.WordWrap = false;
             this.tbCookies.TextChanged += new System.EventHandler(this.tbCookies_TextChanged);
+            this.tbCookies.KeyDown += new KeyEventHandler(this.tbCookies_KeyDown);
             // 
             // CookieManager
             // 

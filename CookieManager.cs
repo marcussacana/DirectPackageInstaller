@@ -9,6 +9,7 @@ namespace DirectPackageInstaller
 {
     public partial class CookieManager : Form
     {
+        static string CookiesPath => Path.Combine(Environment.GetEnvironmentVariable("CD") ?? AppDomain.CurrentDomain.BaseDirectory, "cookies.txt");
         public CookieManager()
         {
             InitializeComponent();
@@ -16,23 +17,23 @@ namespace DirectPackageInstaller
 
         private void CookieManager_Shown(object sender, EventArgs e)
         {
-            if (File.Exists("cookies.txt"))
-                tbCookies.Lines = File.ReadAllLines("cookies.txt");
+            if (File.Exists(CookiesPath))
+                tbCookies.Lines = File.ReadAllLines(CookiesPath);
         }
 
         private void CookieManager_FormClosing(object sender, FormClosingEventArgs e)
         {
-            File.WriteAllLines("cookies.txt", tbCookies.Lines);
+            File.WriteAllLines(CookiesPath, tbCookies.Lines);
         }
 
         public static List<Cookie> GetUserCookies(string Domain)
         {
             List<Cookie> Container = new List<Cookie>();
 
-            if (!File.Exists("cookies.txt"))
+            if (!File.Exists(CookiesPath))
                 return Container;
 
-            var Lines = File.ReadAllLines("cookies.txt");
+            var Lines = File.ReadAllLines(CookiesPath);
 
             foreach (var Line in Lines)
             {
@@ -49,6 +50,19 @@ namespace DirectPackageInstaller
             }
 
             return Container;
+        }
+        
+        private void tbCookies_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (Program.IsUnix && e.KeyValue == 131089)
+            {
+                if (tbCookies.SelectionLength > 0)
+                    tbCookies.SelectedText = Clipboard.GetText();
+                else
+                    tbCookies.Text = Clipboard.GetText();
+
+                e.Handled = true;
+            }
         }
 
         private void tbCookies_TextChanged(object sender, EventArgs e)
