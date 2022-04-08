@@ -566,15 +566,13 @@ namespace DirectPackageInstaller
                 }
             }
 
-            if (IPAddress.TryParse(Program.Config.LastPS4IP, out _)) {
-                var Ini = new Ini(SettingsPath, "Settings");
-                Ini.SetValue("AllDebridApiKey", Program.Config.AllDebridApiKey);
-                Ini.SetValue("LastPS4IP", Program.Config.LastPS4IP);
-                Ini.SetValue("SearchPS4", Program.Config.SearchPS4 ? "true" : "false");
-                Ini.SetValue("ProxyDownload", miProxyDownloads.Checked ? "true" : "false");
-                Ini.SetValue("SegmentedDownload", miSegmentedDownloads.Checked ? "true" : "false");
-                Ini.Save();
-            }
+            var Ini = new Ini(SettingsPath, "Settings");
+            Ini.SetValue("AllDebridApiKey", Program.Config.AllDebridApiKey);
+            Ini.SetValue("LastPS4IP", Program.Config.LastPS4IP);
+            Ini.SetValue("SearchPS4", Program.Config.SearchPS4 ? "true" : "false");
+            Ini.SetValue("ProxyDownload", miProxyDownloads.Checked ? "true" : "false");
+            Ini.SetValue("SegmentedDownload", miSegmentedDownloads.Checked ? "true" : "false");
+            Ini.Save();
 
             TempHelper.Clear();
             Environment.Exit(0);

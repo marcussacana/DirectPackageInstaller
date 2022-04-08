@@ -125,6 +125,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ElevatedDragDropManager.cs" />
     <Compile Include="Ini.cs" />
     <Compile Include="LinkList.cs" />
     <Compile Include="LinkList.Designer.cs" />
