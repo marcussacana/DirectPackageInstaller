@@ -13,7 +13,7 @@ class GitHub {
 
     string cache = null;
     string Name = null;
-    public static string MainExecutable = Program.IsUnix ? Directory.GetFiles(Program.WorkingDirectory, "DirectPackageInstallerLinux*").First() : new Uri(System.Reflection.Assembly.GetExecutingAssembly().CodeBase).LocalPath;
+    public static string MainExecutable = Program.IsUnix ? Directory.GetFiles(Program.WorkingDirectory, "DirectPackageInstallerLinux*").FirstOrDefault() : new Uri(System.Reflection.Assembly.GetExecutingAssembly().CodeBase).LocalPath;
     public static string TempUpdateDir = Path.GetDirectoryName(MainExecutable) + "\\GitHubRelease\\";
     public static string CurrentVersion {
         get {
@@ -30,6 +30,10 @@ class GitHub {
     public GitHub(string Username, string Project, string Name) {
         API = string.Format(API, Username, Project);
         this.Name = Name;
+        
+        if (System.Diagnostics.Debugger.IsAttached)
+            return;
+        
         if (!File.Exists(MainExecutable))
             throw new Exception("Failed to Catch the Executable Path");
     }
@@ -117,7 +121,11 @@ class GitHub {
         } catch (Exception ex){ return false; }
     }
 
-    public bool FinishUpdatePending() {
+    public bool FinishUpdatePending()
+    {
+        if (MainExecutable == null)
+            return false;
+        
         if (MainExecutable.Contains("\\GitHubRelease\\"))
             return true;
 

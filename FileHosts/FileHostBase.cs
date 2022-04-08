@@ -32,7 +32,33 @@ namespace DirectPackageInstaller.FileHosts
                 return HttpClient.DownloadString(URL);
             }
         }
+        protected WebHeaderCollection Head(string URL, Cookie[] Cookies = null)
+        {
+            lock (HttpClient)
+            {
+                HttpClient.Headers.Clear();
+                HttpClient.Headers["user-agent"] = UserAgent;
+                HttpClient.Headers["referer"] = HttpUtility.UrlEncode(URL);
 
+                HttpClient.Container = new CookieContainer();
+                if (Cookies != null)
+                {
+                    foreach (var Cookie in Cookies)
+                        HttpClient.Container.Add(Cookie);
+                }
+
+                try
+                {
+                    var Response = HttpClient.OpenRead(URL);
+                    Response.Close();
+                    return HttpClient.ResponseHeaders;
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+        }
         protected string PostString(string URL, string ContentType, string Data, Cookie[] Cookies = null)
         {
             lock (HttpClient)

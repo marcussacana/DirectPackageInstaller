@@ -22,23 +22,11 @@ namespace DirectPackageInstaller.FileHosts
             List<Cookie> Cookies = new List<Cookie>();
             Cookies.AddRange(UserCookies);
 
-            var Response = DownloadRequest($"https://drive.google.com/u/0/uc?id={GetFileID(URL)}&export=download", Cookies.ToArray());
+            var DownloadUri = $"https://drive.google.com/u/0/uc?id={GetFileID(URL)}&export=download&confirm=t";
 
-
-            foreach (var Cookie in Response.Headers.GetValues("set-cookie"))
-            {
-                var Parts = Cookie.Split(';');
-                if (!Parts.First().Contains("="))
-                    continue;
-
-                var Name = Parts.First().Split('=')[0];
-                var Value = Parts.First().Substring("=");
-
-                Cookies.Add(new Cookie(Name, Value, "/", ".google.com"));
-            }
-
-            var HTML = Encoding.UTF8.GetString(Response.Data);
-            if (HTML.Contains("Quota exceeded"))
+            var Headers = Head(DownloadUri, Cookies.ToArray());
+            
+            if (Headers == null)
             {
                 if (!CookieAsked)
                 {
@@ -58,21 +46,15 @@ namespace DirectPackageInstaller.FileHosts
                 throw new Exception();
             }
 
-            HTML = HTML.Substring("goog-inline-block jfk-button jfk-button-action");
-
-            string DownURL = HttpUtility.HtmlDecode(HTML.Substring("href=\"", "\">")).Replace("/u/0", "");
-            if (!DownURL.StartsWith("http"))
-                DownURL = "https://drive.google.com/u/0" + DownURL;
-
             return new DownloadInfo()
             {
-                Headers = new List<(string Key, string Value)>()
+                Headers = Cookies.Count == 0 ? null : new List<(string Key, string Value)>()
                 {
                     ("referer", "https://drive.google.com/"),
                     ("user-agent", UserAgent)
                 },
-                Cookies = Cookies.ToArray(),
-                Url = DownURL
+                Cookies = Cookies.Count == 0 ? null : Cookies.ToArray(),
+                Url = DownloadUri
             };
         }
 
