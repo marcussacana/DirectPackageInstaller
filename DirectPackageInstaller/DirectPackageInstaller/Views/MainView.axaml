@@ -1,0 +1,97 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewModels="clr-namespace:DirectPackageInstaller.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="DirectPackageInstaller.Views.MainView"
+             Foreground="White"
+             Background="#171C2C">
+  <Design.DataContext>
+    <viewModels:MainViewModel />
+  </Design.DataContext>
+    <Grid ShowGridLines="True">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="40"></RowDefinition>
+            <RowDefinition Height="40"></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition Height="40"></RowDefinition>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition Width="5"></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+        
+        <Menu Grid.ColumnSpan="3">
+            <MenuItem Header="_Options">
+                <MenuItem Header="_Proxy Downloads">
+                    <MenuItem.Icon>
+                        <CheckBox BorderThickness="0"></CheckBox>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="_Segmented Downloads" ></MenuItem>
+                <MenuItem Header="_IP Address">
+                    <Grid Margin="10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition></ColumnDefinition>
+                            <ColumnDefinition></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+                        <Label Grid.Column="0">PS4 IP:</Label>
+                        <TextBox Grid.Column="1"></TextBox>
+                    </Grid>
+                    <Grid Margin="10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition></ColumnDefinition>
+                            <ColumnDefinition></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+                        <Label Grid.Column="0">PC IP:</Label>
+                        <TextBox Grid.Column="1" ></TextBox>
+                    </Grid>
+                </MenuItem>
+            </MenuItem>
+            <MenuItem Header="Packages" IsVisible="False">
+                
+            </MenuItem>
+        </Menu>
+        
+        <Grid Grid.Row="1" Grid.ColumnSpan="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto"></ColumnDefinition>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+                <ColumnDefinition Width="auto"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <Label Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="5,0,0,0">URL:</Label>
+            <TextBox Grid.Row="0" Grid.Column="1" Margin="5"></TextBox>
+            <Button Grid.Row="0" Grid.Column="2" HorizontalAlignment="Right" Margin="5,0,5,0">Install</Button>
+        </Grid>
+        
+        <Image Grid.Row="2"></Image>
+        <GridSplitter Grid.Column="1" Grid.Row="2"></GridSplitter>
+        <ListBox Grid.Row="2" Grid.Column="2"></ListBox>
+        
+        
+        <Label Grid.Row="3" Grid.ColumnSpan="3" Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" Name="Status">
+            STATUS TEXT
+        </Label>
+    </Grid>
+    <UserControl.Styles>
+        <Style Selector="CheckBox">
+            <Setter Property="Width" Value="20"></Setter>
+        </Style>
+        <Style Selector="Menu > MenuItem > MenuItem > MenuItem">
+            <Setter Property="Padding" Value="5,-5,-15,-5"></Setter>
+        </Style>
+        <Style Selector="MenuItem >> Label">
+            <Setter Property="HorizontalAlignment" Value="Right"></Setter>
+            <Setter Property="VerticalAlignment" Value="Center"></Setter>
+            <Setter Property="Margin" Value="0,0,5,0"></Setter>
+        </Style>
+        <Style Selector="MenuItem >> TextBox">
+            <Setter Property="HorizontalAlignment" Value="Stretch"></Setter>
+            <Setter Property="VerticalAlignment" Value="Center"></Setter>
+            <Setter Property="VerticalContentAlignment" Value="Center"></Setter>
+            <Setter Property="Width" Value="150"></Setter>
+        </Style>
+    </UserControl.Styles>
+</UserControl>
