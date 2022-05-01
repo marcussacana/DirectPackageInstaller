@@ -22,7 +22,7 @@ namespace DirectPackageInstaller
 
             InputStream = Input;
 
-            Buffer = new FileStream(this.TempFile, FileMode.OpenOrCreate, FileSystemRights.FullControl, FileShare.ReadWrite, 4096, FileOptions.RandomAccess);
+            Buffer = new FileStream(this.TempFile, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite, 4096, FileOptions.RandomAccess);
         }
         public ReadSeekableStream(Stream Input)
         {
@@ -31,7 +31,7 @@ namespace DirectPackageInstaller
 
             InputStream = Input;
 
-            Buffer = new FileStream(TempFile, FileMode.OpenOrCreate, FileSystemRights.FullControl, FileShare.ReadWrite, 4096, FileOptions.RandomAccess);
+            Buffer = new FileStream(TempFile, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite, 4096, FileOptions.RandomAccess);
         }
 
         public override bool CanRead { get { return true; } }

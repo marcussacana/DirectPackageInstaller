@@ -8,6 +8,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
+using DirectPackageInstaller.Views;
 
 namespace DirectPackageInstaller.Tasks
 {
@@ -29,20 +30,8 @@ namespace DirectPackageInstaller.Tasks
         {
             if (Config.LastPS4IP == null)
             {
-                PS4IP Window;
-
-                if (Locator.Devices.Any())
-                {
-                    var Device = Locator.Devices.First();
-                    Window = new PS4IP(Device);
-                }
-                else
-                    Window = new PS4IP();
-
-                if (Window.ShowDialog() != DialogResult.OK)
-                    return false;
-
-                Config.LastPS4IP = Window.IP;
+                MessageBox.Show("PS4 IP not defined, please, type the PS4 IP in the Options Menu", "PS4 IP Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
             }
 
             StartServer(Config.LastPS4IP);
@@ -111,7 +100,7 @@ namespace DirectPackageInstaller.Tasks
                     }
 
                     var FreeSpace = GetCurrentDiskAvailableFreeSpace();
-                    if (EntrySize > FreeSpace && !Program.IsUnix)
+                    if (EntrySize > FreeSpace && !App.IsUnix)
                     {
                         long Missing = EntrySize - FreeSpace;
                         MessageBox.Show("Compressed files are cached to your disk, you need more " + ToFileSize(Missing) + " of free space to install this package.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);

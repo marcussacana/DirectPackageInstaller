@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using DirectPackageInstaller.Views;
 using ReaderOptions = SharpCompress.Readers.ReaderOptions;
 
 namespace DirectPackageInstaller.Tasks

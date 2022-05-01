@@ -21,6 +21,10 @@
     <ItemGroup>
       <ProjectReference Include="..\..\HttpServerLite\HttpServerLite\HttpServerLite.csproj" />
       <ProjectReference Include="..\..\LibOrbisPkg\LibOrbisPkg.Core\LibOrbisPkg.Core.csproj" />
-      <ProjectReference Include="..\..\LibOrbisPkg\LibOrbisPkg\LibOrbisPkg.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+      <Compile Update="Views\SelectView.axaml.cs">
+        <SubType>Code</SubType>
+      </Compile>
     </ItemGroup>
 </Project>
