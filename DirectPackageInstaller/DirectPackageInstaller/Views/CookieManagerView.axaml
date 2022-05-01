@@ -1,0 +1,32 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewModels="clr-namespace:DirectPackageInstaller.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="DirectPackageInstaller.Views.CookieManagerView">
+    <UserControl.DataContext>
+        <viewModels:CookieManagerViewModel/>
+    </UserControl.DataContext>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition Width="auto"></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
+        </Grid.RowDefinitions>
+        <TextBox Name="tbCookie" Grid.ColumnSpan="2" Text="{Binding CookieList}"></TextBox>
+        <Label Grid.Row="1">You can use the "Get cookies.txt" extension to get a valid cookie list</Label>
+        <Button Name="btnSave" Grid.Row="1" Grid.Column="1">Save Cookies</Button>
+    </Grid>
+    <UserControl.Styles>
+        <Style Selector="TextBox">
+            <Setter Property="Margin" Value="5,5,5,0"/>
+        </Style>
+        <Style Selector="Button,Label">
+            <Setter Property="Margin" Value="5,5,5,5"/>
+        </Style>
+    </UserControl.Styles>
+</UserControl>

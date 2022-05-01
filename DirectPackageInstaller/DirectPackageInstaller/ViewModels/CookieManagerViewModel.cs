@@ -5,8 +5,9 @@ using ReactiveUI;
 
 namespace DirectPackageInstaller.ViewModels
 {
-    public class CookieManagerViewModel : ReactiveObject
+    public class CookieManagerViewModel : DialogModel
     {
-        public DialogResult Result;
+        public string CookieList { get; set; }
+        public string CookiesPath { get; set; }
     }
 }

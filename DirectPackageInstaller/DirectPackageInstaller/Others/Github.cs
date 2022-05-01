@@ -13,7 +13,7 @@ class GitHub {
 
     string cache = null;
     string Name = null;
-    public static string MainExecutable = App.IsUnix ? Directory.GetFiles(App.WorkingDirectory, "DirectPackageInstallerLinux*").FirstOrDefault() : new Uri(System.Reflection.Assembly.GetExecutingAssembly().CodeBase).LocalPath;
+    public static string MainExecutable = App.IsUnix ? Directory.GetFiles(App.WorkingDirectory, "DirectPackageInstaller*").FirstOrDefault() : new Uri(System.Reflection.Assembly.GetExecutingAssembly().CodeBase).LocalPath;
     public static string TempUpdateDir = Path.GetDirectoryName(MainExecutable) + "\\GitHubRelease\\";
     public static string CurrentVersion {
         get {
