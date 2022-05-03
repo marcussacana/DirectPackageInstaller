@@ -1,29 +1,41 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Avalonia.Controls;
+using DirectPackageInstaller.UIBase;
 using DirectPackageInstaller.ViewModels;
+using DynamicData;
 
 namespace DirectPackageInstaller.Views
 {
-    public partial class LinkList : Window
+    public partial class LinkList : DialogWindow
     {
-        public string[] Links { get; private set; }
-        public string Password { get; private set; }
+        LinkListViewModel? Model => (LinkListViewModel?)View.DataContext;
+        
+        public string[]? Links => Model?.Links.Select(x => x.Content).ToArray();
+        public string? Password => Model?.Password;
+        
         public LinkList(bool Multipart, bool Encrypted, string FirstUrl) : this()
         {
-            // tbLinks.Enabled = Multipart;
-            // tbPassword.Enabled = Encrypted;
-            // MainUrl = FirstUrl;
-            // DialogResult = DialogResult.Cancel;
+            if (Model != null)
+            {
+                Model.MainUrl = FirstUrl;
+                Model.HasPassword = Encrypted;
+                Model.IsMultipart = Multipart;
+            }
+
+            View.Initialized();
         }
 
         public LinkList()
         {
             InitializeComponent();
-        }
 
-        public DialogResult ShowDialog()
-        {
-            ShowDialog(null);
-            return ((LinkListViewModel)DataContext).Result;
+            View = this.Find<LinkListView>("View");
+
+            DataContext = new LinkListViewModel();
+            if (Model == null)
+                View.DataContext = (LinkListViewModel)DataContext;
         }
     }
 }

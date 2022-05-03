@@ -4,10 +4,13 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:views="clr-namespace:DirectPackageInstaller.Views"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="350"
         x:Class="DirectPackageInstaller.Views.LinkList"
         d:DataContext="ViewModels.LinkListViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Title="Link List">
-    
+        Title="Link List"
+        Width="700"
+        Height="400"
+        Background="#171C2C">
+    <views:LinkListView Name="View"/>
 </Window>

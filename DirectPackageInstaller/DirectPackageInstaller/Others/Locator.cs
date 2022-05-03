@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Threading;
 using System.Threading.Tasks;
+using DirectPackageInstaller.Views;
 
 namespace DirectPackageInstaller
 {
@@ -96,7 +97,7 @@ namespace DirectPackageInstaller
             catch (Exception ex)
             {
 #if DEBUG
-                MessageBox.Show(ex.ToString(), "");
+                MessageBox.Show(ex.ToString());
 #else
                 System.IO.File.WriteAllText("DPI.log", "Error: " + ex.ToString());
 #endif
