@@ -38,7 +38,7 @@ namespace DirectPackageInstaller.Tasks
                 else
                 {
                     var List = new LinkList(true, Encrypted, FirstUrl);
-                    if (List.ShowDialog() != DialogResult.OK)
+                    if (List.ShowDialogSync() != DialogResult.OK)
                         throw new Exception();
 
                     CompressInfo[FirstUrl] = (List.Links, List.Password);
@@ -60,7 +60,7 @@ namespace DirectPackageInstaller.Tasks
                 else
                 {
                     var List = new LinkList(false, Encrypted, FirstUrl);
-                    if (List.ShowDialog() != DialogResult.OK)
+                    if (List.ShowDialogSync() != DialogResult.OK)
                         throw new Exception();
 
                     CompressInfo[FirstUrl] = (List.Links ?? new string[] { FirstUrl }, List.Password);
@@ -75,7 +75,7 @@ namespace DirectPackageInstaller.Tasks
             if (!Archive.IsComplete)
             {
                 if (!Silent)
-                    MessageBox.Show("Corrupted, missing or RAR parts with wrong sorting.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.ShowSync("Corrupted, missing or RAR parts with wrong sorting.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return (null, null, null, null, 0);
             }
 
@@ -118,7 +118,7 @@ namespace DirectPackageInstaller.Tasks
                 else
                 {
                     var List = new LinkList(true, Encrypted, FirstUrl);
-                    if (List.ShowDialog() != DialogResult.OK)
+                    if (List.ShowDialogSync() != DialogResult.OK)
                         throw new Exception();
 
                     CompressInfo[FirstUrl] = (List.Links, List.Password);
@@ -140,7 +140,7 @@ namespace DirectPackageInstaller.Tasks
                 else
                 {
                     var List = new LinkList(false, Encrypted, FirstUrl);
-                    if (List.ShowDialog() != DialogResult.OK)
+                    if (List.ShowDialogSync() != DialogResult.OK)
                         throw new Exception();
 
                     CompressInfo[FirstUrl] = (List.Links ?? new string[] { FirstUrl }, List.Password);
@@ -155,7 +155,7 @@ namespace DirectPackageInstaller.Tasks
             if (Encrypted && Password == null)
             {
                 var List = new LinkList(false, Encrypted, FirstUrl);
-                if (List.ShowDialog() != DialogResult.OK)
+                if (List.ShowDialogSync() != DialogResult.OK)
                     throw new Exception();
 
                 CompressInfo[FirstUrl] = (List.Links ?? new string[] { FirstUrl }, List.Password);
@@ -169,7 +169,7 @@ namespace DirectPackageInstaller.Tasks
             if (!Archive.IsComplete)
             {
                 if (!Silent)
-                    MessageBox.Show("Corrupted, missing or 7z parts with wrong sorting", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.ShowSync("Corrupted, missing or 7z parts with wrong sorting", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return (null, null, null, null, 0);
             }
 
@@ -186,7 +186,7 @@ namespace DirectPackageInstaller.Tasks
             if (!PKGs.Any())
             {
                 if (!Silent)
-                    MessageBox.Show("No PKG Found in the given file" + (Compressions.Any() ? "\nIt looks like this file has been redundantly compressed." : ""), "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.ShowSync("No PKG Found in the given file" + (Compressions.Any() ? "\nIt looks like this file has been redundantly compressed." : ""), "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return (null, null, null, null, 0);
             }
 

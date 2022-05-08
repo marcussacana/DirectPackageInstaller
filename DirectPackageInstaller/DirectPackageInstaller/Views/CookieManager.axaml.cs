@@ -22,7 +22,6 @@ namespace DirectPackageInstaller.Views
             
             View.DataContext = DataContext;
             
-            ((CookieManagerViewModel)View.DataContext).Window = this;
             ((CookieManagerViewModel)View.DataContext).CookiesPath = CookiesPath;
         }
 

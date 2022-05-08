@@ -97,7 +97,7 @@ namespace DirectPackageInstaller
             catch (Exception ex)
             {
 #if DEBUG
-                MessageBox.Show(ex.ToString());
+                MessageBox.ShowSync(ex.ToString());
 #else
                 System.IO.File.WriteAllText("DPI.log", "Error: " + ex.ToString());
 #endif

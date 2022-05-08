@@ -18,6 +18,7 @@ namespace DirectPackageInstaller.Views;
 
 public partial class LinkListView : UserControl
 {
+    private Window Window;
     public LinkListViewModel? Model => (LinkListViewModel?)DataContext;
     public LinkListView()
     {
@@ -27,15 +28,15 @@ public partial class LinkListView : UserControl
         btnOK.Click += Button_OnClick;
     }
 
-    public void Initialized()
+    public void Initialized(Window Window)
     {
         if (Model?.Links == null)
             return;
         
         if (Model.Links.Count == 0)
             Model.Links.Add(new LinkListViewModel.LinkEntry(Model.MainUrl));
-        
-        
+
+        this.Window = Window;
     }
     private void TextBoxChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
     {
@@ -63,7 +64,7 @@ public partial class LinkListView : UserControl
             Model.Links.Add(new LinkListViewModel.LinkEntry(string.Empty));
     }
 
-    private void Button_OnClick(object? sender, RoutedEventArgs e)
+    private async void Button_OnClick(object? sender, RoutedEventArgs e)
     {
         if (Model.IsMultipart ?? false) {
                 
@@ -77,7 +78,7 @@ public partial class LinkListView : UserControl
             {
                 if (!Uri.IsWellFormedUriString(Link, UriKind.Absolute))
                 {
-                    MessageBox.Show("Invalid URL:\n" + Link, "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    await MessageBox.ShowAsync("Invalid URL:\n" + Link, "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
             }
@@ -87,11 +88,11 @@ public partial class LinkListView : UserControl
 
         if ((Model.HasPassword ?? false) && string.IsNullOrEmpty(Model.Password))
         {
-            MessageBox.Show("Invalid Password", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            await MessageBox.ShowAsync("Invalid Password", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
             return;
         }
         
-        ((LinkListViewModel)Model.Window.DataContext).Result = DialogResult.OK;
-        Model.Window.Close();
+        ((DialogModel)Window.DataContext).Result = DialogResult.OK;
+        Window.Close();
     }
 }

@@ -24,7 +24,7 @@ namespace DirectPackageInstaller.Views
                 Model.IsMultipart = Multipart;
             }
 
-            View.Initialized();
+            View.Initialized(this);
         }
 
         public LinkList()

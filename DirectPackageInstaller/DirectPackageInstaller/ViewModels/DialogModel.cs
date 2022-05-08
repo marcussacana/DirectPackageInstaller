@@ -9,7 +9,12 @@ namespace DirectPackageInstaller.ViewModels
 {
     public class DialogModel : ReactiveObject
     {
+        public string Message { get; set; }
+        public string Title { get; set; }
+        
+        public MessageBoxButtons Buttons;
+        public MessageBoxIcon Icon;
+        
         public DialogResult Result;
-        public Window Window;
     }
 }

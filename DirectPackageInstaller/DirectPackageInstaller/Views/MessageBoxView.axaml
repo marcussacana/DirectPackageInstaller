@@ -1,0 +1,108 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewModels="clr-namespace:DirectPackageInstaller.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="480" d:DesignHeight="180"
+             x:Class="DirectPackageInstaller.Views.MessageBoxView"
+             MinWidth="480"
+             MinHeight="180"
+             Background="#171C2C">
+    <UserControl.DataContext>
+        <viewModels:DialogModel/>
+    </UserControl.DataContext>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition />
+            <RowDefinition Height="50" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+        <Image Classes="Stop" Name="Icon">
+            <Image.Source>
+            </Image.Source>
+        </Image>
+        <TextBlock Name="Message" Grid.Row="0" Grid.Column="1" Text="{Binding Message}"/>
+        <Grid Grid.Row="1" Grid.ColumnSpan="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="4" Name="ButtonA" />
+            <Button Grid.Column="3" Name="ButtonB" />
+            <Button Grid.Column="2" Name="ButtonC" />
+            <Button Grid.Column="1" Name="ButtonD" />
+        </Grid>
+    </Grid>
+    <UserControl.Styles>
+        <Style Selector="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="Margin" Value="20,5,5,5"></Setter>
+        </Style>
+        <Style Selector="Image">
+            <Setter Property="MaxHeight" Value="80"/>
+            <Setter Property="Margin" Value="10,0,5,0"/>
+        </Style>
+        <Style Selector="Button">
+            <Setter Property="MinWidth" Value="60"/>
+            <Setter Property="MinHeight" Value="25" />
+            <Setter Property="Margin" Value="0,0,5,0" />
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+        </Style>
+        <Style Selector="Image.Stop">
+            <Setter Property="Source">
+                <DrawingImage Drawing="{DynamicResource Stop}" />
+            </Setter>
+        </Style>
+        <Style Selector="Image.Error">
+            <Setter Property="Source">
+                <DrawingImage Drawing="{DynamicResource Error}" />
+            </Setter>
+        </Style>
+        <Style Selector="Image.Information">
+            <Setter Property="Source">
+                <DrawingImage Drawing="{DynamicResource Info}" />
+            </Setter>
+        </Style>
+        <Style Selector="Image.Warning">
+            <Setter Property="Source">
+                <DrawingImage Drawing="{DynamicResource Warn}" />
+            </Setter>
+        </Style>
+        <Style Selector="Image.Question">
+            <Setter Property="Source">
+                <DrawingImage Drawing="{DynamicResource Question}" />
+            </Setter>
+        </Style>
+    </UserControl.Styles>
+    
+    <UserControl.Resources>
+        <DrawingGroup x:Key="Stop">
+            <GeometryDrawing Brush="#00FFFFFF" Geometry="F1M16,16L0,16 0,0 16,0z" />
+            <GeometryDrawing Brush="#FFF6F6F6" Geometry="F1M8,10.8281L5,13.8281 2.172,11.0001 5.172,8.0001 2.172,5.0001 5,2.1721 8,5.1721 11,2.1721 13.828,5.0001 10.828,8.0001 13.828,11.0001 11,13.8281z" />
+            <GeometryDrawing Brush="#FFA1260D" Geometry="F1M9.4141,8L12.4141,11 11.0001,12.414 8.0001,9.414 5.0001,12.414 3.5861,11 6.5861,8 3.5861,5 5.0001,3.586 8.0001,6.586 11.0001,3.586 12.4141,5z" />
+        </DrawingGroup>
+        <DrawingGroup x:Key="Error">
+            <GeometryDrawing Brush="#FFE51300" Geometry="F1M12.4141,11L11.0001,12.414 8.0001,9.414 5.0001,12.414 3.5861,11 6.5861,8 3.5861,5 5.0001,3.586 8.0001,6.586 11.0001,3.586 12.4141,5 9.4141,8z M8.0001,1C4.1341,1 1.0001,4.135 1.0001,8 1.0001,11.865 4.1341,15 8.0001,15 11.8651,15 15.0001,11.865 15.0001,8 15.0001,4.135 11.8651,1 8.0001,1" />
+            <GeometryDrawing Brush="#FFFFFFFF" Geometry="F1M12.4141,5L11.0001,3.586 8.0001,6.586 5.0001,3.586 3.5861,5 6.5861,8 3.5861,11 5.0001,12.414 8.0001,9.414 11.0001,12.414 12.4141,11 9.4141,8z" />
+        </DrawingGroup>
+        <DrawingGroup x:Key="Info">
+            <GeometryDrawing Brush="#FF1AA1E2" Geometry="F1M9,5L8,5 8,4 9,4z M9,11L8,11 8,6 9,6z M8.5,3C6.015,3 4,5.015 4,7.5 4,9.985 6.015,12 8.5,12 10.985,12 13,9.985 13,7.5 13,5.015 10.985,3 8.5,3" />
+            <GeometryDrawing Brush="#FFFFFFFF" Geometry="F1M8,5L9,5 9,4 8,4z M8,11L9,11 9,6.001 8,6.001z" />
+        </DrawingGroup>
+        <DrawingGroup x:Key="Warn">
+            <GeometryDrawing Brush="#00FFFFFF" Geometry="F1M16,16L0,16 0,0 16,0z" />
+            <GeometryDrawing Brush="#FFFFCC00" Geometry="F1M9,10L7,10 7,5 9,5z M9,13L7,13 7,11 9,11z M8.382,1L7.618,1 1.217,13.803 2.5,15 13.5,15 14.783,13.803z" />
+            <GeometryDrawing Brush="#FF000000" Geometry="F1M9,11L7,11 7,13 9,13z M9,10L7,10 7,5 9,5z" />
+        </DrawingGroup>
+        <DrawingGroup x:Key="Question">
+            <GeometryDrawing Brush="#FFFFFFFF" Geometry="M9.333,13 L9.333,11 C9.333,10.81 9.188,10.67 9,10.67 L7,10.67 C6.813,10.67 6.667,10.81 6.667,11 L6.667,13 C6.667,13.19 6.813,13.33 7,13.33 L9,13.33 C9.188,13.33 9.333,13.19 9.333,13 z M12,6 C12,4.094 10,2.667 8.208,2.667 C6.51,2.667 5.24,3.396 4.344,4.885 C4.25,5.031 4.292,5.219 4.427,5.323 L5.802,6.365 C5.854,6.406 5.927,6.427 6,6.427 C6.094,6.427 6.198,6.385 6.26,6.302 C6.75,5.677 6.958,5.49 7.156,5.344 C7.333,5.219 7.677,5.094 8.052,5.094 C8.719,5.094 9.333,5.521 9.333,5.979 C9.333,6.521 9.052,6.792 8.417,7.083 C7.677,7.417 6.667,8.281 6.667,9.292 L6.667,9.667 C6.667,9.854 6.813,10 7,10 L9,10 C9.188,10 9.333,9.854 9.333,9.667 C9.333,9.427 9.635,8.917 10.13,8.635 C10.92,8.188 12,7.583 12,6 z M16,8 C16,12.42 12.42,16 8,16 C3.583,16 0,12.42 0,8 C0,3.583 3.583,0 8,0 C12.42,0 16,3.583 16,8 z"   />
+        </DrawingGroup>
+    </UserControl.Resources>
+</UserControl>

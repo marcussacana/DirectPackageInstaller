@@ -6,7 +6,9 @@ public enum DialogResult
     Yes,
     No,
     Ignore,
-    Cancel
+    Cancel,
+    Abort,
+    Retry
 }
 
 [Flags]
@@ -18,9 +20,14 @@ public enum MessageBoxButtons
     Retry = 1 << 3,
     Ignore = 1 << 4,
     Cancel = 1 << 5,
+    Abort = 1 << 6,
+    
     YesNo = Yes | No,
     YesNoCancel = YesNo | Cancel,
     RetryCancel = Retry | Cancel,
+    IgnoreAbort = Ignore | Abort,
+    IgnoreRetry = Ignore | Retry,
+    IgnoreRetryAbort = IgnoreAbort | Retry,
     RetryIgnoreCancel = RetryCancel | Ignore,
     IgnoreCancel = Ignore | Cancel,
     RetryIgnore = Retry | Ignore

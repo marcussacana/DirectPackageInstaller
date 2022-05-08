@@ -30,7 +30,7 @@ namespace DirectPackageInstaller.Tasks
         {
             if (Config.LastPS4IP == null)
             {
-                MessageBox.Show("PS4 IP not defined, please, type the PS4 IP in the Options Menu", "PS4 IP Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                await MessageBox.ShowAsync("PS4 IP not defined, please, type the PS4 IP in the Options Menu", "PS4 IP Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
 
@@ -45,7 +45,7 @@ namespace DirectPackageInstaller.Tasks
                 {
                     if (!Config.ProxyDownload)
                     {
-                        var Reply = MessageBox.Show("The given URL can't be direct downloaded.\nDo you want to the DirectPackageInstaller act as a server?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                        var Reply = await MessageBox.ShowAsync("The given URL can't be direct downloaded.\nDo you want to the DirectPackageInstaller act as a server?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                         if (Reply != DialogResult.Yes)
                             return false;
                     }
@@ -92,7 +92,7 @@ namespace DirectPackageInstaller.Tasks
                 case Source.URL | Source.RAR:
                     if (!Config.ProxyDownload && !AllowIndirect)
                     {
-                        var Reply = MessageBox.Show("The given pkg is compressed therefore can't be direct downloaded in your PS4.\nDo you want to the DirectPackageInstaller act as a decompress server?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                        var Reply = await MessageBox.ShowAsync("The given pkg is compressed therefore can't be direct downloaded in your PS4.\nDo you want to the DirectPackageInstaller act as a decompress server?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                         if (Reply != DialogResult.Yes)
                             return false;
 
@@ -103,7 +103,7 @@ namespace DirectPackageInstaller.Tasks
                     if (EntrySize > FreeSpace && !App.IsUnix)
                     {
                         long Missing = EntrySize - FreeSpace;
-                        MessageBox.Show("Compressed files are cached to your disk, you need more " + ToFileSize(Missing) + " of free space to install this package.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        await MessageBox.ShowAsync("Compressed files are cached to your disk, you need more " + ToFileSize(Missing) + " of free space to install this package.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return false;
                     }
 
@@ -190,7 +190,7 @@ namespace DirectPackageInstaller.Tasks
                     break;
 
                 default:
-                    MessageBox.Show("Unexpected Install Method: \n" + InputType.ToString());
+                    MessageBox.ShowSync("Unexpected Install Method: \n" + InputType.ToString());
                     return false;
             }
 
@@ -221,7 +221,7 @@ namespace DirectPackageInstaller.Tasks
                             if (Result.Contains("\"success\""))
                             {
                                 if (!Silent)
-                                    MessageBox.Show("Package Sent!", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                    await MessageBox.ShowAsync("Package Sent!", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                                 return true;
                             }
@@ -230,7 +230,7 @@ namespace DirectPackageInstaller.Tasks
                                 if (Result.Contains("0x80990085"))
                                     Result += "\nVerify if your PS4 have free space.";
 
-                                MessageBox.Show("Failed:\n" + Result, "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                await MessageBox.ShowAsync("Failed:\n" + Result, "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                                 return false;
                             }
                         }
@@ -254,7 +254,7 @@ namespace DirectPackageInstaller.Tasks
                     catch { }
                 }
 
-                MessageBox.Show("Failed:\n" + Result == null ? ex.ToString() : Result, "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                await MessageBox.ShowAsync("Failed:\n" + Result == null ? ex.ToString() : Result, "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
         }
