@@ -4,7 +4,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:viewModels="clr-namespace:DirectPackageInstaller.ViewModels"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="DirectPackageInstaller.Views.CookieManagerView">
+             x:Class="DirectPackageInstaller.Views.CookieManagerView"
+             Background="#171C2C">
     <UserControl.DataContext>
         <viewModels:CookieManagerViewModel/>
     </UserControl.DataContext>

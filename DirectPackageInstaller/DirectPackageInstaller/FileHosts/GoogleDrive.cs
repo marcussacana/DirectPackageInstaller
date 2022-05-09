@@ -29,21 +29,20 @@ namespace DirectPackageInstaller.FileHosts
             
             if (Headers == null)
             {
-                if (!CookieAsked)
+                var OldCount = UserCookies.Count;
+                UserCookies = CookieManager.GetUserCookies("google.com");
+
+                if (OldCount == UserCookies.Count && (UserCookies.Count == 0 || !CookieAsked))
                 {
-                    var OldCount = UserCookies.Count;
-                    UserCookies = CookieManager.GetUserCookies("google.com");
-
-                    if (OldCount == UserCookies.Count && (UserCookies.Count == 0 || !CookieAsked))
-                    {
-                        CookieAsked = true;
-                        var CManager = new CookieManager();
-                        CManager.ShowDialogSync();
-                    }
-
+                    CookieAsked = true;
+                    var CManager = new CookieManager();
+                    CManager.ShowDialogSync();
                     return GetDownloadInfo(URL);
                 }
-
+                
+                if (OldCount != UserCookies.Count)
+                    return GetDownloadInfo(URL);
+                
                 throw new Exception();
             }
 

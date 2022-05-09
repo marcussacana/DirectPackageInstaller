@@ -29,13 +29,13 @@ namespace DirectPackageInstaller.Tasks
 
         public static async Task<bool> PushPackage(Settings Config, Source InputType, Stream PKGStream, string URL, Action<string> SetStatus, Func<string> GetStatus, bool Silent)
         {
-            if (Config.PS4IP == null)
+            if (string.IsNullOrEmpty(Config.PS4IP))
             {
                 await MessageBox.ShowAsync("PS4 IP not defined, please, type the PS4 IP in the Options Menu", "PS4 IP Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
 
-            StartServer(Config.PS4IP, Config.PCIP);
+            StartServer(Config.PCIP);
 
             if (PKGStream is FileHostStream)
             {
@@ -260,7 +260,7 @@ namespace DirectPackageInstaller.Tasks
             }
         }
 
-        public static void StartServer(string IP, string LocalIP)
+        public static void StartServer(string LocalIP)
         {
             if (string.IsNullOrEmpty(LocalIP))
                 LocalIP = "0.0.0.0";

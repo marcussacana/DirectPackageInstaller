@@ -19,7 +19,6 @@
         <PackageReference Include="XamlNameReferenceGenerator" Version="1.3.4" />
     </ItemGroup>
     <ItemGroup>
-      <ProjectReference Include="..\..\HttpServerLite\HttpServerLite\HttpServerLite.csproj" />
       <ProjectReference Include="..\..\LibOrbisPkg\LibOrbisPkg.Core\LibOrbisPkg.Core.csproj" />
     </ItemGroup>
 </Project>

@@ -1,6 +1,3 @@
-[submodule "HttpServerLite"]
-	path = HttpServerLite
-	url = https://github.com/jchristn/HttpServerLite
 [submodule "LibOrbisPkg"]
 	path = LibOrbisPkg
 	url = https://github.com/OpenOrbis/LibOrbisPkg

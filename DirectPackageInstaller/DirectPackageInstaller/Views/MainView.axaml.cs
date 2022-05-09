@@ -44,7 +44,7 @@ namespace DirectPackageInstaller.Views
 
         private MainWindow Parent = null;
         
-        private string SettingsPath => System.IO.Path.Combine(App.WorkingDirectory, "Settings.ini");
+        
         
         public MainViewModel? Model => (MainViewModel?)DataContext;
         
@@ -319,10 +319,10 @@ namespace DirectPackageInstaller.Views
                 return;
             }
             
-             if (File.Exists(SettingsPath))
+             if (File.Exists(App.SettingsPath))
             {
                 App.Config = new Settings();
-                var IniReader = new Ini(SettingsPath, "Settings");
+                var IniReader = new Ini(App.SettingsPath, "Settings");
 
                 App.Config.PS4IP = IniReader.GetValue("PS4IP");
                 App.Config.PCIP = IniReader.GetValue("PCIP");
@@ -366,7 +366,7 @@ namespace DirectPackageInstaller.Views
                          {
                              Model.PS4IP = IP;
                              Model.PCIP = Locator.FindLocalIP(IP);
-                             Installer.StartServer(Model.PS4IP, Model.PCIP);
+                             RestartServer_OnClick(null, null);
                          }
                      });
                  };
@@ -376,7 +376,7 @@ namespace DirectPackageInstaller.Views
                  new Thread(() => Locator.Locate(string.IsNullOrEmpty(App.Config.PS4IP))).Start();
 
              if (!string.IsNullOrEmpty(App.Config.PS4IP))
-                 new Thread(() => Installer.StartServer(Model.PS4IP, Model.PCIP)).Start();
+                 new Thread(() => Installer.StartServer(App.Config.PCIP)).Start();
              
              Model.PropertyChanged += ModelOnPropertyChanged;
         }

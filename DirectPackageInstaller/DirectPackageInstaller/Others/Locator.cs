@@ -63,7 +63,7 @@ namespace DirectPackageInstaller
             ParallelLoopResult Result = default;
             try
             {
-                Result = Parallel.For(100, 256, ParallelOpt, (i) =>
+                Result = Parallel.For(Begin, End, ParallelOpt, (i) =>
                 {
                     if (Devices.Count > 0)
                         return;
@@ -141,8 +141,8 @@ namespace DirectPackageInstaller
             if (!IPAddress.TryParse(IP, out _))
                 return false;
 #if DEBUG
-            if (System.Diagnostics.Debugger.IsAttached)
-                return true;
+            //if (System.Diagnostics.Debugger.IsAttached)
+            //    return true;
 #endif
             
             var APIUrl = $"http://{IP}:12800/api";
