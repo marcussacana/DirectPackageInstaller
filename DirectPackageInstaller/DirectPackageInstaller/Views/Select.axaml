@@ -8,5 +8,5 @@
         x:Class="DirectPackageInstaller.Views.Select"
         Icon="/Assets/avalonia-logo.ico"
         Title="Select An PKG">
-    <views:SelectView />
+    <views:SelectView Name="View"/>
 </Window>

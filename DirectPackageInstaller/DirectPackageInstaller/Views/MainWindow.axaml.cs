@@ -1,4 +1,5 @@
 using System;
+using Avalonia;
 using Avalonia.Controls;
 using DirectPackageInstaller.ViewModels;
 
@@ -21,6 +22,9 @@ namespace DirectPackageInstaller.Views
 
         private async void MainWindowOpened(object? sender, EventArgs e)
         {
+#if DEBUG
+            this.AttachDevTools();
+#endif
             await View.OnShown(this);
         }
     }

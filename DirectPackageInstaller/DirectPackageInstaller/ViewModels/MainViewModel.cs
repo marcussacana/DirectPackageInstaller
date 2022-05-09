@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Text;
-using LibOrbisPkg.PKG;
 using ReactiveUI;
 
 namespace DirectPackageInstaller.ViewModels
@@ -30,63 +27,49 @@ namespace DirectPackageInstaller.ViewModels
         public string PCIP
         {
             get => _PCIP;
-            set
-            {
-                _PCIP = value;
-                this.RaisePropertyChanged();
-            }
+            set => this.RaiseAndSetIfChanged(ref _PCIP, value);
         }
 
         private string _CurrentURL = null;
         public string CurrentURL
         {
             get => _CurrentURL;
-            set
-            {
-                _CurrentURL = value;
-                this.RaisePropertyChanged();
-            }
+            set => this.RaiseAndSetIfChanged(ref _CurrentURL, value);
         }
         
         private string _AllDebirdApiKey = null;
         public string AllDebirdApiKey
         {
             get => _AllDebirdApiKey;
-            set
-            {
-                _AllDebirdApiKey = value;
-                this.RaisePropertyChanged();
-            }
+            set => this.RaiseAndSetIfChanged(ref _AllDebirdApiKey, value);
         }
 
         private bool _ProxyMode = false;
-        public bool ProxyMode { get => _ProxyMode;
-            set
-            {
-                _ProxyMode = value;
-            
-                this.RaisePropertyChanged();
-            }
+        public bool ProxyMode 
+        {
+            get => _ProxyMode;
+            set => this.RaiseAndSetIfChanged(ref _ProxyMode, value);
         }
 
         private bool _SegmentedMode = false;
-        public bool SegmentedMode { get => _SegmentedMode;
-            set
-            {
-                _SegmentedMode = value;
-                
-                this.RaisePropertyChanged();
-            }
+        public bool SegmentedMode 
+        {
+            get => _SegmentedMode;
+            set => this.RaiseAndSetIfChanged(ref _SegmentedMode, value);
         }
         
         private bool _UseAllDebird = false;
-        public bool UseAllDebird { get => _UseAllDebird;
-            set
-            {
-                _UseAllDebird = value;
-                
-                this.RaisePropertyChanged();
-            }
+        public bool UseAllDebird 
+        {
+            get => _UseAllDebird;
+            set => this.RaiseAndSetIfChanged(ref _UseAllDebird, value);
+        }
+
+        private List<PkgParamInfo> _PKGParams = new List<PkgParamInfo>();
+        public List<PkgParamInfo> PKGParams
+        {
+            get => _PKGParams;
+            set => this.RaiseAndSetIfChanged(ref _PKGParams, value);
         }
     }
 

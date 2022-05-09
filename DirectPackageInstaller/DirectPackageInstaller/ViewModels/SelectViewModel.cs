@@ -5,8 +5,12 @@ using ReactiveUI;
 
 namespace DirectPackageInstaller.ViewModels
 {
-    public class SelectViewModel : ReactiveObject
+    public class SelectViewModel : DialogModel
     {
-        public DialogResult Result;
+        private string[] _Options = null;
+        public string[] Options
+        {
+            get => _Options; set => this.RaiseAndSetIfChanged(ref _Options, value);
+        }
     }
 }

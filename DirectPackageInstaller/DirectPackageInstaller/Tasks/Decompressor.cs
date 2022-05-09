@@ -207,7 +207,7 @@ namespace DirectPackageInstaller.Tasks
             if (!Silent)
             {
                 var ChoiceBox = new Select(Files);
-                if (ChoiceBox.ShowDialog() != DialogResult.OK)
+                if (ChoiceBox.ShowDialogSync() != DialogResult.OK)
                     return (null, null, null, Files, 0);
                 EntryName = ChoiceBox.Choice;
             }

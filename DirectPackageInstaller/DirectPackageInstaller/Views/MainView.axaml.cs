@@ -1,31 +1,62 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Shapes;
 using Avalonia.Interactivity;
+using Avalonia.Media.Imaging;
+using Avalonia.OpenGL.Surfaces;
 using Avalonia.Threading;
+using Avalonia.Visuals.Media.Imaging;
+using DirectPackageInstaller.Compression;
 using DirectPackageInstaller.Host;
+using DirectPackageInstaller.IO;
 using DirectPackageInstaller.Tasks;
 using DirectPackageInstaller.ViewModels;
+using DynamicData;
 using LibOrbisPkg.PKG;
+using LibOrbisPkg.SFO;
+using Path = System.IO.Path;
 
 namespace DirectPackageInstaller.Views
 {
     public partial class MainView : UserControl
     {
+        
+        private Stream PKGStream;
+        
+        private PkgReader PKGParser;
+        private Pkg PKG;
+
+        private bool Fake;
+        private bool BadHostAlert;
+        
+        private Source InputType = Source.NONE;
+
+        private string LastForcedSource = null;
+
+        private MainWindow Parent = null;
+        
         private string SettingsPath => System.IO.Path.Combine(App.WorkingDirectory, "Settings.ini");
+        
         public MainViewModel? Model => (MainViewModel?)DataContext;
+        
         public MainView()
         {
             InitializeComponent();
 
             PackagesMenu = this.Find<MenuItem>("PackagesMenu");
+            IconBox = this.Find<Image>("IconBox");
 
+            tbURL = this.Find<TextBox>("tbURL");
+            
             btnProxyDownload = this.Find<MenuItem>("btnProxyDownload");
             btnRestartServer = this.Find<MenuItem>("btnRestartServer");
             btnAllDebirdEnabled = this.Find<MenuItem>("btnAllDebirdEnabled");
@@ -36,11 +67,251 @@ namespace DirectPackageInstaller.Views
             btnProxyDownload.Click += BtnProxyDownloadOnClick;
             btnAllDebirdEnabled.Click += BtnAllDebirdEnabledOnClick;
             btnSegmentedDownload.Click += BtnSegmentedDownloadOnClick;
+            
+            btnLoad.Click += BtnLoadOnClick;
         }
+
+        private async void BtnLoadOnClick(object? sender, RoutedEventArgs e)
+        {
+            PKGStream?.Close();
+            PKGStream?.Dispose();
+
+            string ForcedSource = sender is string ? (string)sender : null;
+
+            string SourcePackage = Model.CurrentURL;
+
+            if (ForcedSource != null && ForcedSource.Length > 2 && (ForcedSource[1] == ':' || ForcedSource[0] == '/'))
+                SourcePackage = LastForcedSource = ForcedSource;
+
+            if (string.IsNullOrWhiteSpace(SourcePackage) && !string.IsNullOrWhiteSpace(LastForcedSource))
+                SourcePackage = LastForcedSource;
+
+            if (InputType != Source.NONE) {
+                var Success = await Install(SourcePackage, false);
+
+                if (InputType.HasFlag(Source.File) && Success)
+                    Model.CurrentURL = string.Empty;
+
+                return;
+            }
+
+            if (string.IsNullOrEmpty(SourcePackage)) {
+                var FD = new OpenFileDialog();
+                
+                FD.Filters = new List<FileDialogFilter>()
+                {
+                    new FileDialogFilter()
+                    {
+                        Name = "ALL PKG Files",
+                        Extensions = new List<string>() { "pkg" }
+                    },
+                    new FileDialogFilter()
+                    {
+                        Name = "ALL Files",
+                        Extensions = new List<string>() { "*" }
+                    }
+                };
+                
+                var Result = await FD.ShowAsync(Parent);
+                if (Result != null && Result.Length > 0)
+                    Model.CurrentURL = Result.First();
+                
+                return;
+            }
+
+            PKGStream?.Close();
+
+            bool LimitedFHost = false;
+
+            PKG = null;
+            PKGParser = null;
+            PKGStream = null;
+
+            Installer.EntryName = null;
+
+            GC.Collect();
+
+            if (ForcedSource == null)
+            {
+                PackagesMenu.IsVisible = false;
+                Installer.CurrentFileList = null;
+            }
+
+            InputType = Source.NONE;
+
+            if (!Uri.IsWellFormedUriString(SourcePackage, UriKind.Absolute) && !File.Exists(SourcePackage)) {
+                await MessageBox.ShowAsync(Parent, "Invalid URL or File Path", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+                return;
+            }
+            try
+            {
+                PKGStream = null;
+
+                if (SourcePackage.EndsWith(".json", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    PKGStream = SplitHelper.OpenRemoteJSON(SourcePackage);
+                    InputType = Source.URL | Source.JSON;
+                }
+                else if (SourcePackage.Length > 2 && (SourcePackage[1] == ':' || SourcePackage[0] == '/'))
+                {
+                    PKGStream = File.Open(SourcePackage, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    InputType = Source.File;
+                }
+                else
+                {
+                    InputType = Source.URL;
+                    
+                    var FHStream = new FileHostStream(SourcePackage);
+                    LimitedFHost = FHStream.SingleConnection;
+
+                    PKGStream = FHStream;
+                }
+                
+                if (LimitedFHost && !BadHostAlert)
+                {
+                    await MessageBox.ShowAsync("This Filehosting is limited, Even though it is compatible with DirectPackageInstaller it is not recommended for use, prefer services like alldebrid to download from this server, otherwise you may have connection and/or speed problems.\nDon't expect to compressed files works as expected as well, the DirectPackageInstaller will need download the entire file before can do anything", "Bad File Hosting Service", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    BadHostAlert = true;
+                }
+
+                if (LimitedFHost)
+                {
+                    if (PKGStream is FileHostStream)
+                    {
+                        ((FileHostStream)PKGStream).TryBypassProxy = true;
+                        ((FileHostStream)PKGStream).KeepAlive = true;
+                    }
+
+                    var DownTask = Downloader.CreateTask(SourcePackage, PKGStream);
+                    
+                    while (DownTask.SafeLength == 0)
+                        await Task.Delay(100);
+
+                    InputType |= Source.DiskCache;
+                    PKGStream = new VirtualStream(DownTask.OpenRead(), 0, DownTask.SafeLength) { ForceAmount = true };
+                }
+
+                byte[] Magic = new byte[4];
+                PKGStream.Read(Magic, 0, Magic.Length);
+                PKGStream.Position = 0;
+
+                if (LimitedFHost && Common.DetectCompressionFormat(Magic) != CompressionFormat.None)
+                    await MessageBox.ShowAsync("You're trying open a compressed file from a limited file hosting,\nMaybe the compressed file must be fully downloaded to open it.", "Bad File Hosting Service", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+
+                switch (Common.DetectCompressionFormat(Magic))
+                {
+                    case CompressionFormat.RAR:
+                        InputType |= Source.RAR;
+                        SetStatus(LimitedFHost ? "Downloading... (It may take a while)" : "Decompressing...");
+                        var Unrar = Decompressor.UnrarPKG(PKGStream, SourcePackage, ForcedSource);
+                        PKGStream = Unrar.Buffer;
+                        Installer.EntryName = Unrar.Filename;
+                        Installer.EntrySize = Unrar.Length;
+                        ListEntries(Installer.CurrentFileList = Unrar.PKGList);
+                        break;
+
+                    case CompressionFormat.SevenZip:
+                        InputType |= Source.SevenZip;
+                        SetStatus(LimitedFHost ? "Downloading... (It may take a while)" : "Decompressing...");
+                        var Un7z = Decompressor.Un7zPKG(PKGStream, SourcePackage, ForcedSource);
+                        PKGStream = Un7z.Buffer;
+                        Installer.EntryName = Un7z.Filename;
+                        Installer.EntrySize = Un7z.Length;
+                        ListEntries(Installer.CurrentFileList = Un7z.PKGList);
+                        break;
+                }
+
+                SetStatus("Reading PKG...");
+
+                PKGParser = new PkgReader(PKGStream);
+                PKG = PKGParser.ReadPkg();
+
+                Installer.PKGEntries = PKG.Metas.Metas.Select(x => (x.DataOffset, x.DataOffset + x.DataSize, x.DataSize, x.id)).ToArray();
+
+                var SystemVer = PKG.ParamSfo.ParamSfo.HasName("SYSTEM_VER") ? PKG.ParamSfo.ParamSfo["SYSTEM_VER"].ToByteArray() : new byte[4];
+                var TitleName = Encoding.UTF8.GetString(PKG.ParamSfo.ParamSfo.HasName("TITLE") ? PKG.ParamSfo.ParamSfo["TITLE"].ToByteArray() : new byte[0]).Trim('\x0');
+
+                Fake = PKG.CheckPasscode("00000000000000000000000000000000");
+                SetStatus($"[{SystemVer[3]:X2}.{SystemVer[2]:X2} - {(Fake ? "Fake" : "Retail")}] {TitleName}");
+
+                Model.PKGParams.Clear();
+                IconBox.Source = null;
+
+                try
+                {
+
+                    List<PkgParamInfo> Params = new List<PkgParamInfo>();
+                    
+                    foreach (var Param in PKG.ParamSfo.ParamSfo.Values)
+                    {
+                        var Name = Param.Name;
+                        var RawValue = Param.ToByteArray();
+
+                        bool DecimalValue = new[] { "APP_TYPE", "PARENTAL_LEVEL", "DEV_FLAG" }.Contains(Name);
+
+                        var Value = Param.Type switch
+                        {
+                            SfoEntryType.Utf8Special => "",
+                            SfoEntryType.Utf8 => Encoding.UTF8.GetString(RawValue).Trim('\x0'),
+                            SfoEntryType.Integer => BitConverter.ToUInt32(RawValue, 0).ToString(DecimalValue ? "D1" : "X8"),
+                            _ => throw new NotImplementedException(),
+                        };
+
+                        if (Name == "CATEGORY")
+                            Value = ParseCategory(Value);
+
+                        if (string.IsNullOrWhiteSpace(Value))   
+                            continue;
+
+                        Params.Add(new PkgParamInfo() {Name = Name, Value = Value});
+                    }
+
+                    Model.PKGParams = new List<PkgParamInfo>(Params);
+                }
+                catch { }
+
+                if (PKG.Metas.Metas.Where(entry => entry.id == EntryId.ICON0_PNG).FirstOrDefault() is MetaEntry Icon)
+                {
+                    try
+                    {
+                        PKGStream.Position = Icon.DataOffset;
+                        byte[] Buffer = new byte[Icon.DataSize];
+                        PKGStream.Read(Buffer, 0, Buffer.Length);
+
+                        using (Stream ImgBuffer = new MemoryStream(Buffer))
+                        {
+                            var IconBitmap = Bitmap.DecodeToHeight(ImgBuffer, 512);
+                            IconBox.Source = IconBitmap;
+                            
+                        }
+                    }
+                    catch { }
+                }
+
+                btnLoad.Content = "Install";
+            }
+            catch {
+                
+                IconBox.Source = null;
+                Model.PKGParams?.Clear();
+
+                InputType = Source.NONE;
+                btnLoad.Content = "Load";
+
+                PackagesMenu.IsVisible = false;
+
+                SetStatus("Failed to Open the PKG");
+            }
+
+            PKGStream?.Close();
+        }
+
         public async Task OnShown(MainWindow Parent)
         {
             if (Model == null)
                 return;
+
+            this.Parent = Parent;
             
             if (App.Updater.HaveUpdate() && await MessageBox.ShowAsync(Parent, "Update found, Update now?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
@@ -140,19 +411,6 @@ namespace DirectPackageInstaller.Views
                     break;
             }
         }
-
-       
-
-        Stream PKGStream;
-        
-        PkgReader PKGParser;
-        Pkg PKG;
-
-        bool Fake;
-
-        Source InputType = Source.NONE;
-
-        string LastForcedSource = null;
         
         void UrlChanged(string Url)
         {
@@ -164,7 +422,7 @@ namespace DirectPackageInstaller.Views
 
             PackagesMenu.IsVisible = false;
 
-            if (Url.StartsWith("http") && !Uri.IsWellFormedUriString(Url, UriKind.Absolute)) {
+            if (Url.StartsWith("http", StringComparison.InvariantCultureIgnoreCase) && !Uri.IsWellFormedUriString(Url, UriKind.Absolute)) {
                 int PathOrQueryPos = Url.IndexOfAny(new char[] { '/', '?' }, Url.IndexOf("://") + 3);
                 var Host = Url.Substring(0, PathOrQueryPos);
 
@@ -177,11 +435,15 @@ namespace DirectPackageInstaller.Views
                 PathOnly = Uri.EscapeDataString(PathOnly);
 
                 Dictionary<string, string> PathReplaces = new Dictionary<string, string>()
-                { { "%2f", "/" }, { "%2F", "/" }, { "[", "%5b" }, { "]", "%5d" }, { "%2b", "+" }, { "%2B", "+" },
-                    { "%28", "(" }, { "%29", ")" } };
+                { 
+                    { "%2f", "/" }, { "%2F", "/" }, { "[", "%5b" }, { "]", "%5d" }, { "%2b", "+" }, { "%2B", "+" },
+                    { "%28", "(" }, { "%29", ")" } 
+                };
 
                 Dictionary<string, string> QueryReplaces = new Dictionary<string, string>()
-                    { { "%2f", "/" }, { "%2F", "/" }, { "[", "%5b" }, { "]", "%5d" }  };
+                {
+                    { "%2f", "/" }, { "%2F", "/" }, { "[", "%5b" }, { "]", "%5d" }
+                };
 
                 foreach (var Pair in PathReplaces)
                     PathOnly = PathOnly.Replace(Pair.Key, Pair.Value);
@@ -221,6 +483,117 @@ namespace DirectPackageInstaller.Views
                 return;
             
             Model.UseAllDebird = !Model.UseAllDebird;
+        }
+
+        private async Task<bool> Install(string URL, bool Silent)
+        {
+            btnLoad.Content = "Pushing...";
+            PackagesMenu.IsEnabled = false;
+            btnLoad.IsEnabled = false;
+            tbURL.IsEnabled = false;
+            try
+            {
+                if (!Locator.IsValidPS4IP(App.Config.PS4IP))
+                {
+                    await MessageBox.ShowAsync($"Remote Package Installer Not Found at {App.Config.PS4IP}, Ensure if he is open.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return false;
+                };
+                
+                return await Installer.PushPackage(App.Config, InputType, PKGStream, URL, SetStatus, () => Status.Text, Silent);
+            }
+            finally {
+                PackagesMenu.IsEnabled = true;
+                btnLoad.IsEnabled = true;
+                tbURL.IsEnabled = true;
+                btnLoad.Content = "Install";
+            }
+        }        
+
+        private string ParseCategory(string CatID) {
+            return CatID.ToLowerInvariant().Trim() switch {
+                "ac" => "Additional Content",
+                "bd" => "Blu-ray Disc",
+                "gc" => "Game Content",
+                "gd" => "Game Digital Application",
+                "gda" => "System Application",
+                "gdc" => "Non-Game Big Application",
+                "gdd" => "BG Application",
+                "gde" => "Non-Game Mini App / Video Service Native App",
+                "gdk" => "Video Service Web App",
+                "gdl" => "PS Cloud Beta App",
+                "gdo" => "PS2 Classic",
+                "gp" => "Game Application Patch",
+                "gpc" => "Non-Game Big App Patch",
+                "gpd" => "BG Application Patch",
+                "gpe" => "Non-Game Mini App Patch / Video Service Native App Patch",
+                "gpk" => "Video Service Web App Patch",
+                "gpl" => "PS Cloud Beta App Patch",
+                "sd" => "Save Data",
+                _ => "???"
+            } + $" ({CatID})";
+        }
+
+        private void ListEntries(string[] PKGList)
+        {
+            if (PKGList == null)
+                return;
+
+            if (PackagesMenu.IsVisible = PKGList.Length > 1)
+            {
+                List<TemplatedControl> ToRemove = new List<TemplatedControl>();
+                List<TemplatedControl> Items = PackagesMenu.Items.Cast<TemplatedControl>().ToList();
+                
+                foreach (var Item in Items)
+                {
+                    if (Item is Separator)
+                        break;
+                    
+                    ToRemove.Add(Item);
+                }
+
+                foreach (var Item in ToRemove)
+                {
+                    Items.Remove(Item);
+                }
+
+                foreach (var Entry in PKGList.OrderByDescending(x=>x))
+                {
+                    var Item = new MenuItem()
+                    {
+                        Header = Path.GetFileName(Entry)
+                        
+                    };
+                    Item.Click += (sender, e) =>
+                    {
+                        InputType = Source.NONE;
+                        BtnLoadOnClick(Entry, null);
+                    };
+
+                    Items.Insert(0, Item);
+                }
+
+                PackagesMenu.Items = Items;
+            }
+        }
+
+        private void SetStatus(string Status) {
+            if (!Dispatcher.UIThread.CheckAccess())
+            {
+                Dispatcher.UIThread.InvokeAsync(() => SetStatus(Status));
+                return;
+            }
+            
+            this.Status.Text = Status;
+            
+            DoEvents();
+        }
+
+        public void DoEvents()
+        {
+            var Delay = new CancellationTokenSource();
+            Delay.CancelAfter(100);
+            
+            Dispatcher.UIThread.MainLoop(Delay.Token);
         }
 
 
