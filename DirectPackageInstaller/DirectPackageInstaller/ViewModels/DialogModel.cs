@@ -12,8 +12,8 @@ namespace DirectPackageInstaller.ViewModels
         public string Message { get; set; }
         public string Title { get; set; }
         
-        public MessageBoxButtons Buttons;
-        public MessageBoxIcon Icon;
+        public MessageBoxButtons Buttons = MessageBoxButtons.OK;
+        public MessageBoxIcon Icon = MessageBoxIcon.None;
         
         public DialogResult Result;
     }

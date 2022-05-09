@@ -2,6 +2,7 @@
 using DirectPackageInstaller.IO;
 using LibOrbisPkg.PKG;
 using System;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -28,13 +29,13 @@ namespace DirectPackageInstaller.Tasks
 
         public static async Task<bool> PushPackage(Settings Config, Source InputType, Stream PKGStream, string URL, Action<string> SetStatus, Func<string> GetStatus, bool Silent)
         {
-            if (Config.LastPS4IP == null)
+            if (Config.PS4IP == null)
             {
                 await MessageBox.ShowAsync("PS4 IP not defined, please, type the PS4 IP in the Options Menu", "PS4 IP Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
 
-            StartServer(Config.LastPS4IP);
+            StartServer(Config.PS4IP, Config.PCIP);
 
             if (PKGStream is FileHostStream)
             {
@@ -196,7 +197,7 @@ namespace DirectPackageInstaller.Tasks
 
             try
             {
-                var Request = (HttpWebRequest)WebRequest.Create($"http://{Config.LastPS4IP}:12800/api/install");
+                var Request = (HttpWebRequest)WebRequest.Create($"http://{Config.PS4IP}:12800/api/install");
                 Request.Method = "POST";
                 //Request.ContentType = "application/json";
 
@@ -259,20 +260,22 @@ namespace DirectPackageInstaller.Tasks
             }
         }
 
-        public static void StartServer(string IP)
+        public static void StartServer(string IP, string LocalIP)
         {
+            if (string.IsNullOrEmpty(LocalIP))
+                LocalIP = "0.0.0.0";
+            
             try
             {
                 if (Server == null)
                 {
-                    var LocalIP = Locator.FindLocalIP(IP) ?? "127.0.0.1";
                     Server = new PS4Server(LocalIP, ServerPort);
                     Server.Start();
                 }
             }
             catch
             {
-                Server = new PS4Server("127.0.0.1", ServerPort);
+                Server = new PS4Server("0.0.0.0", ServerPort);
                 Server.Start();
             }
         }

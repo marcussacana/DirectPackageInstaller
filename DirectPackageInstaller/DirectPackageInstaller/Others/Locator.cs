@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Threading;
@@ -137,10 +138,13 @@ namespace DirectPackageInstaller
 
         public static bool IsValidPS4IP(string IP)
         {
+            if (!IPAddress.TryParse(IP, out _))
+                return false;
 #if DEBUG
             if (System.Diagnostics.Debugger.IsAttached)
                 return true;
 #endif
+            
             var APIUrl = $"http://{IP}:12800/api";
             try
             {

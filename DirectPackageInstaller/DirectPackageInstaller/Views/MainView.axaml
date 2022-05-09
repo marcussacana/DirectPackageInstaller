@@ -10,7 +10,7 @@
   <Design.DataContext>
     <viewModels:MainViewModel />
   </Design.DataContext>
-    <Grid ShowGridLines="True">
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="40"></RowDefinition>
             <RowDefinition Height="40"></RowDefinition>
@@ -25,12 +25,16 @@
         
         <Menu Grid.ColumnSpan="3">
             <MenuItem Header="_Options">
-                <MenuItem Header="_Proxy Downloads">
+                <MenuItem Header="_Proxy Downloads" Name="btnProxyDownload">
                     <MenuItem.Icon>
-                        <CheckBox BorderThickness="0"></CheckBox>
+                        <CheckBox BorderThickness="0" IsChecked="{Binding ProxyMode, Mode=TwoWay}"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="_Segmented Downloads" ></MenuItem>
+                <MenuItem Header="_Segmented Downloads" Name="btnSegmentedDownload" >
+                    <MenuItem.Icon>
+                        <CheckBox BorderThickness="0" IsChecked="{Binding SegmentedMode, Mode=TwoWay}"/>
+                    </MenuItem.Icon>
+                </MenuItem>
                 <MenuItem Header="_IP Address">
                     <Grid Margin="10">
                         <Grid.ColumnDefinitions>
@@ -38,7 +42,7 @@
                             <ColumnDefinition></ColumnDefinition>
                         </Grid.ColumnDefinitions>
                         <Label Grid.Column="0">PS4 IP:</Label>
-                        <TextBox Grid.Column="1"></TextBox>
+                        <TextBox Grid.Column="1" Text="{Binding PS4IP, Mode=TwoWay}"></TextBox>
                     </Grid>
                     <Grid Margin="10">
                         <Grid.ColumnDefinitions>
@@ -46,12 +50,29 @@
                             <ColumnDefinition></ColumnDefinition>
                         </Grid.ColumnDefinitions>
                         <Label Grid.Column="0">PC IP:</Label>
-                        <TextBox Grid.Column="1" ></TextBox>
+                        <TextBox Grid.Column="1" Text="{Binding PCIP, Mode=TwoWay}"></TextBox>
                     </Grid>
                 </MenuItem>
+                <MenuItem Header="_AllDebrid">
+                    <Grid Margin="10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition></ColumnDefinition>
+                            <ColumnDefinition></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+                        <Label Grid.Column="0">API Key:</Label>
+                        <TextBox Grid.Column="1" Text="{Binding AllDebirdApiKey, Mode=TwoWay}"></TextBox>
+                    </Grid>
+                    <MenuItem Header="_Enabled" Padding="10, 10,0,10" Name="btnAllDebirdEnabled">
+                        <MenuItem.Icon>
+                            <CheckBox BorderThickness="0" IsChecked="{Binding UseAllDebird, Mode=TwoWay}"/>
+                        </MenuItem.Icon>
+                    </MenuItem>
+                </MenuItem>
+                <MenuItem Header="_Restart Server" Name="btnRestartServer"/>
             </MenuItem>
-            <MenuItem Header="Packages" IsVisible="False">
-                
+            <MenuItem Header="Packages" IsVisible="False" Name="PackagesMenu">
+                <Separator></Separator>
+                <MenuItem Header="Install _All"></MenuItem>
             </MenuItem>
         </Menu>
         
@@ -62,22 +83,33 @@
                 <ColumnDefinition Width="auto"></ColumnDefinition>
             </Grid.ColumnDefinitions>
             <Label Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="5,0,0,0">URL:</Label>
-            <TextBox Grid.Row="0" Grid.Column="1" Margin="5"></TextBox>
-            <Button Grid.Row="0" Grid.Column="2" HorizontalAlignment="Right" Margin="5,0,5,0">Install</Button>
+            <TextBox Grid.Row="0" Grid.Column="1" Margin="5" Text="{Binding CurrentURL}"></TextBox>
+            <Button Grid.Row="0" Grid.Column="2" HorizontalAlignment="Right" Margin="5,0,5,0" Name="btnLoad">Load</Button>
         </Grid>
         
         <Image Grid.Row="2"></Image>
         <GridSplitter Grid.Column="1" Grid.Row="2"></GridSplitter>
-        <ListBox Grid.Row="2" Grid.Column="2"></ListBox>
         
+        <DataGrid Grid.Row="2" Grid.Column="2" Name="ParamList">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Param"/>
+                <DataGridTextColumn Header="Value"/>
+            </DataGrid.Columns>
+        </DataGrid>
         
-        <Label Grid.Row="3" Grid.ColumnSpan="3" Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" Name="Status">
-            STATUS TEXT
-        </Label>
+        <TextBlock Grid.Row="3" Grid.ColumnSpan="3" Grid.Column="0" Name="Status"/>
     </Grid>
     <UserControl.Styles>
         <Style Selector="CheckBox">
             <Setter Property="Width" Value="20"></Setter>
+        </Style>
+        <Style Selector="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"></Setter>
+            <Setter Property="Margin" Value="5,0,5,0"></Setter>
+        </Style>
+        <Style Selector="DataGrid">
+            <Setter Property="AutoGenerateColumns" Value="False"/>
+            <Setter Property="CanUserResizeColumns" Value="True"/>
         </Style>
         <Style Selector="Menu > MenuItem > MenuItem > MenuItem">
             <Setter Property="Padding" Value="5,-5,-15,-5"></Setter>

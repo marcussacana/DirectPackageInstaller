@@ -42,6 +42,8 @@
     <UserControl.Styles>
         <Style Selector="TextBlock">
             <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="MaxWidth" Value="800"/>
             <Setter Property="FontSize" Value="18"/>
             <Setter Property="Margin" Value="20,5,5,5"></Setter>
         </Style>

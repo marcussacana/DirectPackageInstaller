@@ -9,8 +9,10 @@ namespace DirectPackageInstaller
     public struct Settings
     {
         public string AllDebridApiKey;
-        public string LastPS4IP;
+        public string PS4IP;
+        public string PCIP;
 
+        public bool UseAllDebrid;
         public bool SearchPS4;
         public bool ProxyDownload;
         public bool SegmentedDownload;
