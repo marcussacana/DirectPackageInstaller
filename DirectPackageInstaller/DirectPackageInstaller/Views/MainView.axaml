@@ -83,7 +83,7 @@
                 <ColumnDefinition Width="auto"></ColumnDefinition>
             </Grid.ColumnDefinitions>
             <Label Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="5,0,0,0">URL:</Label>
-            <TextBox Grid.Row="0" Grid.Column="1" Margin="5" Text="{Binding CurrentURL}" Name="tbURL"></TextBox>
+            <TextBox Grid.Row="0" Grid.Column="1" Margin="5" Text="{Binding CurrentURL, Mode=TwoWay}" Name="tbURL"></TextBox>
             <Button Grid.Row="0" Grid.Column="2" HorizontalAlignment="Right" Margin="5,0,5,0" Name="btnLoad">Open</Button>
         </Grid>
         

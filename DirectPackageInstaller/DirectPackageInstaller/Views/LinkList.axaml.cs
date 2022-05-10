@@ -12,7 +12,7 @@ namespace DirectPackageInstaller.Views
     {
         LinkListViewModel? Model => (LinkListViewModel?)View.DataContext;
         
-        public string[]? Links => Model?.Links.Select(x => x.Content).ToArray();
+        public string[]? Links => Model?.Links.Distinct().Select(x => x.Content).ToArray();
         public string? Password => Model?.Password;
         
         public LinkList(bool Multipart, bool Encrypted, string FirstUrl) : this()

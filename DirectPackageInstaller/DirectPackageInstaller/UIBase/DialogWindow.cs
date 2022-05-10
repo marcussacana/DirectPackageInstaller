@@ -23,6 +23,8 @@ public abstract class DialogWindow : Window
             Dispatcher.UIThread.MainLoop(source.Token);
         }
         
+        App.DoEvents();
+        
         return ((DialogModel)DataContext).Result;
     }
     public async Task<DialogResult> ShowDialogAsync(Window? Parent = null)

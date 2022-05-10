@@ -34,9 +34,13 @@ namespace DirectPackageInstaller.ViewModels
         public string CurrentURL
         {
             get => _CurrentURL;
-            set => this.RaiseAndSetIfChanged(ref _CurrentURL, value);
+            set
+            {
+                _CurrentURL = value;
+                this.RaisePropertyChanged();
+            }
         }
-        
+
         private string _AllDebirdApiKey = null;
         public string AllDebirdApiKey
         {

@@ -8,6 +8,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Avalonia.Dialogs;
 
 namespace DirectPackageInstaller.Compression
 {
@@ -138,6 +139,9 @@ namespace DirectPackageInstaller.Compression
                 
                 var Input = Entry.OpenEntryStream();
                 var TmpFile = TempHelper.GetTempFile(EntryName + "extract");
+                
+                if (File.Exists(TmpFile))
+                    File.Delete(TmpFile);
                 
                 using Stream Output = File.Open(TmpFile, FileMode.CreateNew, FileAccess.Write, FileShare.ReadWrite);
 

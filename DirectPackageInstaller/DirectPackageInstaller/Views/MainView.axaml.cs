@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
@@ -9,18 +8,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
-using Avalonia.Controls.Shapes;
 using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
-using Avalonia.OpenGL.Surfaces;
 using Avalonia.Threading;
-using Avalonia.Visuals.Media.Imaging;
 using DirectPackageInstaller.Compression;
 using DirectPackageInstaller.Host;
 using DirectPackageInstaller.IO;
 using DirectPackageInstaller.Tasks;
 using DirectPackageInstaller.ViewModels;
-using DynamicData;
 using LibOrbisPkg.PKG;
 using LibOrbisPkg.SFO;
 using Path = System.IO.Path;
@@ -422,6 +417,23 @@ namespace DirectPackageInstaller.Views
 
             PackagesMenu.IsVisible = false;
 
+            if (Url.Contains("\n"))
+            {
+                var Links = Url.Replace("\r\n", "\n").Split('\n')
+                    .Where(x => x.StartsWith("http", StringComparison.InvariantCultureIgnoreCase)).ToArray();
+
+                Url = Links.First();
+                Decompressor.CompressInfo[Url.Trim()] = (Links.Select(x =>x.Trim()).ToArray(), null);
+                
+                new Task(async() =>
+                {
+                    var Link = Links.First();
+                    await Task.Delay(20);
+                    await Dispatcher.UIThread.InvokeAsync(() => Model.CurrentURL = Link);
+                }).Start();
+                return;
+            }
+
             if (Url.StartsWith("http", StringComparison.InvariantCultureIgnoreCase) && !Uri.IsWellFormedUriString(Url, UriKind.Absolute)) {
                 int PathOrQueryPos = Url.IndexOfAny(new char[] { '/', '?' }, Url.IndexOf("://") + 3);
                 var Host = Url.Substring(0, PathOrQueryPos);
@@ -585,18 +597,8 @@ namespace DirectPackageInstaller.Views
             
             this.Status.Text = Status;
             
-            DoEvents();
+            App.DoEvents();
         }
-
-        public void DoEvents()
-        {
-            var Delay = new CancellationTokenSource();
-            Delay.CancelAfter(100);
-            
-            Dispatcher.UIThread.MainLoop(Delay.Token);
-        }
-
-
         private void RestartServer_OnClick(object? sender, RoutedEventArgs e)
         {
             if (Model == null)

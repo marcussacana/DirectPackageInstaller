@@ -40,6 +40,8 @@ namespace DirectPackageInstaller.Views
             
             MB.ShowDialogSync(Parent);
             
+            App.DoEvents();
+            
             return MB.Model?.Result ?? DialogResult.Cancel;
         }
 

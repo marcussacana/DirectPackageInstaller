@@ -50,12 +50,28 @@ namespace DirectPackageInstaller.Tasks
             {
                 if (CompressInfo.ContainsKey(FirstUrl))
                 {
-                    var List = CompressInfo[FirstUrl];
+                    if (CompressInfo[FirstUrl].Password == null)
+                    {
+                        var List = new LinkList(false, Encrypted, FirstUrl);
+                        if (List.ShowDialogSync() != DialogResult.OK)
+                            throw new Exception();
 
-                    var Volume = Volumes.Single();
-                    Volume.Seek(0, SeekOrigin.Begin);
+                        CompressInfo[FirstUrl] = (CompressInfo[FirstUrl].Links, List.Password);
 
-                    return UnrarPKG(Volume, FirstUrl, EntryName, Seekable, List.Password);
+                        var Volume = Volumes.Single();
+                        Volume.Seek(0, SeekOrigin.Begin);
+
+                        return UnrarPKG(Volume, FirstUrl, EntryName, Seekable, List.Password);
+                    }
+                    else
+                    {
+                        var List = CompressInfo[FirstUrl];
+
+                        var Volume = Volumes.Single();
+                        Volume.Seek(0, SeekOrigin.Begin);
+
+                        return UnrarPKG(Volume, FirstUrl, EntryName, Seekable, List.Password);
+                    }
                 }
                 else
                 {
@@ -130,12 +146,28 @@ namespace DirectPackageInstaller.Tasks
             {
                 if (CompressInfo.ContainsKey(FirstUrl))
                 {
-                    var List = CompressInfo[FirstUrl];
+                    if (CompressInfo[FirstUrl].Password == null)
+                    {
+                        var List = new LinkList(false, Encrypted, FirstUrl);
+                        if (List.ShowDialogSync() != DialogResult.OK)
+                            throw new Exception();
 
-                    var Volume = Volumes.Single();
-                    Volume.Seek(0, SeekOrigin.Begin);
+                        CompressInfo[FirstUrl] = (CompressInfo[FirstUrl].Links, List.Password);
 
-                    return Un7zPKG(Volume, FirstUrl, EntryName, Seekable, List.Password);
+                        var Volume = Volumes.Single();
+                        Volume.Seek(0, SeekOrigin.Begin);
+
+                        return Un7zPKG(Volume, FirstUrl, EntryName, Seekable, List.Password);
+                    }
+                    else
+                    {
+                        var List = CompressInfo[FirstUrl];
+
+                        var Volume = Volumes.Single();
+                        Volume.Seek(0, SeekOrigin.Begin);
+
+                        return Un7zPKG(Volume, FirstUrl, EntryName, Seekable, List.Password);
+                    }
                 }
                 else
                 {

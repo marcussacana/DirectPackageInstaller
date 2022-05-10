@@ -63,6 +63,8 @@ public partial class MessageBoxView : UserControl
             Buttons.Add(Ignore);
         if (Model.Buttons.HasFlag(MessageBoxButtons.Abort))
             Buttons.Add(Abort);
+        
+       Buttons.Reverse(); 
 
         if (Buttons.Count >= 4)
             throw new Exception("Too Many Buttons");

@@ -91,14 +91,7 @@ namespace DirectPackageInstaller.Tasks
                 case Source.URL | Source.SevenZip:
                 case Source.URL | Source.RAR | Source.DiskCache:
                 case Source.URL | Source.RAR:
-                    if (!Config.ProxyDownload && !AllowIndirect)
-                    {
-                        var Reply = await MessageBox.ShowAsync("The given pkg is compressed therefore can't be direct downloaded in your PS4.\nDo you want to the DirectPackageInstaller act as a decompress server?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                        if (Reply != DialogResult.Yes)
-                            return false;
-
-                        AllowIndirect = true;
-                    }
+                    AllowIndirect = true;
 
                     var FreeSpace = GetCurrentDiskAvailableFreeSpace();
                     if (EntrySize > FreeSpace && !App.IsUnix)
