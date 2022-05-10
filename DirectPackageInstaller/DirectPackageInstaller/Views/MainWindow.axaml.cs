@@ -37,7 +37,10 @@ namespace DirectPackageInstaller.Views
             if (Installer.Server.Connections > 0)
             {
                 if (await MessageBox.ShowAsync("The PS4 is still downloading\nDo you really wanna exit?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+                {
+                    e.Cancel = true;
                     return;
+                }
             }
             try
             {
