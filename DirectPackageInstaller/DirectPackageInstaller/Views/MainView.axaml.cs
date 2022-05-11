@@ -52,12 +52,14 @@ namespace DirectPackageInstaller.Views
 
             tbURL = this.Find<TextBox>("tbURL");
             
+            btnInstallAll = this.Find<MenuItem>("btnInstallAll");
             btnProxyDownload = this.Find<MenuItem>("btnProxyDownload");
             btnRestartServer = this.Find<MenuItem>("btnRestartServer");
             btnAllDebirdEnabled = this.Find<MenuItem>("btnAllDebirdEnabled");
             btnSegmentedDownload = this.Find<MenuItem>("btnSegmentedDownload");
             btnLoad = this.Find<Button>("btnLoad");
 
+            btnInstallAll.Click += BtnInstallAllOnClick;
             btnRestartServer.Click += RestartServer_OnClick;
             btnProxyDownload.Click += BtnProxyDownloadOnClick;
             btnAllDebirdEnabled.Click += BtnAllDebirdEnabledOnClick;
@@ -68,6 +70,12 @@ namespace DirectPackageInstaller.Views
 
         private async void BtnLoadOnClick(object? sender, RoutedEventArgs e)
         {
+            if (e != null)
+            {
+                Callback(() => BtnLoadOnClick(sender, null));
+                return;
+            }
+            
             PKGStream?.Close();
             PKGStream?.Dispose();
 
@@ -545,6 +553,36 @@ namespace DirectPackageInstaller.Views
             } + $" ({CatID})";
         }
 
+        private async void BtnInstallAllOnClick(object? sender, RoutedEventArgs e)
+        {
+            if (e != null)
+            {
+                Callback(() => BtnInstallAllOnClick(sender, null));
+                return;
+            }
+
+            if (Installer.CurrentFileList == null)
+                return;
+
+            foreach (var File in Installer.CurrentFileList)
+            {
+                var Source = tbURL.Text;
+                
+                if (string.IsNullOrWhiteSpace(Source))
+                    Source = File;
+                else
+                    Installer.EntryName = File;
+
+                if (!await Install(Source, true)) {
+                    var Reply = await MessageBox.ShowAsync("Continue trying install the others packages?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    if (Reply != DialogResult.Yes)
+                        break;
+                }
+            }
+
+            await MessageBox.ShowAsync("Packages Sent!", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
         private void ListEntries(string[] PKGList)
         {
             if (PKGList == null)
@@ -575,10 +613,11 @@ namespace DirectPackageInstaller.Views
                         Header = Path.GetFileName(Entry)
                         
                     };
+                    
                     Item.Click += (sender, e) =>
                     {
                         InputType = Source.NONE;
-                        BtnLoadOnClick(Entry, null);
+                        Callback(() => BtnLoadOnClick(Entry, null));
                     };
 
                     Items.Insert(0, Item);
@@ -613,6 +652,16 @@ namespace DirectPackageInstaller.Views
             PS4Server pS4Server = new PS4Server(Model.PCIP);
             Installer.Server = pS4Server;
             Installer.Server.Start();
+        }
+
+        public void Callback(Action Callback)
+        {
+            Action CBCopy = Callback;
+            Dispatcher.UIThread.InvokeAsync(async () =>
+            {
+                await Task.Delay(50);
+                CBCopy.Invoke();
+            });
         }
     }
 }

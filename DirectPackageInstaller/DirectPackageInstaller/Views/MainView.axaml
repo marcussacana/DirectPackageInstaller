@@ -72,7 +72,7 @@
             </MenuItem>
             <MenuItem Header="Packages" IsVisible="False" Name="PackagesMenu">
                 <Separator></Separator>
-                <MenuItem Header="Install _All"></MenuItem>
+                <MenuItem Header="Install _All" Name="btnInstallAll"></MenuItem>
             </MenuItem>
         </Menu>
         
