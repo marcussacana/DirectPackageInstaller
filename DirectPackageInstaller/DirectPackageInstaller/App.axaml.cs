@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -46,6 +47,16 @@ namespace DirectPackageInstaller
             Dispatcher.UIThread.MainLoop(Delay.Token);
         }
 
+
+        public static void Callback(Action Callback)
+        {
+            Action CBCopy = Callback;
+            Dispatcher.UIThread.InvokeAsync(async () =>
+            {
+                await Task.Delay(50);
+                CBCopy.Invoke();
+            });
+        }
         
         internal static Settings Config;
 

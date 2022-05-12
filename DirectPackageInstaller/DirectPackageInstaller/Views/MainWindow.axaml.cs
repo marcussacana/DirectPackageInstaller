@@ -31,17 +31,25 @@ namespace DirectPackageInstaller.Views
 #endif
             await View.OnShown(this);
         }
+
+        private bool ForceClose = false;
         
         private async void MainWindowClosing(object? sender, CancelEventArgs e)
         {
-            if (Installer.Server.Connections > 0)
+            if (Installer.Server.Connections > 0 && !ForceClose)
             {
-                if (await MessageBox.ShowAsync("The PS4 is still downloading\nDo you really wanna exit?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+                App.Callback(async () =>
                 {
-                    e.Cancel = true;
-                    return;
-                }
+                    if (await MessageBox.ShowAsync("The PS4 is still downloading\nDo you really wanna exit?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+                        return;
+                 
+                    ForceClose = true; 
+                    Close();
+                });
+                e.Cancel = true;
+                return;
             }
+            
             try
             {
                 var IniWriter = new Ini(App.SettingsPath, "Settings");

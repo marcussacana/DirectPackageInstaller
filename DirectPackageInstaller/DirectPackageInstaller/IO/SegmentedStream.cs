@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Avalonia.Dialogs;
 
 namespace DirectPackageInstaller.IO
 {
@@ -69,7 +70,7 @@ namespace DirectPackageInstaller.IO
         long TotalConcurrency => Segments.Where(x => x.Position < x.Length).Count();
 
         int BiggestSegment => Segments.Select((x, i) => (Reaming: ReamingSegmentLength(i), ID: i))
-                                              .OrderByDescending(x => x.Reaming).First().ID;
+            .OrderByDescending(x => x.Reaming).First().ID;
 
         public SegmentedStream(Func<Stream> Open, Func<Stream> OpenBuffer, int BufferSize = 1024 * 1024, bool CloseBuffer = false, int Concurrency = 4)
         {
@@ -77,6 +78,10 @@ namespace DirectPackageInstaller.IO
             if (OpenBuffer == null)
             {
                 var TempFile = TempHelper.GetTempFile(null);
+                
+                if (File.Exists(TempFile))
+                    File.Delete(TempFile);
+                
                 Buffer           = new FileStream(TempFile, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite, BufferSize, FileOptions.RandomAccess | FileOptions.WriteThrough);
                 OpenBuffer = () => new FileStream(TempFile, FileMode.Open,      FileAccess.ReadWrite, FileShare.ReadWrite, BufferSize, FileOptions.RandomAccess | FileOptions.WriteThrough);
 

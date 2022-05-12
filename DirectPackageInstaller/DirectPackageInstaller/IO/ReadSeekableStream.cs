@@ -21,6 +21,9 @@ namespace DirectPackageInstaller
                 throw new Exception("Provided stream " + Input + " is not readable");
 
             InputStream = Input;
+            
+            if (File.Exists(this.TempFile))
+                File.Delete(this.TempFile);
 
             Buffer = new FileStream(this.TempFile, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite, 4096, FileOptions.RandomAccess);
         }

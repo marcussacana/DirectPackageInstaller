@@ -72,7 +72,7 @@ namespace DirectPackageInstaller.Views
         {
             if (e != null)
             {
-                Callback(() => BtnLoadOnClick(sender, null));
+                App.Callback(() => BtnLoadOnClick(sender, null));
                 return;
             }
             
@@ -517,9 +517,13 @@ namespace DirectPackageInstaller.Views
                 {
                     await MessageBox.ShowAsync($"Remote Package Installer Not Found at {App.Config.PS4IP}, Ensure if he is open.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return false;
-                };
-                
+                }
+
                 return await Installer.PushPackage(App.Config, InputType, PKGStream, URL, SetStatus, () => Status.Text, Silent);
+            }
+            catch
+            {
+                return false;
             }
             finally {
                 PackagesMenu.IsEnabled = true;
@@ -557,7 +561,7 @@ namespace DirectPackageInstaller.Views
         {
             if (e != null)
             {
-                Callback(() => BtnInstallAllOnClick(sender, null));
+                App.Callback(() => BtnInstallAllOnClick(sender, null));
                 return;
             }
 
@@ -617,7 +621,7 @@ namespace DirectPackageInstaller.Views
                     Item.Click += (sender, e) =>
                     {
                         InputType = Source.NONE;
-                        Callback(() => BtnLoadOnClick(Entry, null));
+                        App.Callback(() => BtnLoadOnClick(Entry, null));
                     };
 
                     Items.Insert(0, Item);
@@ -652,16 +656,6 @@ namespace DirectPackageInstaller.Views
             PS4Server pS4Server = new PS4Server(Model.PCIP);
             Installer.Server = pS4Server;
             Installer.Server.Start();
-        }
-
-        public void Callback(Action Callback)
-        {
-            Action CBCopy = Callback;
-            Dispatcher.UIThread.InvokeAsync(async () =>
-            {
-                await Task.Delay(50);
-                CBCopy.Invoke();
-            });
         }
     }
 }
