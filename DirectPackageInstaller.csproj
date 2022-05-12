@@ -163,6 +163,7 @@
     <Compile Include="Select.Designer.cs">
       <DependentUpon>Select.cs</DependentUpon>
     </Compile>
+    <Compile Include="SelfUpdate.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="IO\TempHelper.cs" />
     <Compile Include="IO\VirtualStream.cs" />

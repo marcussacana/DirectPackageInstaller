@@ -13,7 +13,7 @@ class GitHub {
 
     string cache = null;
     string Name = null;
-    public static string MainExecutable = Program.IsUnix ? Directory.GetFiles(Program.WorkingDirectory, "DirectPackageInstallerLinux*").FirstOrDefault() : new Uri(System.Reflection.Assembly.GetExecutingAssembly().CodeBase).LocalPath;
+    public static string MainExecutable = Program.IsUnix ? Directory.GetFiles(Program.WorkingDirectory, "DirectPackageInstallerLinux*").FirstOrDefault() : new Uri(System.Reflection.Assembly.GetEntryAssembly().CodeBase).LocalPath;
     public static string TempUpdateDir = Path.GetDirectoryName(MainExecutable) + "\\GitHubRelease\\";
     public static string CurrentVersion {
         get {
@@ -31,7 +31,7 @@ class GitHub {
         API = string.Format(API, Username, Project);
         this.Name = Name;
         
-        if (System.Diagnostics.Debugger.IsAttached)
+        if (Debugger.IsAttached)
             return;
         
         if (!File.Exists(MainExecutable))
@@ -60,7 +60,12 @@ class GitHub {
                 System.IO.File.Copy(UpPath, OlPath, true);
             }
 
-            return OriginalPath + Path.GetFileName(MainExecutable);
+            var PossiblePath = OriginalPath + Path.GetFileName(MainExecutable);
+            
+            if (File.Exists(OriginalPath + Path.GetFileNameWithoutExtension(MainExecutable) + ".Desktop" + Path.GetExtension(MainExecutable)))
+                PossiblePath = OriginalPath + Path.GetFileNameWithoutExtension(MainExecutable) + ".Desktop" + Path.GetExtension(MainExecutable);
+
+            return PossiblePath;
         } else {
             new Thread(() => {
                 int i = 0;
@@ -100,6 +105,7 @@ class GitHub {
             break;
         }
     }
+
     public bool HaveUpdate() {
         try {
             if (Debugger.IsAttached)
@@ -134,6 +140,7 @@ class GitHub {
         
         return false;
     }
+
     public void Update() {
         if (!HaveUpdate())
             return;
@@ -153,7 +160,12 @@ class GitHub {
 
         Directory.CreateDirectory(TempUpdateDir);
         Zip.ExtractAll(TempUpdateDir, ExtractExistingFileAction.OverwriteSilently);
-        Process.Start(TempUpdateDir + Path.GetFileName(MainExecutable));
+        
+        if (File.Exists(TempUpdateDir + Path.GetFileNameWithoutExtension(MainExecutable) + ".Desktop" + Path.GetExtension(MainExecutable)))
+            Process.Start(TempUpdateDir + Path.GetFileNameWithoutExtension(MainExecutable) + ".Desktop" + Path.GetExtension(MainExecutable));
+        else
+            Process.Start(TempUpdateDir + Path.GetFileName(MainExecutable));
+        
         Environment.Exit(0);
     }
 
@@ -178,18 +190,6 @@ class GitHub {
     private void Download(string URL, Stream Output, int tries = 4) {
         try {
             HttpWebRequest Request = (HttpWebRequest)WebRequest.Create(URL);
-            //Bypass a fucking bug in the fucking .net framework
-            if (Request.Address.AbsoluteUri != URL && tries <= 2) {
-                /*
-                WebClient WC = new WebClient();
-                WC.QueryString.Add("action", "shorturl");
-                WC.QueryString.Add("format", "simple");
-                WC.QueryString.Add("url", URL);
-                URL = WC.DownloadString("https://u.nu/api.php");*/
-
-                Request = (HttpWebRequest)WebRequest.Create("http://proxy-it.nordvpn.com/browse.php?u=" + URL);
-                Request.Referer = "http://proxy-it.nordvpn.com";
-            }
 
             Request.UseDefaultCredentials = true;
             Request.Method = "GET";
@@ -249,7 +249,7 @@ class GitHub {
         return cache;
     }
 
-    public void BypassSLL() {
+    public static void BypassSLL() {
         ServicePointManager.SecurityProtocol = (SecurityProtocolType)0x00000FF0;
         ServicePointManager.ServerCertificateValidationCallback = (sender, cert, chain, sslPolicyErrors) => true;
     }

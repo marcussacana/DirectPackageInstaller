@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace DirectPackageInstaller
@@ -17,6 +18,11 @@ namespace DirectPackageInstaller
                 IniLines = System.IO.File.ReadAllLines(File);
             else
                 IniLines = new string[0];
+        }
+
+        public Ini(string[] Lines)
+        {
+            IniLines = Lines;
         }
 
         ~Ini() => Save();
@@ -63,7 +69,7 @@ namespace DirectPackageInstaller
 
         public Dictionary<string, string> GetValues(string Group)
         {
-            var Result = new Dictionary<string, string>();
+            var Result = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
             string CurrentGroup = null;
             foreach (string Line in IniLines)
             {

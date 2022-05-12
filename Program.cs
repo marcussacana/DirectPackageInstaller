@@ -23,6 +23,8 @@ namespace DirectPackageInstaller
 
         public static GitHub Updater = new GitHub("marcussacana", "DirectPackageInstaller", IsUnix ? "DirectPackageInstallerLinux" : "DirectPackageInstaller");
 
+        public static SelfUpdate NewUpdater = null;
+
         /// <summary>
         /// Ponto de entrada principal para o aplicativo.
         /// </summary>
@@ -30,7 +32,7 @@ namespace DirectPackageInstaller
         static void Main()
         {
             if (!IsUnix)
-                Updater.BypassSLL();
+                GitHub.BypassSLL();
 
             if (Updater.FinishUpdatePending())
             {
@@ -38,6 +40,18 @@ namespace DirectPackageInstaller
                 Environment.Exit(0);
                 return;
             }
+
+            try
+            {
+                NewUpdater = new SelfUpdate();
+                if (NewUpdater.FinishUpdatePending())
+                {
+                    Process.Start(Updater.FinishUpdate());
+                    Environment.Exit(0);
+                    return;
+                }
+            }
+            catch { }
 
             UnlockHeaders(); 
             

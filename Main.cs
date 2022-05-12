@@ -20,6 +20,7 @@ using Size = System.Drawing.Size;
 using Point = System.Drawing.Point;
 using System.Collections.Generic;
 using DirectPackageInstaller.Tasks;
+using System.Diagnostics;
 
 namespace DirectPackageInstaller
 {
@@ -38,6 +39,32 @@ namespace DirectPackageInstaller
                 Program.Updater.Update();
                 return;
             }
+
+        
+            var Updater = new SelfUpdate();
+            if (Updater.HasUpdates())
+            {
+                bool MissingDotNet = false;
+                if (!Directory.Exists(@"C:\Program Files\dotnet\shared\Microsoft.NETCore.App"))
+                    MissingDotNet = true;
+
+                if (!MissingDotNet)
+                {
+                    var Runtimes = Directory.GetDirectories(@"C:\Program Files\dotnet\shared\Microsoft.NETCore.App", "6.*", SearchOption.TopDirectoryOnly);
+                    MissingDotNet = Runtimes.Length == 0;
+                }
+
+                if (MissingDotNet)
+                {
+                    MessageBox.Show("A New update has been released, but you can't update because a required program is missing.\nNow, the DirectPackageInstaller will use .NET 6.0, and you can update only after install the Runtime, Press OK to Visit the Download Page.", "DirectPackageInstaller - MISSING RUNTIME", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                    Process.Start("https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime");
+                }
+                else
+                {
+                    Updater.DownloadUpdate();
+                }
+            }
+            
 
             if (Program.IsUnix)
             {
