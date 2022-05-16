@@ -13,11 +13,7 @@ namespace DirectPackageInstaller.Desktop
         {
             TempHelper.Clear();
             BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
-            
-            try
-            {
-                TempHelper.Clear();
-            } catch { }
+            TempHelper.Clear();
         }
 
         // Avalonia configuration, don't remove; also used by visual designer.

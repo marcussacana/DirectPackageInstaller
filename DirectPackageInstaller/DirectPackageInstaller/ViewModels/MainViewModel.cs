@@ -15,8 +15,8 @@ namespace DirectPackageInstaller.ViewModels
             {
                 _PS4IP = value;
                 
-                if (Locator.IsValidPS4IP(value))
-                    PCIP = Locator.FindLocalIP(value);
+                if (IPHelper.IsRPIOnline(value))
+                    PCIP = IPHelper.FindLocalIP(value);
                 
                 this.RaisePropertyChanged();
             }

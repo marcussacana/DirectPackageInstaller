@@ -226,70 +226,17 @@ namespace DirectPackageInstaller.Views
 
                 SetStatus("Reading PKG...");
 
-                PKGParser = new PkgReader(PKGStream);
-                PKG = PKGParser.ReadPkg();
+                var Info = PKGStream.GetPKGInfo() ?? throw new Exception();
+                
+                Installer.PKGEntries = Info.Entries;
 
-                Installer.PKGEntries = PKG.Metas.Metas.Select(x => (x.DataOffset, x.DataOffset + x.DataSize, x.DataSize, x.id)).ToArray();
-
-                var SystemVer = PKG.ParamSfo.ParamSfo.HasName("SYSTEM_VER") ? PKG.ParamSfo.ParamSfo["SYSTEM_VER"].ToByteArray() : new byte[4];
-                var TitleName = Encoding.UTF8.GetString(PKG.ParamSfo.ParamSfo.HasName("TITLE") ? PKG.ParamSfo.ParamSfo["TITLE"].ToByteArray() : new byte[0]).Trim('\x0');
-
-                Fake = PKG.CheckPasscode("00000000000000000000000000000000");
-                SetStatus($"[{SystemVer[3]:X2}.{SystemVer[2]:X2} - {(Fake ? "Fake" : "Retail")}] {TitleName}");
+                Fake = Info.FakePackage;
+                SetStatus(Info.Description);
 
                 Model.PKGParams.Clear();
-                IconBox.Source = null;
-
-                try
-                {
-
-                    List<PkgParamInfo> Params = new List<PkgParamInfo>();
-                    
-                    foreach (var Param in PKG.ParamSfo.ParamSfo.Values)
-                    {
-                        var Name = Param.Name;
-                        var RawValue = Param.ToByteArray();
-
-                        bool DecimalValue = new[] { "APP_TYPE", "PARENTAL_LEVEL", "DEV_FLAG" }.Contains(Name);
-
-                        var Value = Param.Type switch
-                        {
-                            SfoEntryType.Utf8Special => "",
-                            SfoEntryType.Utf8 => Encoding.UTF8.GetString(RawValue).Trim('\x0'),
-                            SfoEntryType.Integer => BitConverter.ToUInt32(RawValue, 0).ToString(DecimalValue ? "D1" : "X8"),
-                            _ => throw new NotImplementedException(),
-                        };
-
-                        if (Name == "CATEGORY")
-                            Value = ParseCategory(Value);
-
-                        if (string.IsNullOrWhiteSpace(Value))   
-                            continue;
-
-                        Params.Add(new PkgParamInfo() {Name = Name, Value = Value});
-                    }
-
-                    Model.PKGParams = new List<PkgParamInfo>(Params);
-                }
-                catch { }
-
-                if (PKG.Metas.Metas.Where(entry => entry.id == EntryId.ICON0_PNG).FirstOrDefault() is MetaEntry Icon)
-                {
-                    try
-                    {
-                        PKGStream.Position = Icon.DataOffset;
-                        byte[] Buffer = new byte[Icon.DataSize];
-                        PKGStream.Read(Buffer, 0, Buffer.Length);
-
-                        using (Stream ImgBuffer = new MemoryStream(Buffer))
-                        {
-                            var IconBitmap = Bitmap.DecodeToHeight(ImgBuffer, 512);
-                            IconBox.Source = IconBitmap;
-                            
-                        }
-                    }
-                    catch { }
-                }
+                Model.PKGParams = Info.Params;
+                
+                IconBox.Source = Info.Icon;
 
                 btnLoad.Content = "Install";
             }
@@ -308,19 +255,12 @@ namespace DirectPackageInstaller.Views
 
             PKGStream?.Close();
         }
-
         public async Task OnShown(MainWindow Parent)
         {
             if (Model == null)
                 return;
 
             this.Parent = Parent;
-            
-            if (App.Updater.HaveUpdate() && await MessageBox.ShowAsync(Parent, "Update found, Update now?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-            {
-                App.Updater.Update();
-                return;
-            }
             
              if (File.Exists(App.SettingsPath))
             {
@@ -358,26 +298,22 @@ namespace DirectPackageInstaller.Views
              Model.PCIP = App.Config.PCIP;
              Model.AllDebirdApiKey = App.Config.AllDebridApiKey;
              
-             
-             if (App.Config.SearchPS4 || string.IsNullOrEmpty(App.Config.PS4IP))
-             {
-                 Locator.OnPS4DeviceFound = (IP) =>
-                 {
-                     Dispatcher.UIThread.InvokeAsync(() =>
-                     {
-                         if (string.IsNullOrEmpty(Model.PS4IP))
-                         {
-                             Model.PS4IP = IP;
-                             Model.PCIP = Locator.FindLocalIP(IP);
-                             RestartServer_OnClick(null, null);
-                         }
-                     });
-                 };
-             }
-
-             if (string.IsNullOrEmpty(App.Config.PS4IP) || !Locator.IsValidPS4IP(Model.PS4IP))
-                 new Thread(() => Locator.Locate(string.IsNullOrEmpty(App.Config.PS4IP))).Start();
-
+            if (App.Config.SearchPS4 || string.IsNullOrEmpty(App.Config.PS4IP))
+            {
+                _ = PS4Finder.StartFinder((IP) =>
+                {
+                    Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        if (string.IsNullOrEmpty(Model.PS4IP))
+                        {
+                            Model.PS4IP = IP.ToString();
+                            Model.PCIP = IPHelper.FindLocalIP(IP.ToString());
+                            RestartServer_OnClick(null, null);
+                        }
+                    });
+                });
+            }
+            
              if (!string.IsNullOrEmpty(App.Config.PS4IP))
                  new Thread(() => Installer.StartServer(App.Config.PCIP)).Start();
              
@@ -513,7 +449,7 @@ namespace DirectPackageInstaller.Views
             tbURL.IsEnabled = false;
             try
             {
-                if (!Locator.IsValidPS4IP(App.Config.PS4IP))
+                if (!IPHelper.IsRPIOnline(App.Config.PS4IP))
                 {
                     await MessageBox.ShowAsync($"Remote Package Installer Not Found at {App.Config.PS4IP}, Ensure if he is open.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return false;
@@ -531,30 +467,6 @@ namespace DirectPackageInstaller.Views
                 tbURL.IsEnabled = true;
                 btnLoad.Content = "Install";
             }
-        }        
-
-        private string ParseCategory(string CatID) {
-            return CatID.ToLowerInvariant().Trim() switch {
-                "ac" => "Additional Content",
-                "bd" => "Blu-ray Disc",
-                "gc" => "Game Content",
-                "gd" => "Game Digital Application",
-                "gda" => "System Application",
-                "gdc" => "Non-Game Big Application",
-                "gdd" => "BG Application",
-                "gde" => "Non-Game Mini App / Video Service Native App",
-                "gdk" => "Video Service Web App",
-                "gdl" => "PS Cloud Beta App",
-                "gdo" => "PS2 Classic",
-                "gp" => "Game Application Patch",
-                "gpc" => "Non-Game Big App Patch",
-                "gpd" => "BG Application Patch",
-                "gpe" => "Non-Game Mini App Patch / Video Service Native App Patch",
-                "gpk" => "Video Service Web App Patch",
-                "gpl" => "PS Cloud Beta App Patch",
-                "sd" => "Save Data",
-                _ => "???"
-            } + $" ({CatID})";
         }
 
         private async void BtnInstallAllOnClick(object? sender, RoutedEventArgs e)

@@ -65,7 +65,5 @@ namespace DirectPackageInstaller
         internal static bool IsUnix => (int)Environment.OSVersion.Platform == 4 || (int)Environment.OSVersion.Platform == 6 || (int)Environment.OSVersion.Platform == 128;
         internal static string WorkingDirectory => Environment.GetEnvironmentVariable("CD") ?? Directory.GetCurrentDirectory();
         internal static string SettingsPath => System.IO.Path.Combine(App.WorkingDirectory, "Settings.ini");
-
-        internal static GitHub Updater = new GitHub("marcussacana", "DirectPackageInstaller", IsUnix ? "DirectPackageInstallerLinux" : "DirectPackageInstaller");
     }
 }
