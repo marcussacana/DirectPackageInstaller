@@ -30,7 +30,6 @@ namespace DirectPackageInstaller.Views
         private PkgReader PKGParser;
         private Pkg PKG;
 
-        private bool Fake;
         private bool BadHostAlert;
         
         private Source InputType = Source.NONE;
@@ -38,9 +37,7 @@ namespace DirectPackageInstaller.Views
         private string LastForcedSource = null;
 
         private MainWindow Parent = null;
-        
-        
-        
+
         public MainViewModel? Model => (MainViewModel?)DataContext;
         
         public MainView()
@@ -230,7 +227,6 @@ namespace DirectPackageInstaller.Views
                 
                 Installer.PKGEntries = Info.Entries;
 
-                Fake = Info.FakePackage;
                 SetStatus(Info.Description);
 
                 Model.PKGParams.Clear();
