@@ -20,6 +20,10 @@ public static class PKGHelper
             var PKGParser = new PkgReader(Input);
             var PKG = PKGParser.ReadPkg();
 
+            Result.Digest = string.Join("", PKG.HeaderDigest.Select((x) => x.ToString("X2")));
+
+            Result.PackageSize = Input.Length;
+            
             Result.Entries = PKG.Metas.Metas.Select(x => (x.DataOffset, x.DataOffset + x.DataSize, x.DataSize, x.id)).ToArray();
 
             var SystemVer = PKG.ParamSfo.ParamSfo.HasName("SYSTEM_VER") ? PKG.ParamSfo.ParamSfo["SYSTEM_VER"].ToByteArray() : new byte[4];
@@ -100,8 +104,13 @@ public static class PKGHelper
         public bool FakePackage;
         public string Description;
 
+        public string Digest;
+
         public string ContentType;
-        
+
+        public long PackageSize;
+
+        public string BGFTContentType => $"PS4{ContentType.ToUpperInvariant()}";
         public string FirendlyContentType
         {
             get => ContentType.ToLowerInvariant().Trim() switch {
@@ -126,7 +135,6 @@ public static class PKGHelper
                 _ => "???"
             } + $" ({ContentType})";
         }
-
         public Bitmap? Icon
         {
             get

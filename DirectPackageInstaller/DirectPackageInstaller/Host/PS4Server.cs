@@ -18,6 +18,8 @@ namespace DirectPackageInstaller.Host
     {
         const long MaxSkipBufferSize = 1024 * 1024 * 100;
 
+        public Dictionary<string, string> JSONs = new Dictionary<string, string>();
+
         Dictionary<string, int> Instances = new Dictionary<string, int>();
 
 #if DEBUG
@@ -75,17 +77,26 @@ namespace DirectPackageInstaller.Host
 
             bool FromPS4 = false;
             var Path = Context.Request.Url.Full;
-            var QueryStr = Path.Substring(Path.IndexOf('?') + 1);
-            if (QueryStr.Contains("?"))
+            
+            string QueryStr = "";
+            if (Path.Contains("?"))
             {
-                QueryStr = QueryStr.Substring(0, QueryStr.IndexOf('?'));
-                FromPS4 = true;
+                QueryStr = Path.Substring(Path.IndexOf('?') + 1);
+                if (QueryStr.Contains("?"))
+                {
+                    QueryStr = QueryStr.Substring(0, QueryStr.IndexOf('?'));
+                    FromPS4 = true;
+                }
             }
 
             LOG("Request Client Identified as {0}", FromPS4 ? "Shell App Downloader" : "RemotePackageInstaller");
 
             var Query = HttpUtility.ParseQueryString(QueryStr);
-            Path = Path.Substring(0, Path.IndexOf('?')).Trim('/');
+
+            if (Path.Contains("?"))
+                Path = Path.Substring(0, Path.IndexOf('?'));
+
+            Path = Path.Trim('/');
 
             foreach (var Param in Query.AllKeys)
                 LOG("Query Param: {0}={1}", Param, Query[Param]);
@@ -105,6 +116,8 @@ namespace DirectPackageInstaller.Host
                     await Decompress.Unrar(Context, Query, FromPS4);
                 else if (Path.StartsWith("un7z"))
                     await Decompress.Un7z(Context, Query, FromPS4);
+                else if (Path.StartsWith("json"))
+                    await Json(Context, Query, Path);
                 else if (Url == null)
                     throw new Exception("Missing Download Url");
 
@@ -268,7 +281,26 @@ namespace DirectPackageInstaller.Host
             }
         }
 
-        async Task SendStream(HttpContext Context, Stream Origin, HttpRange? Range)
+        async Task Json(HttpContext Context, NameValueCollection Query, string Path)
+        {
+            HttpRange? Range = null;
+            bool Partial = Context.Request.HeaderExists("Range", true);
+            if (Partial)
+                Range = new HttpRange(Context.Request.Headers["Range"]);
+
+            Context.Response.StatusCode = Partial ? 206 : 200;
+            Context.Response.StatusDescription = Partial ? "Partial Content" : "OK";
+
+            var id = Path.Split('/').Last().Split('.').First();
+
+            var Data = Encoding.UTF8.GetBytes(JSONs[id]);
+            MemoryStream Stream = new MemoryStream();
+            Stream.Write(Data, 0, Data.Length);
+            Stream.Position = 0;
+
+            await SendStream(Context, Stream, Range, "application/json");
+        }
+        async Task SendStream(HttpContext Context, Stream Origin, HttpRange? Range, string ContentType = null)
         {
             bool Partial = Range.HasValue;
 
@@ -279,14 +311,16 @@ namespace DirectPackageInstaller.Host
 
                 Context.Response.Headers["Connection"] = "Keep-Alive";
                 Context.Response.Headers["Accept-Ranges"] = "none";
-                Context.Response.Headers["Content-Type"] = "application/octet-stream";
+                Context.Response.Headers["Content-Type"] = ContentType ?? "application/octet-stream";
 
-                if (Origin is FileHostStream)
-                    Context.Response.Headers["Content-Disposition"] = $"attachment; filename=\"{((FileHostStream)Origin).Filename}\"";
-                else
+                if (ContentType == null) {
+                    if (Origin is FileHostStream)
+                        Context.Response.Headers["Content-Disposition"] = $"attachment; filename=\"{((FileHostStream)Origin).Filename}\"";
+                    else
 
-                    Context.Response.Headers["Content-Disposition"] = $"attachment; filename=\"app.pkg\"";
-
+                        Context.Response.Headers["Content-Disposition"] = $"attachment; filename=\"app.pkg\"";
+                }
+                
                 if (Partial)
                 {
                     Context.Response.ContentLength = Range?.Length ?? Origin.Length - Range?.Begin ?? Origin.Length;

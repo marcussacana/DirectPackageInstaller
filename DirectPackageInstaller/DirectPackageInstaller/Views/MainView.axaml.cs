@@ -223,10 +223,8 @@ namespace DirectPackageInstaller.Views
 
                 SetStatus("Reading PKG...");
 
-                var Info = PKGStream.GetPKGInfo() ?? throw new Exception();
+                var Info =  Installer.CurrentPKG = PKGStream.GetPKGInfo() ?? throw new Exception();
                 
-                Installer.PKGEntries = Info.Entries;
-
                 SetStatus(Info.Description);
 
                 Model.PKGParams.Clear();
@@ -361,7 +359,13 @@ namespace DirectPackageInstaller.Views
             {
                 var Links = Url.Replace("\r\n", "\n").Split('\n')
                     .Where(x => x.StartsWith("http", StringComparison.InvariantCultureIgnoreCase)).ToArray();
-
+                
+                if (Links.Count() == 0)
+                {
+                    App.Callback(() => Model.CurrentURL = "");
+                    return;
+                }
+                
                 Url = Links.First();
                 Decompressor.CompressInfo[Url.Trim()] = (Links.Select(x =>x.Trim()).ToArray(), null);
                 
@@ -445,7 +449,7 @@ namespace DirectPackageInstaller.Views
             tbURL.IsEnabled = false;
             try
             {
-                if (!IPHelper.IsRPIOnline(App.Config.PS4IP))
+                if (!IPHelper.IsRPIOnline(App.Config.PS4IP) && !await Installer.TryConnectSocket(App.Config.PS4IP))
                 {
                     await MessageBox.ShowAsync($"Remote Package Installer Not Found at {App.Config.PS4IP}, Ensure if he is open.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return false;

@@ -1,11 +1,11 @@
 ﻿using DirectPackageInstaller.Host;
 using DirectPackageInstaller.IO;
-using LibOrbisPkg.PKG;
 using System;
-using System.ComponentModel;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
@@ -15,7 +15,7 @@ namespace DirectPackageInstaller.Tasks
 {
     static class Installer
     {
-        public static (uint Offset, uint End, uint Size, EntryId Id)[] PKGEntries;
+        public static PKGHelper.PKGInfo CurrentPKG;
 
         public const int ServerPort = 9898;
 
@@ -26,6 +26,8 @@ namespace DirectPackageInstaller.Tasks
         
         public static string EntryName = null;
         public static long EntrySize = -1;
+
+        public static Socket PayloadSocket;
 
         public static async Task<bool> PushPackage(Settings Config, Source InputType, Stream PKGStream, string URL, Action<string> SetStatus, Func<string> GetStatus, bool Silent)
         {
@@ -83,7 +85,7 @@ namespace DirectPackageInstaller.Tasks
                 InputType &= ~Source.Proxy;
 
             
-            uint LastResource = PKGEntries.OrderByDescending(x => x.End).First().End;
+            uint LastResource = CurrentPKG.Entries.OrderByDescending(x => x.End).First().End;
 
             switch (InputType)
             {
@@ -188,6 +190,17 @@ namespace DirectPackageInstaller.Tasks
                     return false;
             }
 
+            bool OK = false;
+            if (IPHelper.IsRPIOnline(Config.PS4IP))
+                OK = await PushRPI(URL, Config, Silent);
+            else
+                OK = await SendPKGPayload(Config.PS4IP, Config.PCIP, URL, Silent);
+
+            return OK;
+        }
+
+        public static async Task<bool> PushRPI(string URL, Settings Config, bool Silent)
+        {
             try
             {
                 var Request = (HttpWebRequest)WebRequest.Create($"http://{Config.PS4IP}:12800/api/install");
@@ -252,7 +265,100 @@ namespace DirectPackageInstaller.Tasks
                 return false;
             }
         }
+        public static async Task<bool> SendPKGPayload(string PS4IP, string PCIP, string URL, bool Silent)
+        {
+            if (!File.Exists("payload.bin"))
+                return false;
 
+            var Payload = File.ReadAllBytes("payload.bin");
+            var Offset = Payload.IndexOf(new byte[] { 0xB4, 0xB4, 0xB4, 0xB4, 0xB4, 0xB4});
+            if (Offset == -1)
+                return false;
+
+            URL = RegisterJSON(URL, PCIP);
+
+            Socket InfoSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            
+            InfoSocket.Bind(new IPEndPoint(IPAddress.Any, 0));
+            InfoSocket.Listen();
+
+            if (PayloadSocket == null || !PayloadSocket.Connected)
+            {
+                if (!await TryConnectSocket(PS4IP))
+                    return false;
+            }
+
+            ushort LocalPort = (ushort)((IPEndPoint)InfoSocket.LocalEndPoint).Port;
+            
+            var IP = IPAddress.Parse(PCIP).GetAddressBytes();
+            var Port = BitConverter.GetBytes(LocalPort).Reverse().ToArray();
+            
+            IP.CopyTo(Payload, Offset);
+            Port.CopyTo(Payload, Offset + 4);
+
+            PayloadSocket.SendBufferSize = Payload.Length;
+            
+            if (PayloadSocket.Send(Payload) != Payload.Length)
+                return false;
+
+            SocketAsyncEventArgs DisconnectEvent = new SocketAsyncEventArgs();
+            DisconnectEvent.RemoteEndPoint = PayloadSocket.RemoteEndPoint;
+            
+            PayloadSocket.Disconnect(false);
+            PayloadSocket.Close();
+            
+            var PKGInfoSocket = await InfoSocket.AcceptAsync();
+            
+            List<byte> PKGInfoBuffer = new List<byte>();
+
+            var UrlData = Encoding.UTF8.GetBytes(URL);
+            var NameData = Encoding.UTF8.GetBytes(CurrentPKG.FriendlyName);
+            var IDData = Encoding.UTF8.GetBytes(CurrentPKG.ContentID);
+            var PKGType = Encoding.UTF8.GetBytes(CurrentPKG.BGFTContentType);
+            var PackageSize = BitConverter.GetBytes(CurrentPKG.PackageSize);
+            var IconData = CurrentPKG.IconData;
+
+            if (IconData == null)
+                IconData = new byte[0];
+            
+            PKGInfoBuffer.AddRange(BitConverter.GetBytes(UrlData.Length));
+            PKGInfoBuffer.AddRange(UrlData);
+            PKGInfoBuffer.AddRange(BitConverter.GetBytes(NameData.Length));
+            PKGInfoBuffer.AddRange(NameData);
+            PKGInfoBuffer.AddRange(BitConverter.GetBytes(IDData.Length));
+            PKGInfoBuffer.AddRange(IDData);
+            PKGInfoBuffer.AddRange(BitConverter.GetBytes(PKGType.Length));
+            PKGInfoBuffer.AddRange(PKGType);
+
+            PKGInfoBuffer.AddRange(PackageSize);
+            
+            if (IconData.Length == 0)
+            {
+                PKGInfoBuffer.AddRange(new byte[4]);
+            }
+            else
+            {
+                PKGInfoBuffer.AddRange(BitConverter.GetBytes(IconData.Length));
+                PKGInfoBuffer.AddRange(IconData);
+            }
+
+            SocketAsyncEventArgs PkgInfoEvent = new SocketAsyncEventArgs();
+            PkgInfoEvent.RemoteEndPoint = PKGInfoSocket.RemoteEndPoint;
+            PkgInfoEvent.SetBuffer(PKGInfoBuffer.ToArray());
+            PkgInfoEvent.Completed += (sender, e) =>
+            {
+                PKGInfoSocket.Close();
+                InfoSocket.Close();
+                PayloadSocket.Close();
+            };
+            
+            PKGInfoSocket.SendAsync(PkgInfoEvent);
+
+            if (!Silent)
+                await MessageBox.ShowAsync("Package Sent!", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+            return true;
+        }
         public static void StartServer(string LocalIP)
         {
             if (string.IsNullOrEmpty(LocalIP))
@@ -272,6 +378,58 @@ namespace DirectPackageInstaller.Tasks
                 Server.Start();
             }
         }
+
+        public static async Task<bool> TryConnectSocket(string IP)
+        {
+            int[] Ports = new int[] { 9090, 9021, 9020 };
+            foreach (var Port in Ports)
+            {
+                PayloadSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                PayloadSocket.ReceiveTimeout = 3000;
+                PayloadSocket.SendTimeout = 3000;
+
+                try
+                {
+                    await PayloadSocket.ConnectAsync(new IPEndPoint(IPAddress.Parse(IP), Port));
+                    break;
+                } catch{}
+            }
+
+            return PayloadSocket.Connected;
+        }
+
+        public static string RegisterJSON(string URL, string PCIP)
+        {
+            var ID = Server.JSONs.Count().ToString();
+            var JSON = string.Format("{{\n  \"originalFileSize\": {0},\n  \"packageDigest\": \"{1}\",\n  \"numberOfSplitFiles\": 1,\n  \"pieces\": [\n    {{\n      \"url\": \"{2}\",\n      \"fileOffset\": 0,\n      \"fileSize\": {0},\n      \"hashValue\": \"0000000000000000000000000000000000000000\"\n    }}\n  ]\n}}", CurrentPKG.PackageSize, CurrentPKG.Digest, URL);
+            Server.JSONs.Add(ID, JSON);
+
+            return $"http://{PCIP}:{ServerPort}/json/{ID}.json";
+        }
+
+        public static int IndexOf(this IEnumerable<byte> Buffer, byte[] Content)
+        {
+            int Offset = 0;
+            int Count = Buffer.Count() - Content.Length;
+            for (int i = 0, x = 0; i < Count; i++)
+            {
+                if (Buffer.ElementAt(i) != Content[x])
+                {
+                    x = 0;
+                    continue;
+                }
+
+                if (x == 0)
+                    Offset = i;
+                
+                x++;
+                if (x >= Content.Length)
+                    return Offset;
+            }
+
+            return -1;
+        }
+        
 
         static string ToFileSize(double value)
         {
