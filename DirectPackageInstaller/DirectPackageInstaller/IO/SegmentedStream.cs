@@ -10,6 +10,8 @@ namespace DirectPackageInstaller.IO
 {
     public class SegmentedStream : Stream
     {
+        public static int DefaultConcurrency = 4;
+        
         public int BufferSize = 1024 * 1024;
 
         bool CloseBuffer;
@@ -72,7 +74,7 @@ namespace DirectPackageInstaller.IO
         int BiggestSegment => Segments.Select((x, i) => (Reaming: ReamingSegmentLength(i), ID: i))
             .OrderByDescending(x => x.Reaming).First().ID;
 
-        public SegmentedStream(Func<Stream> Open, Func<Stream> OpenBuffer, int BufferSize = 1024 * 1024, bool CloseBuffer = false, int Concurrency = 4)
+        public SegmentedStream(Func<Stream> Open, Func<Stream> OpenBuffer, int BufferSize = 1024 * 1024, bool CloseBuffer = false, int? Concurrency = null)
         {
             Stream Buffer;
             if (OpenBuffer == null)
@@ -118,7 +120,7 @@ namespace DirectPackageInstaller.IO
                 SegmentProgress.Add(0);
             }
 
-            this.Concurrency = Concurrency;
+            this.Concurrency = Concurrency ?? DefaultConcurrency;
 
             Worker = new BackgroundWorker();
             Worker.DoWork += ConcurrencyRead;
@@ -254,16 +256,27 @@ namespace DirectPackageInstaller.IO
            
             //We should try stop reading of the lastest downloaded bytes because the Reader stream
             //can try buffer empty data, when the download is finished then we can allow read it.
-            while (((ReadyInfo = SegmentReadyOffset(GetSegmentByOffset(Position))).ReadyOffset <= Position + (Finished ? 0 : BufferSize * 2)) || ReadyInfo.ReadyOffset == -1 || Position < ReadyInfo.Offset)
+            int AntiBuffering = (Finished ? 0 : BufferSize * 2);
+            while (((ReadyInfo = SegmentReadyOffset(GetSegmentByOffset(Position))).ReadyOffset <= Position + AntiBuffering) || ReadyInfo.ReadyOffset == -1 || Position < ReadyInfo.Offset)
             {
                 if (ReadyInfo.ReadyOffset == -1)
                     return 0;
 
+                if (ReaderStream != null && ReadyInfo.ReadyOffset > Position && !(ReadyInfo.ReadyOffset > Position + AntiBuffering))
+                {
+                    ReaderStream.Close();
+                    ReaderStream = null;
+                }
+
                 Task.Delay(30).Wait();
+                AntiBuffering = (Finished ? 0 : BufferSize * 2);
             }
 
             if (Position + count > ReadyInfo.ReadyOffset)
                 count = (int)(ReadyInfo.ReadyOffset - Position);
+
+            if (ReaderStream == null)
+                ReaderStream = OpenBuffer();
 
             lock (this)
             {
@@ -385,7 +398,7 @@ namespace DirectPackageInstaller.IO
                     
                     if (Readed > 0)
                     {
-                        lock (Locker)
+                        lock (StreamBuffer)
                         {
                             StreamBuffer.Seek(WritePos, SeekOrigin.Begin);
                             StreamBuffer.Write(Buffer, 0, Readed);

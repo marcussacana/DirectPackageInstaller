@@ -18,7 +18,7 @@ namespace DirectPackageInstaller.Compression
             return CompressionFormat.None;
         }
 
-        public void MultipartHelper((DecompressorHelperStream This, long Readed) Args)
+        public unsafe void MultipartHelper((DecompressorHelperStream This, long Readed) Args)
         {
             if (Args.This.Info == null)
                 return;
@@ -84,21 +84,30 @@ namespace DirectPackageInstaller.Compression
                         {
                             var Stream = new UnsafeMemoryStream(FileStream.Length);
 
-                            Buffer = () => Stream;
+                            Buffer = () =>
+                            {
+                                var NewStream =  new UnsafeMemoryStream(Stream.BasePointer, FileStream.Length);           
+                                Args.This.Instances.Add(NewStream);
+                                
+                                if (!Stream.Disposed)
+                                    Stream.Dispose();
+                                
+                                return NewStream;
+                            };
 
                             Args.This.Instances.Add(Stream);
                         }
                         catch { }
                     }
 
-                    if (Buffer == null)
+                    if (Buffer == null) {
                         Buffer = () =>
                         {
                             var Stream = new FileStream(TempFile, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite, 1024 * 1024 * 2, FileOptions.RandomAccess | FileOptions.WriteThrough);
                             Args.This.Instances.Add(Stream);
                             return Stream;
                         };
-                    
+                    }
 
                     var SegStream = new SegmentedStream(() => new FileHostStream(Url, 1024 * 1024), Buffer, 1024 * 1024, true);
                     SegStream.Position = Position;

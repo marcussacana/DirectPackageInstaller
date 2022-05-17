@@ -268,6 +268,11 @@ namespace DirectPackageInstaller.Views
                 App.Config.SegmentedDownload = IniReader.GetBooleanValue("SegmentedDownload");
                 App.Config.UseAllDebrid = IniReader.GetBooleanValue("UseAllDebrid");
                 App.Config.AllDebridApiKey = IniReader.GetValue("AllDebridApiKey");
+
+                var Concurrency = IniReader.GetValue("Concurrency");
+                if (!string.IsNullOrWhiteSpace(Concurrency) && int.TryParse(Concurrency, out int ConcurrencyNum))
+                    SegmentedStream.DefaultConcurrency = ConcurrencyNum;
+                
             }
             else
             {

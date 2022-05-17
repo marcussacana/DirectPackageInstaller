@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -7,7 +8,7 @@ namespace DirectPackageInstaller.IO
     public unsafe class UnsafeMemoryStream : Stream
     {
 
-        bool Disposed = false;
+        public bool Disposed { get; private set; } = false;
 
         public UnsafeMemoryStream(long Size)
         {
@@ -17,6 +18,36 @@ namespace DirectPackageInstaller.IO
                 throw new InternalBufferOverflowException();
 
             BasePointer = CurrentPointer = (byte*)Marshal.AllocHGlobal(new IntPtr(Size)).ToPointer();
+
+            lock (InstanceCount)
+            {
+                if (!InstanceCount.ContainsKey(new IntPtr(BasePointer)))
+                    InstanceCount[new IntPtr(BasePointer)] = 0;
+
+                InstanceCount[new IntPtr(BasePointer)]++;
+            }
+            
+
+            this.Size = Size;
+        }
+
+        public UnsafeMemoryStream(byte* Pointer, long Size)
+        {
+            long MaxValue = IntPtr.Size == 4 ? int.MaxValue : long.MaxValue;
+
+            if (Size > MaxValue)
+                throw new InternalBufferOverflowException();
+
+            lock (InstanceCount)
+            {
+                if (!InstanceCount.ContainsKey(new IntPtr(Pointer)))
+                    InstanceCount[new IntPtr(Pointer)] = 0;
+
+                InstanceCount[new IntPtr(Pointer)]++;
+            }
+            
+
+            BasePointer = CurrentPointer = Pointer;
             this.Size = Size;
         }
 
@@ -145,10 +176,29 @@ namespace DirectPackageInstaller.IO
             }
         }
 
+        private static Dictionary<IntPtr, int> InstanceCount = new Dictionary<IntPtr, int>();
+
         protected override void Dispose(bool Disposing)
         {
             if (Disposed)
                 return;
+
+            lock (InstanceCount)
+            {
+                if (InstanceCount.ContainsKey(new IntPtr(BasePointer)))
+                {
+                    if (InstanceCount[new IntPtr(BasePointer)] > 0)
+                    {
+                        Disposed = true;
+                        base.Dispose(Disposing);
+
+                        InstanceCount[new IntPtr(BasePointer)]--;
+
+                        if (InstanceCount[new IntPtr(BasePointer)] > 0)
+                            return;
+                    }
+                }
+            }
 
             Disposed = true;
             Marshal.FreeHGlobal(new IntPtr(BasePointer));
