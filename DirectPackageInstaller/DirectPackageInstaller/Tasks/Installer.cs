@@ -15,19 +15,17 @@ namespace DirectPackageInstaller.Tasks
 {
     static class Installer
     {
-        public static PKGHelper.PKGInfo CurrentPKG;
-
         public const int ServerPort = 9898;
+        public static PS4Server? Server;
 
-        public static string[] CurrentFileList = null;
-        public static bool AllowIndirect = false;
-        public static bool ForceProxy = false;
-        public static PS4Server Server;
-        
-        public static string EntryName = null;
+        public static PKGHelper.PKGInfo CurrentPKG;
+        public static string[]? CurrentFileList = null;
+
+        public static string? EntryName = null;
         public static long EntrySize = -1;
 
-        public static Socket PayloadSocket;
+        private static Socket? PayloadSocket;
+        private static bool ForceProxy = false;
 
         public static async Task<bool> PushPackage(Settings Config, Source InputType, Stream PKGStream, string URL, Action<string> SetStatus, Func<string> GetStatus, bool Silent)
         {
@@ -85,7 +83,7 @@ namespace DirectPackageInstaller.Tasks
                 InputType &= ~Source.Proxy;
 
             
-            uint LastResource = CurrentPKG.Entries.OrderByDescending(x => x.End).First().End;
+            uint LastResource = CurrentPKG.Entries.MaxBy(x => x.End).End;
 
             switch (InputType)
             {
@@ -93,8 +91,6 @@ namespace DirectPackageInstaller.Tasks
                 case Source.URL | Source.SevenZip:
                 case Source.URL | Source.RAR | Source.DiskCache:
                 case Source.URL | Source.RAR:
-                    AllowIndirect = true;
-
                     var FreeSpace = GetCurrentDiskAvailableFreeSpace();
                     if (EntrySize > FreeSpace && !App.IsUnix)
                     {

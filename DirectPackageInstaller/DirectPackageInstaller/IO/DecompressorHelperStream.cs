@@ -12,10 +12,10 @@ namespace DirectPackageInstaller.IO
 
         public Stream Base;
 
-        public List<IntPtr> UnmanagedPointers = new List<IntPtr>();
-        public List<Stream> Instances = new List<Stream>();
+        public readonly List<IntPtr> UnmanagedPointers = new List<IntPtr>();
+        public readonly List<Stream> Instances = new List<Stream>();
 
-        Action<(DecompressorHelperStream This, long Readed)> OnRead;
+        private Action<(DecompressorHelperStream This, long Readed)> OnRead;
 
         public DecompressorHelperStream(Stream Base, Action<(DecompressorHelperStream This, long Readed)> OnRead)
         {

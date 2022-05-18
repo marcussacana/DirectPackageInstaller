@@ -16,7 +16,7 @@ namespace DirectPackageInstaller
 
         static Random random = new Random();
         public static string TempDir => Path.Combine(App.WorkingDirectory, "Temp");
-        public static string GetTempFile(string ID)
+        public static string GetTempFile(string? ID)
         {
             if (ID == null)
                 ID = random.Next().ToString() + random.Next().ToString() + random.Next().ToString();

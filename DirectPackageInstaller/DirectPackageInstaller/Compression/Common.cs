@@ -83,6 +83,8 @@ namespace DirectPackageInstaller.Compression
                         try
                         {
                             var Stream = new UnsafeMemoryStream(FileStream.Length);
+                            
+                            Args.This.UnmanagedPointers.Add(new IntPtr(Stream.BasePointer));
 
                             Buffer = () =>
                             {

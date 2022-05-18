@@ -10,6 +10,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
+using Avalonia.Platform.Interop;
 using Avalonia.Threading;
 using DirectPackageInstaller.Compression;
 using DirectPackageInstaller.Host;
@@ -18,6 +19,7 @@ using DirectPackageInstaller.Tasks;
 using DirectPackageInstaller.ViewModels;
 using LibOrbisPkg.PKG;
 using LibOrbisPkg.SFO;
+using SharpCompress.Archives;
 using Path = System.IO.Path;
 
 namespace DirectPackageInstaller.Views
@@ -34,9 +36,11 @@ namespace DirectPackageInstaller.Views
         
         private Source InputType = Source.NONE;
 
-        private string LastForcedSource = null;
+        private string? LastForcedSource = null;
 
-        private MainWindow Parent = null;
+        private MainWindow Parent;
+
+        private IArchive? CurrentDecompressor = null;
 
         public MainViewModel? Model => (MainViewModel?)DataContext;
         
@@ -198,27 +202,28 @@ namespace DirectPackageInstaller.Views
                 if (LimitedFHost && Common.DetectCompressionFormat(Magic) != CompressionFormat.None)
                     await MessageBox.ShowAsync("You're trying open a compressed file from a limited file hosting,\nMaybe the compressed file must be fully downloaded to open it.", "Bad File Hosting Service", MessageBoxButtons.OK, MessageBoxIcon.Stop);
 
+                ArchiveDataInfo? DataInfo = null;
                 switch (Common.DetectCompressionFormat(Magic))
                 {
                     case CompressionFormat.RAR:
                         InputType |= Source.RAR;
                         SetStatus(LimitedFHost ? "Downloading... (It may take a while)" : "Decompressing...");
-                        var Unrar = Decompressor.UnrarPKG(PKGStream, SourcePackage, ForcedSource);
-                        PKGStream = Unrar.Buffer;
-                        Installer.EntryName = Unrar.Filename;
-                        Installer.EntrySize = Unrar.Length;
-                        ListEntries(Installer.CurrentFileList = Unrar.PKGList);
+                        DataInfo = Decompressor.UnrarPKG(PKGStream, SourcePackage, ForcedSource);
                         break;
-
                     case CompressionFormat.SevenZip:
                         InputType |= Source.SevenZip;
                         SetStatus(LimitedFHost ? "Downloading... (It may take a while)" : "Decompressing...");
-                        var Un7z = Decompressor.Un7zPKG(PKGStream, SourcePackage, ForcedSource);
-                        PKGStream = Un7z.Buffer;
-                        Installer.EntryName = Un7z.Filename;
-                        Installer.EntrySize = Un7z.Length;
-                        ListEntries(Installer.CurrentFileList = Un7z.PKGList);
+                        DataInfo = Decompressor.Un7zPKG(PKGStream, SourcePackage, ForcedSource);
                         break;
+                }
+
+                if (DataInfo != null)
+                {
+                    PKGStream = DataInfo?.Buffer ?? throw new Exception();
+                    Installer.EntryName = DataInfo?.Filename;
+                    Installer.EntrySize = DataInfo?.Length ?? throw new Exception();
+                    CurrentDecompressor = DataInfo?.Archive;
+                    ListEntries(Installer.CurrentFileList = DataInfo?.PKGList ?? throw new Exception());
                 }
 
                 SetStatus("Reading PKG...");
@@ -349,8 +354,8 @@ namespace DirectPackageInstaller.Views
                     break;
             }
         }
-        
-        void UrlChanged(string Url)
+
+        private void UrlChanged(string Url)
         {
             InputType = Source.NONE;
             
@@ -365,9 +370,9 @@ namespace DirectPackageInstaller.Views
                 var Links = Url.Replace("\r\n", "\n").Split('\n')
                     .Where(x => x.StartsWith("http", StringComparison.InvariantCultureIgnoreCase)).ToArray();
                 
-                if (Links.Count() == 0)
+                if (!Links.Any())
                 {
-                    App.Callback(() => Model.CurrentURL = "");
+                    App.Callback(() => Model!.CurrentURL = "");
                     return;
                 }
                 
@@ -378,13 +383,13 @@ namespace DirectPackageInstaller.Views
                 {
                     var Link = Links.First();
                     await Task.Delay(20);
-                    await Dispatcher.UIThread.InvokeAsync(() => Model.CurrentURL = Link);
+                    await Dispatcher.UIThread.InvokeAsync(() => Model!.CurrentURL = Link);
                 }).Start();
                 return;
             }
 
             if (Url.StartsWith("http", StringComparison.InvariantCultureIgnoreCase) && !Uri.IsWellFormedUriString(Url, UriKind.Absolute)) {
-                int PathOrQueryPos = Url.IndexOfAny(new char[] { '/', '?' }, Url.IndexOf("://") + 3);
+                int PathOrQueryPos = Url.IndexOfAny(new char[] { '/', '?' }, Url.IndexOf("://", StringComparison.Ordinal) + 3);
                 var Host = Url.Substring(0, PathOrQueryPos);
 
                 var PathAndQuery = Url.Substring(PathOrQueryPos);
@@ -414,7 +419,7 @@ namespace DirectPackageInstaller.Views
 
                 var NewUrl = $"{Host}{PathOnly}{QueryOnly}";
                 if (Uri.IsWellFormedUriString(NewUrl, UriKind.Absolute))
-                    Model.CurrentURL = NewUrl;
+                    Model!.CurrentURL = NewUrl;
             }
 
             PKGStream?.Close();
@@ -474,7 +479,7 @@ namespace DirectPackageInstaller.Views
             }
         }
 
-        private async void BtnInstallAllOnClick(object? sender, RoutedEventArgs e)
+        private async void BtnInstallAllOnClick(object? sender, RoutedEventArgs? e)
         {
             if (e != null)
             {
@@ -482,7 +487,7 @@ namespace DirectPackageInstaller.Views
                 return;
             }
 
-            if (Installer.CurrentFileList == null)
+            if (Installer.CurrentFileList == null || CurrentDecompressor == null)
                 return;
 
             foreach (var File in Installer.CurrentFileList)
@@ -494,22 +499,47 @@ namespace DirectPackageInstaller.Views
                 else
                     Installer.EntryName = File;
 
+                Stream Stream = null;
+                try
+                {
+                    var Entry = CurrentDecompressor.Entries.Single(x =>
+                        x.Key.EndsWith(File, StringComparison.InvariantCultureIgnoreCase));
+                    Stream = Entry.OpenEntryStream();
+
+                    if (!Stream.CanSeek)
+                        Stream = new ReadSeekableStream(Stream, TempHelper.GetTempFile(null));
+
+                    Installer.CurrentPKG = Stream.GetPKGInfo() ?? throw new Exception();
+                }
+                catch
+                {
+                    continue;
+                }
+                finally
+                {
+                    Stream?.Close();
+                }
+
                 if (!await Install(Source, true)) {
                     var Reply = await MessageBox.ShowAsync("Continue trying install the others packages?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                     if (Reply != DialogResult.Yes)
                         break;
                 }
+
+                await Task.Delay(5000);
             }
 
             await MessageBox.ShowAsync("Packages Sent!", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
-        private void ListEntries(string[] PKGList)
+        private void ListEntries(string[]? PKGList)
         {
             if (PKGList == null)
                 return;
-
-            if (PackagesMenu.IsVisible = PKGList.Length > 1)
+            
+            PackagesMenu.IsVisible = PKGList.Length > 1;
+            
+            if (PackagesMenu.IsVisible)
             {
                 List<TemplatedControl> ToRemove = new List<TemplatedControl>();
                 List<TemplatedControl> Items = PackagesMenu.Items.Cast<TemplatedControl>().ToList();
@@ -559,7 +589,7 @@ namespace DirectPackageInstaller.Views
             
             App.DoEvents();
         }
-        private void RestartServer_OnClick(object? sender, RoutedEventArgs e)
+        private void RestartServer_OnClick(object? sender, RoutedEventArgs? e)
         {
             if (Model == null)
                 return;

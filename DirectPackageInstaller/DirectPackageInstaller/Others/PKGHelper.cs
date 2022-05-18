@@ -72,7 +72,7 @@ public static class PKGHelper
             {
             }
 
-            if (PKG.Metas.Metas.Where(entry => entry.id == EntryId.ICON0_PNG).FirstOrDefault() is MetaEntry Icon)
+            if (PKG.Metas.Metas.FirstOrDefault(entry => entry.id == EntryId.ICON0_PNG) is MetaEntry Icon)
             {
                 try
                 {

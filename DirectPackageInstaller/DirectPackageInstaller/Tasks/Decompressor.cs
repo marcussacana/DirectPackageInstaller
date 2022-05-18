@@ -5,6 +5,7 @@ using SharpCompress.Archives.SevenZip;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Enumeration;
 using System.Linq;
 using DirectPackageInstaller.Views;
 using ReaderOptions = SharpCompress.Readers.ReaderOptions;
@@ -13,9 +14,10 @@ namespace DirectPackageInstaller.Tasks
 {
     static class Decompressor
     {
-        public static Dictionary<string, (string[] Links, string Password)> CompressInfo = new Dictionary<string, (string[] Links, string Password)>();
-        public static (IArchive Archive, Stream Buffer, string Filename, string[] PKGList, long Length) UnrarPKG(Stream Volume, string FirstUrl, string EntryName = null, bool Seekable = true, string Password = null) => UnrarPKG(new Stream[] { Volume }, FirstUrl, EntryName, Seekable, Password);
-        public static (IArchive Archive, Stream Buffer, string Filename, string[] PKGList, long Length) UnrarPKG(Stream[] Volumes, string FirstUrl, string EntryName = null, bool Seekable = true, string Password = null)
+        public static readonly Dictionary<string, (string[] Links, string? Password)> CompressInfo = new Dictionary<string, (string[] Links, string? Password)>();
+        
+        public static ArchiveDataInfo? UnrarPKG(Stream Volume, string FirstUrl, string? EntryName = null, bool Seekable = true, string? Password = null) => UnrarPKG(new Stream[] { Volume }, FirstUrl, EntryName, Seekable, Password);
+        public static ArchiveDataInfo? UnrarPKG(Stream[] Volumes, string FirstUrl, string? EntryName = null, bool Seekable = true, string? Password = null)
         {
             bool Silent = EntryName != null;
             var Archive = RarArchive.Open(Volumes, new ReaderOptions()
@@ -24,7 +26,7 @@ namespace DirectPackageInstaller.Tasks
                 DisableCheckIncomplete = true
             });
 
-            bool Encrypted = Archive.Entries.Where(x => x.IsEncrypted).Any();
+            bool Encrypted = Archive.Entries.Any(x => x.IsEncrypted);
 
             if (Archive.IsMultipartVolume() && Volumes.Count() == 1)
             {
@@ -41,7 +43,7 @@ namespace DirectPackageInstaller.Tasks
                     if (List.ShowDialogSync() != DialogResult.OK)
                         throw new Exception();
 
-                    CompressInfo[FirstUrl] = (List.Links, List.Password);
+                    CompressInfo[FirstUrl] = (List.Links, List.Password)!;
 
                     return UnrarPKG(List.Links.Select(x => new FileHostStream(x)).ToArray(), FirstUrl, EntryName, Seekable, List.Password);
                 }
@@ -92,14 +94,15 @@ namespace DirectPackageInstaller.Tasks
             {
                 if (!Silent)
                     MessageBox.ShowSync("Corrupted, missing or RAR parts with wrong sorting.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return (null, null, null, null, 0);
+                return null;
             }
 
             return UnArchive(Archive, Silent, EntryName, Seekable);
         }
 
-        public static (IArchive Achive, Stream Buffer, string Filename, string[] PKGList, long Length) Un7zPKG(Stream Volume, string FirstUrl, string EntryName = null, bool Seekable = true, string Password = null) => Un7zPKG(new Stream[] { Volume }, FirstUrl, EntryName, Seekable, Password);
-        public static (IArchive Achive, Stream Buffer, string Filename, string[] PKGList, long Length) Un7zPKG(Stream[] Volumes, string FirstUrl, string EntryName = null, bool Seekable = true, string Password = null)
+        public static ArchiveDataInfo? Un7zPKG(Stream Volume, string FirstUrl, string? EntryName = null, bool Seekable = true, string? Password = null) => Un7zPKG(new Stream[] { Volume }, FirstUrl, EntryName, Seekable, Password);
+
+        private static ArchiveDataInfo? Un7zPKG(Stream[] Volumes, string FirstUrl, string? EntryName = null, bool Seekable = true, string? Password = null)
         {
             bool Silent = EntryName != null;
             var Options = new ReaderOptions()
@@ -118,7 +121,7 @@ namespace DirectPackageInstaller.Tasks
 
             try
             {
-                Encrypted = Archive.Entries.Where(x => x.IsEncrypted).Any();
+                Encrypted = Archive.Entries.Any(x => x.IsEncrypted);
             }
             catch { }
 
@@ -137,7 +140,7 @@ namespace DirectPackageInstaller.Tasks
                     if (List.ShowDialogSync() != DialogResult.OK)
                         throw new Exception();
 
-                    CompressInfo[FirstUrl] = (List.Links, List.Password);
+                    CompressInfo[FirstUrl] = (List.Links, List.Password)!;
 
                     return Un7zPKG(List.Links.Select(x => new FileHostStream(x)).ToArray(), FirstUrl, EntryName, Seekable, List.Password);
                 }
@@ -190,7 +193,7 @@ namespace DirectPackageInstaller.Tasks
                 if (List.ShowDialogSync() != DialogResult.OK)
                     throw new Exception();
 
-                CompressInfo[FirstUrl] = (List.Links ?? new string[] { FirstUrl }, List.Password);
+                CompressInfo[FirstUrl] = (List.Links ?? new string[] { FirstUrl }, List.Password)!;
 
                 foreach (var Volume in Volumes)
                     Volume.Seek(0, SeekOrigin.Begin);
@@ -202,13 +205,13 @@ namespace DirectPackageInstaller.Tasks
             {
                 if (!Silent)
                     MessageBox.ShowSync("Corrupted, missing or 7z parts with wrong sorting", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return (null, null, null, null, 0);
+                return null;
             }
 
             return UnArchive(Archive, Silent, EntryName, Seekable);
         }
 
-        public static (IArchive Achive, Stream Buffer, string Filename, string[] PKGList, long Length) UnArchive(IArchive Archive, bool Silent, string EntryName, bool Seekable)
+        public static ArchiveDataInfo? UnArchive(IArchive Archive, bool Silent, string? EntryName, bool Seekable)
         {
 
             var Compressions = Archive.Entries.Where(x => Path.GetExtension(x.Key).StartsWith(".r", StringComparison.OrdinalIgnoreCase) || x.Key.Contains(".7z"));
@@ -219,7 +222,7 @@ namespace DirectPackageInstaller.Tasks
             {
                 if (!Silent)
                     MessageBox.ShowSync("No PKG Found in the given file" + (Compressions.Any() ? "\nIt looks like this file has been redundantly compressed." : ""), "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return (null, null, null, null, 0);
+                return null;
             }
 
             if (PKGs.Count() == 1)
@@ -231,7 +234,7 @@ namespace DirectPackageInstaller.Tasks
                 if (Seekable)
                     FileStream = new ReadSeekableStream(FileStream, TempHelper.GetTempFile(null)) { ReportLength = Entry.Size };
 
-                return (Archive, FileStream, Path.GetFileName(Entry.Key), new[] { Entry.Key }, Entry.Size);
+                return new (Archive, FileStream, Path.GetFileName(Entry.Key), new[] { Entry.Key }, Entry.Size);
             }
 
             var Files = PKGs.Select(x => Path.GetFileName(x.Key)).ToArray();
@@ -240,13 +243,13 @@ namespace DirectPackageInstaller.Tasks
             {
                 var ChoiceBox = new Select(Files);
                 if (ChoiceBox.ShowDialogSync() != DialogResult.OK)
-                    return (null, null, null, Files, 0);
+                    return null;
                 EntryName = ChoiceBox.Choice;
             }
             else if (string.IsNullOrEmpty(EntryName))
-                return (null, null, null, Files, 0);
+                return null;
 
-            var SelectedEntry = PKGs.Where(x => Path.GetFileName(x.Key) == EntryName).Single();
+            var SelectedEntry = PKGs.Single(x => Path.GetFileName(x.Key) == EntryName);
             var SelectedFile = Path.GetFileName(SelectedEntry.Key);
 
             var Stream = SelectedEntry.OpenEntryStream();
@@ -254,7 +257,25 @@ namespace DirectPackageInstaller.Tasks
             if (Seekable)
                 Stream = new ReadSeekableStream(Stream, TempHelper.GetTempFile(null)) { ReportLength = SelectedEntry.Size };
 
-            return (Archive, Stream, SelectedFile, Files, SelectedEntry.Size);
+            return new (Archive, Stream, SelectedFile, Files, SelectedEntry.Size);
         }
+    }
+
+    public struct ArchiveDataInfo
+    {
+        public ArchiveDataInfo(IArchive Archive, Stream Buffer, string Filename, string[] PKGList, long Length)
+        {
+            this.Archive = Archive;
+            this.Buffer = Buffer;
+            this.Filename = Filename;
+            this.PKGList = PKGList;
+            this.Length = Length;
+        }
+        
+        public readonly IArchive Archive;
+        public readonly Stream Buffer;
+        public readonly string Filename;
+        public readonly string[] PKGList;
+        public readonly long Length;
     }
 }

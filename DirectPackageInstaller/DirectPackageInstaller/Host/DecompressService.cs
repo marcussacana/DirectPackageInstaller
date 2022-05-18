@@ -12,12 +12,12 @@ namespace DirectPackageInstaller.Host
     {
         const long MaxSkipBufferSize = 1024 * 1024 * 100;
 
-        Dictionary<string, int> Instances = new Dictionary<string, int>();
+        private readonly Dictionary<string, int> Instances = new Dictionary<string, int>();
 
-        public static Dictionary<string, string> EntryMap = new Dictionary<string, string>();
-        public static Dictionary<string, (string Entry, string Url)> TaskCache = new Dictionary<string, (string Entry, string Url)>();
+        public static readonly Dictionary<string, string?> EntryMap = new Dictionary<string, string?>();
+        public static readonly Dictionary<string, (string? Entry, string? Url)> TaskCache = new Dictionary<string, (string? Entry, string? Url)>();
 
-        internal SharpComp Decompressor = new SharpComp();
+        internal readonly SharpComp Decompressor = new SharpComp();
 
         internal Dictionary<string, DecompressTaskInfo> Tasks => Decompressor.Tasks;
 
@@ -26,8 +26,8 @@ namespace DirectPackageInstaller.Host
             if (!Query.AllKeys.Contains("url") && !Query.AllKeys.Contains("id"))
                 return;
 
-            string Url = null;
-            string Entry = "";
+            string? Url = null;
+            string? Entry = "";
 
             if (Query.AllKeys.Contains("entry"))
                 Entry = Query["entry"];
@@ -37,7 +37,7 @@ namespace DirectPackageInstaller.Host
 
             if (Query.AllKeys.Contains("id") && TaskCache.ContainsKey(Query["id"]))
             {
-                var Task = TaskCache[Query["id"]];
+                var Task = TaskCache[Query["id"] ?? throw new NullReferenceException()];
                 Url = Task.Url;
                 Entry = Task.Entry;
             }
@@ -58,8 +58,8 @@ namespace DirectPackageInstaller.Host
             if (!Query.AllKeys.Contains("url") && !Query.AllKeys.Contains("id"))
                 return;
 
-            string Url = null;
-            string Entry = "";
+            string? Url = null;
+            string? Entry = "";
 
             if (Query.AllKeys.Contains("entry"))
                 Entry = Query["entry"];
@@ -67,14 +67,14 @@ namespace DirectPackageInstaller.Host
             if (Query.AllKeys.Contains("url"))
                 Url = Query["url"];
 
-            if (Query.AllKeys.Contains("id") && TaskCache.ContainsKey(Query["id"]))
+            if (Query.AllKeys.Contains("id") && TaskCache.ContainsKey(Query["id"]!))
             {
-                var Task = TaskCache[Query["id"]];
+                var Task = TaskCache[Query["id"]!];
                 Url = Task.Url;
                 Entry = Task.Entry;
             }
 
-            if (!EntryMap.ContainsKey(Url) || !Tasks.ContainsKey(EntryMap[Url]))
+            if (!EntryMap.ContainsKey(Url) || !Tasks.ContainsKey(EntryMap[Url]!))
             {
                 if ((Entry = Decompressor.CreateUn7z(Url, Entry)) == null)
                     throw new NotSupportedException();
@@ -85,7 +85,7 @@ namespace DirectPackageInstaller.Host
             await Decompress(Context, Url, Entry, FromPS4);
         }
 
-        async Task Decompress(HttpContext Context, string Url, string Entry, bool FromPS4)
+        async Task Decompress(HttpContext Context, string Url, string? Entry, bool FromPS4)
         {
             HttpRange? Range = null;
             bool Partial = Context.Request.HeaderExists("Range", true);

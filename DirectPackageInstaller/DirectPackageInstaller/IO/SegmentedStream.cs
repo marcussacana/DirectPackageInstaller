@@ -14,7 +14,7 @@ namespace DirectPackageInstaller.IO
         
         public int BufferSize = 1024 * 1024;
 
-        bool CloseBuffer;
+        private bool CloseBuffer;
 
         Func<Stream> OpenBuffer;
         Stream ReaderStream;
@@ -69,10 +69,9 @@ namespace DirectPackageInstaller.IO
 
         long TotalBuffered => Segments.Select(x => x.Position).Sum();
 
-        long TotalConcurrency => Segments.Where(x => x.Position < x.Length).Count();
+        long TotalConcurrency => Segments.Count(x => x.Position < x.Length);
 
-        int BiggestSegment => Segments.Select((x, i) => (Reaming: ReamingSegmentLength(i), ID: i))
-            .OrderByDescending(x => x.Reaming).First().ID;
+        int BiggestSegment => Segments.Select((x, i) => (Reaming: ReamingSegmentLength(i), ID: i)).MaxBy(x => x.Reaming).ID;
 
         public SegmentedStream(Func<Stream> Open, Func<Stream> OpenBuffer, int BufferSize = 1024 * 1024, bool CloseBuffer = false, int? Concurrency = null)
         {
