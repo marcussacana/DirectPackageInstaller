@@ -6,6 +6,7 @@
         xmlns:views="clr-namespace:DirectPackageInstaller.Views"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="DirectPackageInstaller.Views.CookieManager"
+        WindowStartupLocation="CenterOwner"
         Icon="/Assets/avalonia-logo.ico"
         Title="Cookie Manager">
     <views:CookieManagerView Name="View"/>

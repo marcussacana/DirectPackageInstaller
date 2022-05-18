@@ -7,6 +7,7 @@
         mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="350"
         x:Class="DirectPackageInstaller.Views.LinkList"
         d:DataContext="ViewModels.LinkListViewModel"
+        WindowStartupLocation="CenterOwner"
         Icon="/Assets/avalonia-logo.ico"
         Title="Link List"
         Width="700"

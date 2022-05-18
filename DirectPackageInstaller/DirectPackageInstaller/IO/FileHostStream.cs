@@ -14,6 +14,8 @@ namespace DirectPackageInstaller.IO
 
         public FileHostStream(string Url, int cacheLen = 8192) : base(Url, cacheLen)
         {
+            App.HttpClient.Proxy = null;
+            
             foreach (var Host in FileHostBase.Hosts)
             {
                 if (!Host.IsValidUrl(Url))

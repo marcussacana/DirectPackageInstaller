@@ -6,6 +6,7 @@
         xmlns:views="clr-namespace:DirectPackageInstaller.Views"
         mc:Ignorable="d" d:DesignWidth="480" d:DesignHeight="180"
         x:Class="DirectPackageInstaller.Views.MessageBox"
+        WindowStartupLocation="CenterOwner"
         Icon="/Assets/avalonia-logo.ico"
         CanResize="False"
         SizeToContent="WidthAndHeight"

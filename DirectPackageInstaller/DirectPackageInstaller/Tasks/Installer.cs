@@ -379,7 +379,7 @@ namespace DirectPackageInstaller.Tasks
             }
         }
 
-        public static async Task<bool> TryConnectSocket(string IP)
+        public static async Task<bool> TryConnectSocket(string IP, bool Retry = true)
         {
             int[] Ports = new int[] { 9090, 9021, 9020 };
             foreach (var Port in Ports)
@@ -393,6 +393,12 @@ namespace DirectPackageInstaller.Tasks
                     await PayloadSocket.ConnectAsync(new IPEndPoint(IPAddress.Parse(IP), Port));
                     break;
                 } catch{}
+            }
+
+            if (!PayloadSocket.Connected && Retry)
+            {
+                await Task.Delay(3000);
+                return await TryConnectSocket(IP, false);
             }
 
             return PayloadSocket.Connected;

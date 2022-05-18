@@ -223,7 +223,7 @@ namespace DirectPackageInstaller.IO
             return IDs.Single();
         }
 
-        (long Offset, long Ready, long ReadyOffset) SegmentReadyOffset(int ID)
+        (long SegmentOffset, long Ready, long ReadyOffset) SegmentReadyOffset(int ID)
         {
             if (ID == -1)
                 return (-1, -1, -1);
@@ -247,33 +247,46 @@ namespace DirectPackageInstaller.IO
 
         public override void Flush()
         {
-
+            ReaderStream?.Close();
+            ReaderStream = null;
         }
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            (long Offset, long Ready, long ReadyOffset) ReadyInfo;
+            if (count <= 0)
+                return 0;
+            
+            (long SegmentOffset, long Ready, long ReadyOffset) ReadyInfo;
            
             //We should try stop reading of the lastest downloaded bytes because the Reader stream
             //can try buffer empty data, when the download is finished then we can allow read it.
-            int AntiBuffering = (Finished ? 0 : BufferSize * 2);
-            while (((ReadyInfo = SegmentReadyOffset(GetSegmentByOffset(Position))).ReadyOffset <= Position + AntiBuffering) || ReadyInfo.ReadyOffset == -1 || Position < ReadyInfo.Offset)
+            
+            int AntiBuffering() => Finished ? 0 : BufferSize * 2;
+            
+            (long SegmentOffset, long Ready, long ReadyOffset) GetCurrentSegmentInfo() => SegmentReadyOffset(GetSegmentByOffset(Position));
+            
+
+            while (((ReadyInfo = GetCurrentSegmentInfo()).ReadyOffset <= Position + AntiBuffering()) || ReadyInfo.ReadyOffset == -1 || Position < ReadyInfo.SegmentOffset)
             {
                 if (ReadyInfo.ReadyOffset == -1)
-                    return 0;
-
-                if (ReaderStream != null && ReadyInfo.ReadyOffset > Position && !(ReadyInfo.ReadyOffset > Position + AntiBuffering))
                 {
-                    ReaderStream.Close();
-                    ReaderStream = null;
+                    Task.Delay(1000).Wait();
+                    
+                    if (GetCurrentSegmentInfo().ReadyOffset == -1)
+                        return 0;
                 }
 
+                Flush();
                 Task.Delay(30).Wait();
-                AntiBuffering = (Finished ? 0 : BufferSize * 2);
             }
 
-            if (Position + count > ReadyInfo.ReadyOffset)
-                count = (int)(ReadyInfo.ReadyOffset - Position);
+            if (Position + count + AntiBuffering() > ReadyInfo.ReadyOffset)
+            {
+                count = (int) (ReadyInfo.ReadyOffset - Position) - AntiBuffering();
+                
+                if (count <= 0)
+                    count = 1;
+            }
 
             if (ReaderStream == null)
                 ReaderStream = OpenBuffer();
@@ -400,7 +413,9 @@ namespace DirectPackageInstaller.IO
                     {
                         lock (StreamBuffer)
                         {
-                            StreamBuffer.Seek(WritePos, SeekOrigin.Begin);
+                            if (StreamBuffer.Position != WritePos)
+                                StreamBuffer.Seek(WritePos, SeekOrigin.Begin);
+                            
                             StreamBuffer.Write(Buffer, 0, Readed);
                             StreamBuffer.Flush();
                         }
