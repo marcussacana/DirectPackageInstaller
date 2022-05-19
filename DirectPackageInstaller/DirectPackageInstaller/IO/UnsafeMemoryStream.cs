@@ -70,43 +70,46 @@ namespace DirectPackageInstaller.IO
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            if (Disposed)
-                throw new ObjectDisposedException("UnsafeMemoryStream");
-
-            if (Position + count > Length)
-                count = (int)(Length - Position);
-
-            if (count + offset > buffer.Length)
-                count = buffer.Length - offset;
-
-            if (count < 0)
-                count = 0;
-
-            if (count == 0)
-                return 0;
-
-            int Readed = 0;
-
-            fixed (byte* pBuffer = &buffer[offset])
+            lock (this)
             {
-                int Assert = count % 4;
+                if (Disposed || !InstanceCount.ContainsKey(new IntPtr(BasePointer)))
+                    throw new ObjectDisposedException("UnsafeMemoryStream");
 
-                for (int i = 0; i < Assert; i++)
-                     pBuffer[i] = *CurrentPointer++;
-                
-                count -= Assert;
-                Readed += Assert;
+                if (Position + count > Length)
+                    count = (int) (Length - Position);
 
-                uint* dwBuffer = (uint*)(pBuffer + Assert);
-                uint* dwPointer = (uint*)CurrentPointer;
+                if (count + offset > buffer.Length)
+                    count = buffer.Length - offset;
 
-                for (int i = 0; i < count; i += 4, Readed += 4)
-                    *dwBuffer++ = *dwPointer++;
+                if (count < 0)
+                    count = 0;
 
-                CurrentPointer = (byte*)dwPointer;
+                if (count == 0)
+                    return 0;
+
+                int Readed = 0;
+
+                fixed (byte* pBuffer = &buffer[offset])
+                {
+                    int Assert = count % 4;
+
+                    for (int i = 0; i < Assert; i++)
+                        pBuffer[i] = *CurrentPointer++;
+
+                    count -= Assert;
+                    Readed += Assert;
+
+                    uint* dwBuffer = (uint*) (pBuffer + Assert);
+                    uint* dwPointer = (uint*) CurrentPointer;
+
+                    for (int i = 0; i < count; i += 4, Readed += 4)
+                        *dwBuffer++ = *dwPointer++;
+
+                    CurrentPointer = (byte*) dwPointer;
+                }
+
+                return Readed;
             }
-
-            return Readed;
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -142,37 +145,40 @@ namespace DirectPackageInstaller.IO
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            if (Disposed)
-                throw new ObjectDisposedException("UnsafeMemoryStream");
-
-            if (Position + count > Length)
-                count = (int)(Length - Position);
-
-            if (count + offset > buffer.Length)
-                count = buffer.Length - offset;
-
-            if (count < 0)
-                count = 0;
-
-            if (count == 0)
-                return;
-
-            fixed (byte* pBuffer = &buffer[offset])
+            lock (this)
             {
-                int Assert = count % 4;
+                if (Disposed)
+                    throw new ObjectDisposedException("UnsafeMemoryStream");
 
-                for (int i = 0; i < Assert; i++)
-                    *CurrentPointer++ = pBuffer[i];
+                if (Position + count > Length)
+                    count = (int) (Length - Position);
 
-                count -= Assert;
+                if (count + offset > buffer.Length)
+                    count = buffer.Length - offset;
 
-                uint* dwBuffer = (uint*)(pBuffer + Assert);
-                uint* dwPointer = (uint*)CurrentPointer;
+                if (count < 0)
+                    count = 0;
 
-                for (int i = 0; i < count; i += 4)
-                    *dwPointer++ = *dwBuffer++;
+                if (count == 0)
+                    return;
 
-                CurrentPointer = (byte*)dwPointer;
+                fixed (byte* pBuffer = &buffer[offset])
+                {
+                    int Assert = count % 4;
+
+                    for (int i = 0; i < Assert; i++)
+                        *CurrentPointer++ = pBuffer[i];
+
+                    count -= Assert;
+
+                    uint* dwBuffer = (uint*) (pBuffer + Assert);
+                    uint* dwPointer = (uint*) CurrentPointer;
+
+                    for (int i = 0; i < count; i += 4)
+                        *dwPointer++ = *dwBuffer++;
+
+                    CurrentPointer = (byte*) dwPointer;
+                }
             }
         }
 
@@ -180,29 +186,41 @@ namespace DirectPackageInstaller.IO
 
         protected override void Dispose(bool Disposing)
         {
-            if (Disposed)
-                return;
-
-            lock (InstanceCount)
+            lock (this)
             {
-                if (InstanceCount.ContainsKey(new IntPtr(BasePointer)))
+                lock (InstanceCount)
                 {
-                    if (InstanceCount[new IntPtr(BasePointer)] > 0)
+                    if (Disposed)
+                        return;
+                    
+                    if (InstanceCount.ContainsKey(new IntPtr(BasePointer)))
+                    {
+                        if (InstanceCount[new IntPtr(BasePointer)] > 0)
+                        {
+                            Disposed = true;
+                            base.Dispose(Disposing);
+
+                            InstanceCount[new IntPtr(BasePointer)]--;
+
+                            if (InstanceCount[new IntPtr(BasePointer)] > 0)
+                                return;
+                        }
+                    }
+                    else
                     {
                         Disposed = true;
                         base.Dispose(Disposing);
-
-                        InstanceCount[new IntPtr(BasePointer)]--;
-
-                        if (InstanceCount[new IntPtr(BasePointer)] > 0)
-                            return;
+                        return;
                     }
+
+                    Disposed = true;
+
+                    Marshal.FreeHGlobal(new IntPtr(BasePointer));
+                    InstanceCount.Remove(new IntPtr(BasePointer));
+
+                    base.Dispose(Disposing);
                 }
             }
-
-            Disposed = true;
-            Marshal.FreeHGlobal(new IntPtr(BasePointer));
-            base.Dispose(Disposing);
         }
     }
 }

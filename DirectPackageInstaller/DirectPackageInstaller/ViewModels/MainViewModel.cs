@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Net;
 using ReactiveUI;
 
 namespace DirectPackageInstaller.ViewModels
@@ -15,8 +16,8 @@ namespace DirectPackageInstaller.ViewModels
             {
                 _PS4IP = value;
                 
-                if (IPHelper.IsRPIOnline(value))
-                    PCIP = IPHelper.FindLocalIP(value);
+                if (IPAddress.TryParse(value, out _))
+                    PCIP = IPHelper.FindLocalIP(value) ?? PCIP;
                 
                 this.RaisePropertyChanged();
             }

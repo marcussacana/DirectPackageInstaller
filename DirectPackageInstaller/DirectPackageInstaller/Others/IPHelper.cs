@@ -12,13 +12,13 @@ namespace DirectPackageInstaller
 {
     static class IPHelper
     {
-        public static string FindLocalIP(string RemoteIP)
+        public static string? FindLocalIP(string RemoteIP)
         {
             try
             {
                 var IPs = SearchInterfaces();
                 string RemotePartial = RemoteIP.Substring(0, RemoteIP.LastIndexOf('.'));
-                return IPs.Where(x => x.StartsWith(RemotePartial)).Single();
+                return IPs.Single(x => x.StartsWith(RemotePartial));
             }
             catch
             {

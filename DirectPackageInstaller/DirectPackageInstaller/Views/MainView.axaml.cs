@@ -453,6 +453,12 @@ namespace DirectPackageInstaller.Views
 
         private async Task<bool> Install(string URL, bool Silent)
         {
+            if (string.IsNullOrWhiteSpace(App.Config.PS4IP) || string.IsNullOrWhiteSpace(App.Config.PCIP))
+            {
+                await MessageBox.ShowAsync(Parent, "Failed to detect your PS4 IP.\nPlease, Type your PS4/PC IP in the options menu", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+            
             btnLoad.Content = "Pushing...";
             PackagesMenu.IsEnabled = false;
             btnLoad.IsEnabled = false;
@@ -526,7 +532,11 @@ namespace DirectPackageInstaller.Views
                         break;
                 }
 
-                await Task.Delay(5000);
+                if (Installer.Server != null)
+                {
+                    while (Installer.Server.Decompress.Tasks.Any(x => x.Value.Running))
+                        await Task.Delay(5000);
+                }
             }
 
             await MessageBox.ShowAsync("Packages Sent!", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Information);
