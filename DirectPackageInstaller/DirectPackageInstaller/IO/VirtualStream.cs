@@ -6,16 +6,16 @@ namespace DirectPackageInstaller
 {
     public class VirtualStream : Stream
     {
-        private Stream Package;
+        public readonly Stream Base;
         public long FilePos { get; private set; } = 0;
         private long Len;
 
-        internal VirtualStream(Stream Package, long Pos, long Len)
+        internal VirtualStream(Stream Base, long Pos, long Len)
         {
-            if (!Package.CanRead)
+            if (!Base.CanRead)
                 throw new IOException("The Stream bust be Readable");
 
-            this.Package = Package;
+            this.Base = Base;
             FilePos = Pos;
             this.Len = Len;
         }
@@ -80,11 +80,11 @@ namespace DirectPackageInstaller
         {
             long ReadPos = FilePos + Pos;
 
-            while (ForceAmount && ReadPos >= Package.Length)
+            while (ForceAmount && ReadPos >= Base.Length)
                 Task.Delay(10).Wait();
 
-            if (ReadPos != Package.Position)
-                Package.Position = ReadPos;
+            if (ReadPos != Base.Position)
+                Base.Position = ReadPos;
 
             if (Pos + count > Length)
                 count = (int)(Length - Pos);
@@ -100,7 +100,7 @@ namespace DirectPackageInstaller
             do
             {
                 
-                int lReaded = Package.Read(buffer, offset + Readed, count);
+                int lReaded = Base.Read(buffer, offset + Readed, count);
                 Readed += lReaded;
                 count -= lReaded;
 
@@ -126,13 +126,13 @@ namespace DirectPackageInstaller
             switch (origin)
             {
                 case SeekOrigin.Begin:
-                    Package.Position = FilePos + offset;
+                    Base.Position = FilePos + offset;
                     this.Pos = offset;
                     break;
                 case SeekOrigin.Current:
                     if (Position + offset > Length)
                         throw new Exception("Out of Range");
-                    Package.Position += offset;
+                    Base.Position += offset;
                     this.Pos += offset;
                     break;
                 case SeekOrigin.End:
@@ -141,11 +141,11 @@ namespace DirectPackageInstaller
                     long FP = FilePos + Pos;
                     if (Pos < 0)
                         throw new Exception("Out of Range");
-                    Package.Position = FP;
+                    Base.Position = FP;
                     break;
             }
 
-            while (ForceAmount && (Package.Position > Package.Length))
+            while (ForceAmount && (Base.Position > Base.Length))
                 Task.Delay(100).Wait();
 
             return Pos;
@@ -153,7 +153,7 @@ namespace DirectPackageInstaller
 
         public override void SetLength(long value)
         {
-            if (FilePos + value > Package.Length)
+            if (FilePos + value > Base.Length)
                 throw new Exception("Invalid Length");
 
             Len = value;
@@ -167,14 +167,14 @@ namespace DirectPackageInstaller
         protected override void Dispose(bool Disposing)
         {
             Close();
-            Package?.Dispose();
+            Base?.Dispose();
 
             base.Dispose(Disposing);
         }
 
         public override void Close()
         {
-            Package?.Close();
+            Base?.Close();
         }
     }
 }

@@ -16,7 +16,7 @@ namespace DirectPackageInstaller.IO
 
             if (Size > MaxValue)
                 throw new InternalBufferOverflowException();
-
+            
             BasePointer = CurrentPointer = (byte*)Marshal.AllocHGlobal(new IntPtr(Size)).ToPointer();
 
             lock (InstanceCount)
@@ -51,9 +51,9 @@ namespace DirectPackageInstaller.IO
             this.Size = Size;
         }
 
-        public byte* CurrentPointer;
-        public byte* BasePointer;
-        public long Size;
+        private byte* CurrentPointer;
+        public byte* BasePointer { get; private set; }
+        public long Size { get; private set; }
 
 
         public override bool CanRead => true;

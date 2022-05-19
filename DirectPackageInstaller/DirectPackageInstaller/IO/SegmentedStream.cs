@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using Avalonia.Dialogs;
+using Avalonia.Input;
 
 namespace DirectPackageInstaller.IO
 {
@@ -12,7 +13,7 @@ namespace DirectPackageInstaller.IO
     {
         public static int DefaultConcurrency = 4;
         
-        public int BufferSize = 1024 * 1024;
+        public int BufferSize;
 
         private bool CloseBuffer;
 
@@ -55,7 +56,9 @@ namespace DirectPackageInstaller.IO
                 }
             } 
         }
-        public bool Finished => TotalProgress >= TotalSize && TotalConcurrency == 0;
+
+        public bool InProgess => TotalConcurrency > 0;
+        public bool Finished => TotalProgress >= TotalSize && !InProgess;
 
         BackgroundWorker Worker;
 
@@ -73,7 +76,7 @@ namespace DirectPackageInstaller.IO
 
         int BiggestSegment => Segments.Select((x, i) => (Reaming: ReamingSegmentLength(i), ID: i)).MaxBy(x => x.Reaming).ID;
 
-        public SegmentedStream(Func<Stream> Open, Func<Stream> OpenBuffer, int BufferSize = 1024 * 1024, bool CloseBuffer = false, int? Concurrency = null)
+        public SegmentedStream(Func<Stream> OpenConnection, Func<Stream> OpenBuffer, int BufferSize = 1024 * 1024, bool CloseBuffer = false, int? Concurrency = null)
         {
             Stream Buffer;
             if (OpenBuffer == null)
@@ -102,7 +105,7 @@ namespace DirectPackageInstaller.IO
 
             this.BufferSize = BufferSize;
             this.CloseBuffer = CloseBuffer;
-            OpenSegment = Open;
+            OpenSegment = OpenConnection;
             var First = OpenSegment();
 
             TotalSize = First.Length;
@@ -208,18 +211,14 @@ namespace DirectPackageInstaller.IO
 
         int GetSegmentByOffset(long Offset, int Retry = 0)
         {
-            List<int> IDs = new List<int>();
             for (int i = 0; i < Segments.Count; i++)
             {
                 var Segment = Segments[i];
                 if (Segment.FilePos <= Offset && Segment.FilePos + Segment.Length > Offset)
-                    IDs.Add(i);
+                    return i;
             }
 
-            if (IDs.Count == 0)
-                return -1;
-
-            return IDs.Single();
+            return -1;
         }
 
         (long SegmentOffset, long Ready, long ReadyOffset) SegmentReadyOffset(int ID)
@@ -288,7 +287,11 @@ namespace DirectPackageInstaller.IO
             }
 
             if (ReaderStream == null)
+            {
                 ReaderStream = OpenBuffer();
+                Streams.Add(ReaderStream);
+            }
+            
 
             lock (this)
             {
@@ -321,24 +324,24 @@ namespace DirectPackageInstaller.IO
 
             return Position;
         }
-
-        public override void Close()
+        
+        public void Cancel()
         {
+            Worker?.CancelAsync();
             foreach (var Segment in Processors)
                 Segment.Cancel();
-
-            Worker?.CancelAsync();
-            base.Close();
         }
-
+        
         protected override void Dispose(bool Disposing)
         {
+            Cancel();
+            
             if (CloseBuffer)
             {
                 ReaderStream?.Close();
 
                 foreach (var Stream in Streams)
-                    Stream.Close();
+                    Stream?.Close();
 
                 Streams.Clear();
             }
@@ -406,6 +409,9 @@ namespace DirectPackageInstaller.IO
                     Readed = Input.Read(Buffer, 0, Buffer.Length);
 
                     if (e.Cancel)
+                        break;
+
+                    if (Input.Base is UnsafeMemoryStream Reader && Reader.Disposed)
                         break;
                     
                     if (Readed > 0)

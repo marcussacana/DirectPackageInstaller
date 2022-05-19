@@ -162,14 +162,9 @@ namespace DirectPackageInstaller.Host
 
                 await Context.Response.SendAsync(Context.Response.ContentLength ?? TaskInfo.TotalSize, RespData);
             }
-            catch (Exception ex)
-            {
-                throw;
-            }
             finally
             {
                 RespData?.Close();
-                RespData?.Dispose();
 
                 if (FromPS4)
                     Instances[InstanceID]--;

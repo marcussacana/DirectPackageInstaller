@@ -12,7 +12,6 @@ namespace DirectPackageInstaller.IO
 
         public Stream Base;
 
-        public readonly List<IntPtr> UnmanagedPointers = new List<IntPtr>();
         public readonly List<Stream> Instances = new List<Stream>();
 
         private Action<(DecompressorHelperStream This, long Readed)> OnRead;
@@ -66,26 +65,6 @@ namespace DirectPackageInstaller.IO
         public override void Write(byte[] buffer, int offset, int count)
         {
             Base.Write(buffer, offset, count);
-        }
-
-        protected override void Dispose(bool Disposing)
-        {
-            if (Disposing)
-            {
-                foreach (var Instance in Instances)
-                {
-                    try { Instance?.Dispose(); } catch { }
-                }
-
-                Instances.Clear();
-            }
-
-            foreach (var Pointer in UnmanagedPointers)
-                Marshal.FreeHGlobal(Pointer);
-
-            UnmanagedPointers.Clear();
-
-            base.Dispose(Disposing);
         }
     }
 }

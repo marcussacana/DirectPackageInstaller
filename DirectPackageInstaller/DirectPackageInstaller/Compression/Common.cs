@@ -49,10 +49,18 @@ namespace DirectPackageInstaller.Compression
 
                 foreach (var Part in DecompressInfo.PartsStream)
                 {
-                    if (!(Part.Base is SegmentedStream))
+                    if (!(Part.Base is SegmentedStream) || Part.Base == Args.This.Base)
                         continue;
 
                     SegmentedStream Strm = Part.Base as SegmentedStream;
+
+                    if (Strm.InProgess)
+                    {
+                        Strm.Cancel();
+                        DecompressInfo.SafeInSegmentTranstion = false;
+                        return;
+                    }
+
                     Strm.Flush();
 
                     var NewStrm = Strm.OpenSegment();
@@ -60,11 +68,6 @@ namespace DirectPackageInstaller.Compression
                     Part.Base = NewStrm;
 
                     Strm.Close();
-
-                    foreach (var Ptr in Args.This.UnmanagedPointers)
-                        try { Marshal.FreeHGlobal(Ptr); } catch { }
-
-                    Args.This.UnmanagedPointers.Clear();
                 }
 
                 var FileStream = Args.This.Base as FileHostStream;
@@ -83,8 +86,6 @@ namespace DirectPackageInstaller.Compression
                         try
                         {
                             var Stream = new UnsafeMemoryStream(FileStream.Length);
-                            
-                            Args.This.UnmanagedPointers.Add(new IntPtr(Stream.BasePointer));
 
                             Buffer = () =>
                             {
