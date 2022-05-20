@@ -89,6 +89,9 @@ namespace DirectPackageInstaller.Compression
 
                             Buffer = () =>
                             {
+                                if (UnsafeMemoryStream.PointerDisposed(new IntPtr(Stream.BasePointer)))
+                                    return null;
+                                
                                 var NewStream =  new UnsafeMemoryStream(Stream.BasePointer, FileStream.Length);           
                                 Args.This.Instances.Add(NewStream);
                                 

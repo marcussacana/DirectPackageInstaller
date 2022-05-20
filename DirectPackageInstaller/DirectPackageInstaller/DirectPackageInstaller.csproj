@@ -24,4 +24,17 @@
       <ProjectReference Include="..\..\HttpServerLite\HttpServerLite\HttpServerLite.csproj" />
       <ProjectReference Include="..\..\LibOrbisPkg\LibOrbisPkg.Core\LibOrbisPkg.Core.csproj" />
     </ItemGroup>
+    <ItemGroup>
+      <EmbeddedResource Update="Resources.resx">
+        <Generator>ResXFileCodeGenerator</Generator>
+        <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+    </ItemGroup>
+    <ItemGroup>
+      <Compile Update="Resources.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>Resources.resx</DependentUpon>
+      </Compile>
+    </ItemGroup>
 </Project>

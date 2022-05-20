@@ -139,55 +139,61 @@ namespace DirectPackageInstaller.IO
         private async void ConcurrencyRead(object sender, DoWorkEventArgs e)
         {
             SegmentBuffer(0);
-
             while (TotalBuffered < TotalSize && !e.Cancel)
             {
-                while (TotalConcurrency < Concurrency && !e.Cancel)
+                try
                 {
-                    if (Connections < TotalConcurrency)
-                        break;
-
-                    int NextSegment = BiggestSegment;
-                    long Reaming = ReamingSegmentLength(NextSegment);//Segment.Length - Segment.Position
-
-                    long OldReaming = Reaming / 2;
-                    long NewReaming = OldReaming;
-
-                    bool MustAssert = Reaming % 2 != 0;
-
-                    if (MustAssert)
-                        NewReaming += 1;
-
-                    //if (OldReaming + NewReaming != Reaming)
-                    //    break;
-
-                    if (Reaming < 1024 * 1024 * 2)
-                        break;
-
-                    var OldSegment = Segments[NextSegment];
-
-                    long NewSize = OldSegment.Length - NewReaming;
-
-                    long NewSegOffset = OldSegment.FilePos + NewSize;
-
-                    //if (NewSegOffset + NewReaming != OldSegment.Length + OldSegment.FilePos)
-                    //    break;
-
-                    lock (SegmentProgress)
+                    while (TotalConcurrency < Concurrency && !e.Cancel)
                     {
-                        Segments.Add(new VirtualStream(new BufferedStream(OpenSegment()), NewSegOffset, NewReaming)
+                        if (Connections < TotalConcurrency)
+                            break;
+
+                        int NextSegment = BiggestSegment;
+                        long Reaming = ReamingSegmentLength(NextSegment); //Segment.Length - Segment.Position
+
+                        long OldReaming = Reaming / 2;
+                        long NewReaming = OldReaming;
+
+                        bool MustAssert = Reaming % 2 != 0;
+
+                        if (MustAssert)
+                            NewReaming += 1;
+
+                        //if (OldReaming + NewReaming != Reaming)
+                        //    break;
+
+                        if (Reaming < 1024 * 1024 * 2)
+                            break;
+
+                        var OldSegment = Segments[NextSegment];
+
+                        long NewSize = OldSegment.Length - NewReaming;
+
+                        long NewSegOffset = OldSegment.FilePos + NewSize;
+
+                        //if (NewSegOffset + NewReaming != OldSegment.Length + OldSegment.FilePos)
+                        //    break;
+
+                        lock (SegmentProgress)
                         {
-                            ForceAmount = true
-                        });
-                        SegmentProgress.Add(0);
+                            Segments.Add(new VirtualStream(new BufferedStream(OpenSegment()), NewSegOffset, NewReaming)
+                            {
+                                ForceAmount = true
+                            });
+                            SegmentProgress.Add(0);
+                        }
+
+                        OldSegment.SetLength(NewSize);
+
+                        SegmentBuffer(Segments.Count() - 1);
                     }
 
-                    OldSegment.SetLength(NewSize);
-
-                    SegmentBuffer(Segments.Count() - 1);
+                    await Task.Delay(500);
                 }
-
-                await Task.Delay(500);
+                catch
+                {
+                    Cancel();
+                }
             }
         }
 
@@ -411,7 +417,7 @@ namespace DirectPackageInstaller.IO
                     if (e.Cancel)
                         break;
 
-                    if (Input.Base is UnsafeMemoryStream Reader && Reader.Disposed)
+                    if (StreamBuffer is UnsafeMemoryStream {Disposed: true})
                         break;
                     
                     if (Readed > 0)

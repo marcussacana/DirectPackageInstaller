@@ -6,6 +6,8 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
+using System.Resources;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
@@ -263,10 +265,8 @@ namespace DirectPackageInstaller.Tasks
         }
         public static async Task<bool> SendPKGPayload(string PS4IP, string PCIP, string URL, bool Silent)
         {
-            if (!File.Exists("payload.bin"))
-                return false;
-
-            var Payload = File.ReadAllBytes("payload.bin");
+            var Payload = Resources.Payload;
+            
             var Offset = Payload.IndexOf(new byte[] { 0xB4, 0xB4, 0xB4, 0xB4, 0xB4, 0xB4});
             if (Offset == -1)
                 return false;
@@ -388,10 +388,10 @@ namespace DirectPackageInstaller.Tasks
                 {
                     await PayloadSocket.ConnectAsync(new IPEndPoint(IPAddress.Parse(IP), Port));
                     break;
-                } catch{}
+                } catch { }
             }
 
-            if (!PayloadSocket.Connected && Retry)
+            if (!PayloadSocket!.Connected && Retry)
             {
                 await Task.Delay(3000);
                 return await TryConnectSocket(IP, false);
@@ -400,7 +400,7 @@ namespace DirectPackageInstaller.Tasks
             return PayloadSocket.Connected;
         }
 
-        public static string RegisterJSON(string URL, string PCIP)
+        private static string RegisterJSON(string URL, string PCIP)
         {
             var ID = Server.JSONs.Count().ToString();
             var JSON = string.Format("{{\n  \"originalFileSize\": {0},\n  \"packageDigest\": \"{1}\",\n  \"numberOfSplitFiles\": 1,\n  \"pieces\": [\n    {{\n      \"url\": \"{2}\",\n      \"fileOffset\": 0,\n      \"fileSize\": {0},\n      \"hashValue\": \"0000000000000000000000000000000000000000\"\n    }}\n  ]\n}}", CurrentPKG.PackageSize, CurrentPKG.Digest, URL);
@@ -409,7 +409,7 @@ namespace DirectPackageInstaller.Tasks
             return $"http://{PCIP}:{ServerPort}/json/{ID}.json";
         }
 
-        public static int IndexOf(this IEnumerable<byte> Buffer, byte[] Content)
+        private static int IndexOf(this IEnumerable<byte> Buffer, byte[] Content)
         {
             int Offset = 0;
             int Count = Buffer.Count() - Content.Length;

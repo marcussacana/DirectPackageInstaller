@@ -93,7 +93,7 @@ The build you need install the .NET 6.x SDK and run the `Build.cmd` file,
 this file is actually a hybrid bash and batch file, so despite the `cmd` extension you can use it to compile on unix systems too.  
 A "Release" Directory will be creted in the root of this repo with the binaries.
 
-The Payload must be manually built if you want modify the retail one, just run `make` in the payload source directory and replace the genareted payload.bin with the DirectPackageInstaller embedded resource file.
+The Payload must be manually built if you want modify the retail one, just run `make` in the payload source directory and replace the genareted payload.bin with the `DirectPackageInstaller/DirectPackageInstaller/payload` and rebuild the project.
 
 ### Warnings
 - The proxy feature in turn has proven to work in games over 90 GB, and I believe it is relatively stable as it depends on your internet connection and download server.

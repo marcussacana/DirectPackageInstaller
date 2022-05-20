@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace DirectPackageInstaller.IO
 {
@@ -67,10 +69,41 @@ namespace DirectPackageInstaller.IO
         public override long Position { get => (long)CurrentPointer - (long)BasePointer; set => CurrentPointer = BasePointer + value; }
 
         public override void Flush() { }
+        
+        static SemaphoreSlim innerLock = new SemaphoreSlim(1, 1);
+        static SemaphoreSlim outerLock = new SemaphoreSlim(1, 1);
+        static SemaphoreSlim ReadWriteLocker = new SemaphoreSlim(1, 1);
+        static int ReadWriteCount = 0;
+        
+        static void MasterReadWriteLock()
+        {
+            ReadWriteLocker.Wait();
+            outerLock.Wait();
+
+            if (ReadWriteCount == 0)
+                innerLock.Wait();
+
+            ReadWriteCount++;
+
+            outerLock.Release();
+            ReadWriteLocker.Release();
+        }
+
+        static void MasterReadWriteUnlock()
+        {
+            ReadWriteLocker.Wait();
+            ReadWriteCount--;
+
+            if (ReadWriteCount == 0)
+                innerLock.Release();
+
+            ReadWriteLocker.Release();
+        }
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            lock (this)
+            MasterReadWriteLock();
+            try
             {
                 if (Disposed || !InstanceCount.ContainsKey(new IntPtr(BasePointer)))
                     throw new ObjectDisposedException("UnsafeMemoryStream");
@@ -110,6 +143,10 @@ namespace DirectPackageInstaller.IO
 
                 return Readed;
             }
+            finally
+            {
+                MasterReadWriteUnlock();
+            }
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -145,7 +182,9 @@ namespace DirectPackageInstaller.IO
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            lock (this)
+            MasterReadWriteLock();
+            
+            try
             {
                 if (Disposed)
                     throw new ObjectDisposedException("UnsafeMemoryStream");
@@ -180,46 +219,59 @@ namespace DirectPackageInstaller.IO
                     CurrentPointer = (byte*) dwPointer;
                 }
             }
+            finally
+            {
+                MasterReadWriteUnlock();
+            }
+        }
+
+        public static bool PointerDisposed(IntPtr Pointer)
+        {
+            if (InstanceCount.ContainsKey(Pointer) && InstanceCount[Pointer] > 0)
+                return false;
+            return true;
         }
 
         private static Dictionary<IntPtr, int> InstanceCount = new Dictionary<IntPtr, int>();
 
         protected override void Dispose(bool Disposing)
         {
-            lock (this)
+            outerLock.Wait();
+            innerLock.Wait();
+            try
             {
-                lock (InstanceCount)
+                if (Disposed)
+                    return;
+
+                Disposed = true;
+
+                if (InstanceCount.ContainsKey(new IntPtr(BasePointer)))
                 {
-                    if (Disposed)
-                        return;
-                    
-                    if (InstanceCount.ContainsKey(new IntPtr(BasePointer)))
+                    if (InstanceCount[new IntPtr(BasePointer)] > 0)
                     {
-                        if (InstanceCount[new IntPtr(BasePointer)] > 0)
-                        {
-                            Disposed = true;
-                            base.Dispose(Disposing);
-
-                            InstanceCount[new IntPtr(BasePointer)]--;
-
-                            if (InstanceCount[new IntPtr(BasePointer)] > 0)
-                                return;
-                        }
-                    }
-                    else
-                    {
-                        Disposed = true;
                         base.Dispose(Disposing);
-                        return;
+
+                        InstanceCount[new IntPtr(BasePointer)]--;
+
+                        if (InstanceCount[new IntPtr(BasePointer)] > 0)
+                            return;
                     }
-
-                    Disposed = true;
-
-                    Marshal.FreeHGlobal(new IntPtr(BasePointer));
-                    InstanceCount.Remove(new IntPtr(BasePointer));
-
-                    base.Dispose(Disposing);
                 }
+                else
+                {
+                    base.Dispose(Disposing);
+                    return;
+                }
+
+                Marshal.FreeHGlobal(new IntPtr(BasePointer));
+                InstanceCount.Remove(new IntPtr(BasePointer));
+
+                base.Dispose(Disposing);
+            }
+            finally
+            {
+                outerLock.Release();
+                innerLock.Release();
             }
         }
     }
