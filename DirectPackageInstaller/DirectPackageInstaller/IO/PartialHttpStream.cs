@@ -132,49 +132,6 @@ namespace DirectPackageInstaller.IO
 
             return (int)(Position - curPosition);
         }
-
-        public new async Task<int> ReadAsync(byte[] buffer, int offset, int count)
-        {
-            if (count == 0)
-                return 0;
-
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
-            if (offset < 0 || offset >= buffer.Length)
-                throw new ArgumentException(nameof(offset));
-            if (count < 0 || offset + count > buffer.Length)
-                throw new ArgumentException(nameof(count));
-
-            long curPosition = Position;
-            Position += ReadFromCache(buffer, ref offset, ref count);
-
-            if (count > cacheLen)
-            {
-                // large request, do not cache
-                while (count > 0)
-                {
-                    var Result = await HttpReadAsync(buffer, offset, count);
-                    Position += Result.Readed;
-                    offset = Result.Offset;
-                    count = Result.Count;
-                }
-            }
-            else if (count > 0)
-            {
-                // read to cache
-                cachePosition = Position;
-
-                var Result = await HttpReadAsync(buffer, offset, count);
-                cacheCount = Result.Readed;
-                offset = Result.Offset;
-                count = Result.Count;
-
-                Position += ReadFromCache(buffer, ref offset, ref count);
-            }
-
-            return (int)(Position - curPosition);
-        }
-
         public override void Write(byte[] buffer, int offset, int count)
         { throw new NotImplementedException(); }
 
@@ -222,6 +179,9 @@ namespace DirectPackageInstaller.IO
         {
             try
             {
+                if (Position == Length)
+                    return 0;
+                
                 if (RespPos != Position || ResponseStream == null)
                 {
                     HttpRequestsCount++;
@@ -260,7 +220,7 @@ namespace DirectPackageInstaller.IO
 
                     if (length != null || Position > 0)
                         req.AddRange(Position, Length - 1);
-
+                    
                     resp = req.GetResponse();
 
                     if (length != null && FinalURL != resp.ResponseUri.AbsoluteUri)
@@ -297,7 +257,7 @@ namespace DirectPackageInstaller.IO
                 offset += nread;
                 count -= nread;
                 
-                if (App.IsUnix && nread == 0 && count > 0)
+                if (App.IsUnix && nread == 0 && count > 0 && ResponseStream.Position != ResponseStream.Length)
                     throw new WebException();
 
                 RespPos = Position + nread;
@@ -337,132 +297,6 @@ namespace DirectPackageInstaller.IO
                     var response = (HttpWebResponse)((WebException)ex).Response;
                     if (response?.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable)
                         return 0;
-                }
-
-                throw;
-            }
-        }
-
-        private async Task<(int Readed, int Offset, int Count)> HttpReadAsync(byte[] buffer, int offset, int count, int Tries = 0)
-        {
-            try
-            {
-                if (RespPos != Position || ResponseStream == null)
-                {
-                    HttpRequestsCount++;
-
-                    if (ResponseStream != null)
-                    {
-                        ResponseStream?.Close();
-                        ResponseStream?.Dispose();
-                    }
-
-                    if (req != null)
-                        req.ServicePoint.CloseConnectionGroup(req.ConnectionGroupName);
-
-                    if (resp != null)
-                    {
-                        resp?.Close();
-                        resp?.Dispose();
-                    }
-
-                    req = HttpWebRequest.CreateHttp(Url);
-                    req.CookieContainer = Cookies;
-                    req.ConnectionGroupName = new Guid().ToString();
-                    req.CachePolicy = new System.Net.Cache.RequestCachePolicy(System.Net.Cache.RequestCacheLevel.NoCacheNoStore);
-
-
-
-                    req.KeepAlive = KeepAlive;
-                    req.ServicePoint.SetTcpKeepAlive(KeepAlive, 1000 * 60 * 5, 1000);
-
-                    if (!TryBypassProxy || (TryBypassProxy && Tries >= 2))
-                        req.Proxy = Proxy;
-
-
-                    foreach (var Header in Headers)
-                        req.Headers[Header.Key] = Header.Value;
-
-                    if (length != null || Position > 0)
-                        req.AddRange(Position, Length - 1);
-
-                    resp = await req.GetResponseAsync();
-
-                    if (length != null && FinalURL != resp.ResponseUri.AbsoluteUri)
-                    {
-                        if (resp.ContentType.Contains("text/html") && resp.ContentType != FinalContentType)
-                        {
-                            FinalURL = resp.ResponseUri.AbsoluteUri;
-                            FinalContentType = resp.ContentType;
-                            throw new WebException("Link Expired?");
-                        }
-                    }
-
-                    FinalURL = resp.ResponseUri.AbsoluteUri;
-                    FinalContentType = resp.ContentType;
-
-                    if (length == null)
-                        ReadResponseInfo(resp);
-
-                    ResponseStream = resp.GetResponseStream();
-                    ResponseStream.ReadTimeout = (int)TimeSpan.FromMinutes(1).TotalMilliseconds;
-                    ResponseStream = new BufferedStream(ResponseStream);
-                }
-
-                int nread = 0;
-
-                int Readed = 0;
-                do
-                {
-                    Readed = await ResponseStream.ReadAsync(buffer, offset + nread, count - nread);
-                    nread += Readed;
-                } while (Readed > 0 && count > 0);
-
-                offset += nread;
-                count -= nread;
-
-                RespPos = Position + nread;
-
-                return (nread, offset, count);
-
-            }
-            catch (IOException ex)
-            {
-                if (req != null)
-                    req.ServicePoint.CloseConnectionGroup(req.ConnectionGroupName);
-
-                ResponseStream?.Close();
-                ResponseStream?.Dispose();
-                ResponseStream = null;
-
-                if (TryBypassProxy ? Tries < 5 : Tries < 3)
-                {
-                    RefreshUrl?.Invoke();
-                    return await HttpReadAsync(buffer, offset, count, Tries + 1).ConfigureAwait(false);
-                }
-
-                throw;
-            }
-            catch (Exception ex)
-            {
-                if (req != null)
-                    req.ServicePoint.CloseConnectionGroup(req.ConnectionGroupName);
-
-                ResponseStream?.Close();
-                ResponseStream?.Dispose();
-                ResponseStream = null;
-
-                if (TryBypassProxy ? Tries < 5 : Tries < 3)
-                {
-                    RefreshUrl?.Invoke();
-                    return await HttpReadAsync(buffer, offset, count, Tries + 1).ConfigureAwait(false);
-                }
-
-                if (ex is WebException)
-                {
-                    var response = (HttpWebResponse)((WebException)ex).Response;
-                    if (response?.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable)
-                        return (0, offset, count);
                 }
 
                 throw;

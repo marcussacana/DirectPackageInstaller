@@ -58,7 +58,8 @@ namespace DirectPackageInstaller.Views
                     Icon = Icon,
                     Buttons = Buttons,
                     Message = Message,
-                    Title = Title
+                    Title = Title,
+                    Result = DialogResult.Cancel
                 }
             };
             

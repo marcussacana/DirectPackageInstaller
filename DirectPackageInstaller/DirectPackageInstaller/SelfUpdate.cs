@@ -31,10 +31,11 @@ namespace DirectPackageInstaller
         private static readonly string TempUpdateDir = Path.Combine(Path.GetDirectoryName(MainExecutable), "LastVersion");
 
         const string Repo = "https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/";
+        //const string Repo = "http://localhost:8000/";
 
         const string UpdateList = "Update.ini";
 
-        Version CurrentVersion = new Version("5.3.0");
+        Version CurrentVersion = new Version("6.0.0");
 
         string Runtime;
 
@@ -124,7 +125,7 @@ namespace DirectPackageInstaller
             
             Zip.ExtractToDirectory(TempUpdateDir, true);
             
-            Process.Start(TempUpdateDir + Path.GetFileName(MainExecutable));
+            Process.Start(Path.Combine(TempUpdateDir, Path.GetFileName(MainExecutable)));
 
             Environment.Exit(0);
         }

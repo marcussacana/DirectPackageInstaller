@@ -13,6 +13,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using DirectPackageInstaller.ViewModels;
 using DirectPackageInstaller.Views;
+using Microsoft.CodeAnalysis;
 
 namespace DirectPackageInstaller
 {
