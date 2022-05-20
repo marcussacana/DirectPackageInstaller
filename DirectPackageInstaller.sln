@@ -4,8 +4,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirectPackageInstaller.Desk
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirectPackageInstaller", "DirectPackageInstaller\DirectPackageInstaller\DirectPackageInstaller.csproj", "{921CC84D-9B3F-454A-852C-433CD6585311}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirectPackageInstaller.Android", "DirectPackageInstaller\DirectPackageInstaller.Android\DirectPackageInstaller.Android.csproj", "{0BB8DB11-B2EC-4618-9E8E-325363FA8722}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LibOrbisPkg", "LibOrbisPkg\LibOrbisPkg\LibOrbisPkg.csproj", "{B053F491-FF0F-4CBB-B03B-520591BB0441}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LibOrbisPkg.Core", "LibOrbisPkg\LibOrbisPkg.Core\LibOrbisPkg.Core.csproj", "{8A5EB900-7726-4D50-87C2-BE3BD202F6A2}"

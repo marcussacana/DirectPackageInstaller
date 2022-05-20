@@ -88,6 +88,13 @@ The Segmented Download mode will start a background multithreaded download of th
 ### Dependencies
 The Direct Package Installer Requires the .NET 6.0 Runtime installed in your machine, you can dowload it [here](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime)
 
+### How To Build
+The build you need install the .NET 6.x SDK and run the `Build.cmd` file,  
+this file is actually a hybrid bash and batch file, so despite the `cmd` extension you can use it to compile on unix systems too.  
+A "Release" Directory will be creted in the root of this repo with the binaries.
+
+The Payload must be manually built if you want modify the retail one, just run `make` in the payload source directory and replace the genareted payload.bin with the DirectPackageInstaller embedded resource file.
+
 ### Warnings
 - The proxy feature in turn has proven to work in games over 90 GB, and I believe it is relatively stable as it depends on your internet connection and download server.
 - Compressed file downloads generate a temporary PKG 'cache' on your hard drive, which will require free space according to the size of the PKG on your hard drive.
@@ -95,5 +102,5 @@ The Direct Package Installer Requires the .NET 6.0 Runtime installed in your mac
 ## Credits:
 LibOrbisPkg by **maxton**  
 HttpServerLite by **jchristn**  
-DirectPackageInstaller by **marcussacana**
 Payload template by **sleirsgoevy**
+DirectPackageInstaller by **marcussacana**
