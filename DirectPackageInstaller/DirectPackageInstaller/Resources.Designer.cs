@@ -51,5 +51,12 @@ namespace DirectPackageInstaller {
                 return ((byte[])(obj));
             }
         }
+        
+        internal static byte[] WebHeaderCollection {
+            get {
+                object obj = ResourceManager.GetObject("WebHeaderCollection", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
     }
 }

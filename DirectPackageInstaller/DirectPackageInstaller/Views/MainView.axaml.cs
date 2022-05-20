@@ -322,6 +322,18 @@ namespace DirectPackageInstaller.Views
                  new Thread(() => Installer.StartServer(App.Config.PCIP)).Start();
              
              Model.PropertyChanged += ModelOnPropertyChanged;
+             
+             App.Callback(async () =>
+             {
+                 if (await App.Updater.HasUpdates())
+                 {
+                     var Response = await MessageBox.ShowAsync("New Update Found, Download now?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                     if (Response != DialogResult.Yes)
+                         return;
+                     
+                     await App.Updater.DownloadUpdate();
+                 }
+             });
         }
 
         private void ModelOnPropertyChanged(object? sender, PropertyChangedEventArgs e)

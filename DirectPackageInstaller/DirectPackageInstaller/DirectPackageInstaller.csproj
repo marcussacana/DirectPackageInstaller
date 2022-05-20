@@ -37,4 +37,9 @@
         <DependentUpon>Resources.resx</DependentUpon>
       </Compile>
     </ItemGroup>
+    <ItemGroup>
+      <Reference Include="System.Net.WebHeaderCollection">
+        <HintPath>System.Net.WebHeaderCollection.dll</HintPath>
+      </Reference>
+    </ItemGroup>
 </Project>

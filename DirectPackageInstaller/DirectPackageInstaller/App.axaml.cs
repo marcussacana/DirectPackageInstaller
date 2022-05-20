@@ -1,5 +1,9 @@
 using System;
+using System.Collections;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,8 +23,18 @@ namespace DirectPackageInstaller
             AvaloniaXamlLoader.Load(this);
         }
 
+        public static readonly SelfUpdate Updater = new SelfUpdate();
         public override void OnFrameworkInitializationCompleted()
         {
+            if (Updater.FinishUpdatePending())
+            {
+                Process.Start(Updater.FinishUpdate());
+                Environment.Exit(0);
+                return;
+            }
+            
+            UnlockHeaders();
+            
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
                 desktop.MainWindow = new MainWindow
@@ -38,7 +52,49 @@ namespace DirectPackageInstaller
 
             base.OnFrameworkInitializationCompleted();
         }
+        
+        /// <summary>
+        /// We aren't kids microsoft, we shouldn't need this
+        /// 
+        /// This Hack allows set custom header names instead
+        /// use the microsoft enforced API that make my job
+        /// harden than the usual to implement all possibilities
+        /// of the http headers where I need handle it.
+        ///
+        /// After .NET Core 3, we can't use reflection to modify
+        /// the readonly field, and we deal with that by loading
+        /// early an patched assembly that don't use the readonly
+        /// attribute in the field that we want modify. :)
+        ///
+        /// Suck My Dick Microsoft.
+        /// </summary>
+        public static void UnlockHeaders()
+        {
+            try
+            {
+                //At the time writing this, the dnSpyEx don't support .NET 6, then
+                //this custom assembly is manually patched to only remove the readonly
+                //attribute from the HeaderInfoTable, in the future will be better
+                //just load a pre-patched assembly with all headers already unlocked
+                var Asm = Assembly.Load(DirectPackageInstaller.Resources.WebHeaderCollection);
+                var tHashtable = Asm
+                    .GetType("System.Net.HeaderInfoTable")
+                    .GetFields(BindingFlags.NonPublic | BindingFlags.Static)
+                    .Single(x => x.FieldType.Name == "Hashtable");
 
+                var Table = (Hashtable)tHashtable.GetValue(null);
+                foreach (var Key in Table.Keys.Cast<string>().ToArray())
+                {
+                    var HeaderInfo = Table[Key];
+                    HeaderInfo.GetType().GetField("IsRequestRestricted", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(HeaderInfo, false);
+                    HeaderInfo.GetType().GetField("IsResponseRestricted", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(HeaderInfo, false);
+                    Table[Key] = HeaderInfo;
+                }
+
+                tHashtable.SetValue(null, Table);
+            }
+            catch { }
+        }
         public static void DoEvents()
         {
             var Delay = new CancellationTokenSource();

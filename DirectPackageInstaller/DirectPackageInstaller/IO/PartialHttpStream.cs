@@ -471,7 +471,7 @@ namespace DirectPackageInstaller.IO
 
         static Dictionary<string, (string Filename, long Length)> HeadCache = new Dictionary<string, (string Filename, long Length)>();
         
-        private long HttpGetLength(bool NoHead = false)
+        private long? HttpGetLength(bool NoHead = false)
         {
             if (HeadCache.ContainsKey(Url))
             {
@@ -501,6 +501,9 @@ namespace DirectPackageInstaller.IO
             }
             catch
             {
+                if (NoHead)
+                    return null;
+                
                 return HttpGetLength(true);
             }
 

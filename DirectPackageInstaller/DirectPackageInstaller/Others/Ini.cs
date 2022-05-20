@@ -19,6 +19,10 @@ namespace DirectPackageInstaller
                 IniLines = new string[0];
         }
 
+        public Ini(string[] Lines)
+        {
+            IniLines = Lines;
+        }
         ~Ini() => Save();
         public string GetValue(string Name, string Group = null)
         {
