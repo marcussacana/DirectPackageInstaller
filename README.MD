@@ -102,5 +102,5 @@ The Payload must be manually built if you want modify the retail one, just run `
 ## Credits:
 LibOrbisPkg by **maxton**  
 HttpServerLite by **jchristn**  
-Payload template by **sleirsgoevy**
+Payload template by **sleirsgoevy**  
 DirectPackageInstaller by **marcussacana**
