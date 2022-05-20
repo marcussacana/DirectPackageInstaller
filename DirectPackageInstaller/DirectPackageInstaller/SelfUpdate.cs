@@ -140,7 +140,9 @@ namespace DirectPackageInstaller
 
             if (Directory.Exists(TempUpdateDir))
                 Directory.Delete(TempUpdateDir, true);
-
+                
+            if (File.Exists(Path.Combine(Path.GetDirectoryName(MainExecutable), "DirectPackageInstaller.exe")))
+                Delete(Path.Combine(Path.GetDirectoryName(MainExecutable), "DirectPackageInstaller.exe"));
             return false;
         }
 

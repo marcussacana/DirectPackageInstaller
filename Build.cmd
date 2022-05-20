@@ -17,12 +17,30 @@ mkdir Release
 
 Publish () {
    echo "Building for $1"
+   dotnet restore -r $1
    dotnet publish -c Release -r $1
    zip -j -9 -r Release/$1.zip DirectPackageInstaller/DirectPackageInstaller.Desktop/bin/Release/net6.0/$1/publish/* -x Icon.icns
 }
 
+
+# Fix Console Window on Windows
+WINPublish(){
+   Publish $1
+   
+   cd Release
+   
+   unzip $1.zip -d tmp/
+   
+   dotnet ../Files/NSubsys.Tasks.dll ./tmp/DirectPackageInstaller.Desktop.exe
+   
+   rm $1.zip
+   zip -j -9 -r $1.zip tmp/*   
+   rm -r tmp
+   
+   cd ..
+}
+
 OSXPublish (){
-   echo "Building for $1"
    Publish $1
    
    cd Release
@@ -39,10 +57,10 @@ OSXPublish (){
    cd ..
 }
 
-Publish win-x64
-Publish win-x86
-Publish win-arm
-Publish win-arm64
+WINPublish win-x64
+WINPublish win-x86
+WINPublish win-arm
+WINPublish win-arm64
 
 
 Publish linux-x64
@@ -135,6 +153,7 @@ goto :eof
 exit
 :Build
 echo Building for %1
+dotnet restore -r %1
 dotnet publish -c Release -r %1
 powershell Compress-Archive .\DirectPackageInstaller\DirectPackageInstaller.Desktop\bin\Release\net6.0\%1\publish\* .\Release\%1.zip
 goto :eof
