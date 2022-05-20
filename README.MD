@@ -1,6 +1,7 @@
 # DirectPackageInstaller
 
-A tool to preview and send PKG to your PS4 from direct links
+A tool to preview and send PKG to your PS4 from direct links, using your GoldHEN payloader server,  
+Or alternatively the RemotePackageInstaller Homebrew.
 
 ### Features
 - Preview PKGs Files
@@ -11,7 +12,7 @@ A tool to preview and send PKG to your PS4 from direct links
 - Segmented Downloads
 - Support for few file hosting links
 - Support for PSN update manifest (Splited PKGs)
-- Works with Rem. Pack. Installer or Bin Loader
+- Works with or without RemotePackageInstaller
 
 
 ### Supported File Hostings
@@ -26,14 +27,13 @@ A tool to preview and send PKG to your PS4 from direct links
 ### How to Install
 - Download and Install the [.NET 6 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime)
 - Download one of those builds:
-	- [Windows x64]()
-	- [Windows x86]()
-	- [Windows ARM]()
-	- [Linux x64]()
-	- [Linux x86]()
-	- [Linux ARM]()
-	- [OSX x64]()
-	- [OSX ARM]()
+	- [Windows x64](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/Windows-X64.zip)
+	- [Windows x86](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/Windows-X86.zip)
+	- [Windows ARM](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/Windows-ARM.zip)
+	- [Windows ARM64](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/Windows-ARM64.zip)
+	- [Linux x64](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/Linux-X64.zip)
+	- [Linux ARM](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/Linux-ARM.zip)
+	- [Linux ARM64](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/Linux-ARM64.zip)
 
 
 ### How to Use 
@@ -89,14 +89,14 @@ The Segmented Download mode will start a background multithreaded download of th
 The Direct Package Installer Requires the .NET 6.0 Runtime installed in your machine, you can dowload it [here](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime)
 
 ### How To Build
-The build you need install the .NET 6.x SDK and run the `Build.cmd` file,  
+To build you need install the .NET 6.x SDK and run the `Build.cmd` file,  
 this file is actually a hybrid bash and batch file, so despite the `cmd` extension you can use it to compile on unix systems too.  
 A "Release" Directory will be creted in the root of this repo with the binaries.
 
 The Payload must be manually built if you want modify the retail one, just run `make` in the payload source directory and replace the genareted payload.bin with the `DirectPackageInstaller/DirectPackageInstaller/payload` and rebuild the project.
 
 ### Warnings
-- The proxy feature in turn has proven to work in games over 90 GB, and I believe it is relatively stable as it depends on your internet connection and download server.
+- The DirectPackageInstaller don't handle well parallel decompressions, If you're downloading from a compressed file, try download one per time.
 - Compressed file downloads generate a temporary PKG 'cache' on your hard drive, which will require free space according to the size of the PKG on your hard drive.
 
 ## Credits:
