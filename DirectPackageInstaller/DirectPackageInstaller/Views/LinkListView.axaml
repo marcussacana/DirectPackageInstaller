@@ -1,0 +1,60 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewModels="clr-namespace:DirectPackageInstaller.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="200"
+             x:Class="DirectPackageInstaller.Views.LinkListView">
+    <Design.DataContext>
+        <viewModels:LinkListViewModel/>
+    </Design.DataContext>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        
+        <ScrollViewer Grid.ColumnSpan="3" VerticalScrollBarVisibility="Auto" IsEnabled="{Binding IsMultipart}">
+            <ItemsControl Items="{Binding Links}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                            <StackPanel Orientation="Vertical"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <TextBox Grid.Column="1" Text="{Binding Content, Mode=TwoWay}" PropertyChanged="TextBoxChanged"></TextBox>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+        <TextBlock Grid.Row="1">Password:</TextBlock>
+        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Password}" IsEnabled="{Binding HasPassword}"></TextBox>
+        <Button Grid.Row="1" Grid.Column="2" Name="btnOK">OK</Button>
+    </Grid>
+    
+    <UserControl.Styles>
+        <Style Selector="TextBox">
+            <Setter Property="Margin" Value="5,5,5,0"/>
+        </Style>
+        <Style Selector="Button">
+            <Setter Property="Margin" Value="5,5,5,5"/>
+        </Style>
+        <Style Selector="TextBox">
+            <Setter Property="Margin" Value="0,5,0,5"/>
+        </Style>
+        <Style Selector="ScrollViewer">
+            <Setter Property="Margin" Value="5,0,5,0"/>
+        </Style>
+        <Style Selector="TextBlock">
+            <Setter Property="Margin" Value="5,5,5,5"/>
+            <Setter Property="TextAlignment" Value="Right"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </UserControl.Styles>
+</UserControl>

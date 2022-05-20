@@ -1,0 +1,31 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewModels="clr-namespace:DirectPackageInstaller.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="60"
+             Height="60"
+             x:Class="DirectPackageInstaller.Views.SelectView"
+             Foreground="White"
+             Background="#171C2C">
+    <Design.DataContext>
+        <viewModels:SelectViewModel/>
+    </Design.DataContext>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Label Content="PKG:"/>
+        <ComboBox Grid.Column="1" Items="{Binding Options}" Name="Items"></ComboBox>
+    </Grid>
+    <UserControl.Styles>
+        <Style Selector="Label">
+            <Setter Property="Margin" Value="5,20,5,5"/>
+        </Style>
+        <Style Selector="ComboBox">
+            <Setter Property="Margin" Value="0,15,5,5"></Setter>
+            <Setter Property="MinWidth" Value="740"></Setter>
+        </Style>
+    </UserControl.Styles>
+</UserControl>

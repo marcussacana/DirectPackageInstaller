@@ -1,0 +1,16 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:DirectPackageInstaller.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:views="clr-namespace:DirectPackageInstaller.Views"
+        x:Class="DirectPackageInstaller.Views.Select"
+        WindowStartupLocation="CenterOwner"
+        Height="60"
+        Width="800"
+        MaxHeight="60"
+        MinHeight="60"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="Select An PKG">
+    <views:SelectView Name="View"/>
+</Window>

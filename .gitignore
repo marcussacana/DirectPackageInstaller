@@ -292,6 +292,12 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+#Payload Binaries
+*.o
+*.a
+*.bin
+*.elf
+
 [Pp]ackages/
 [Oo]bj/
 [Bb]in/
