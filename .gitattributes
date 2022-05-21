@@ -15,3 +15,8 @@
 *.PDF	 diff=astextplain
 *.rtf	 diff=astextplain
 *.RTF	 diff=astextplain
+
+Payload/freebsd-headers/** linguist-vendored
+Payload/lib/** linguist-vendored
+Payload/ps4-libjbc/** linguist-vendored
+
