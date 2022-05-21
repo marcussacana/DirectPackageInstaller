@@ -29,7 +29,14 @@ namespace DirectPackageInstaller
                 {
                     var PS4IP = ((IPEndPoint) e.RemoteEndPoint).Address;
 
-                    IPAddress? PCIP = ((IPEndPoint?) ((Socket) sender).LocalEndPoint)?.Address;
+                    IPAddress? PCIP = null;
+
+                    
+                    //In case of the socket already disposed 
+                    try
+                    {
+                        PCIP = ((IPEndPoint?) ((Socket) sender).LocalEndPoint)?.Address;
+                    } catch { }
 
                     if (PCIP!= null && PCIP.Equals(IPAddress.Any))
                         PCIP = null;
@@ -84,6 +91,7 @@ namespace DirectPackageInstaller
                     await Task.Delay(500);
                 }
 
+                await Task.Delay(1000);
                 Discovery.Close();
             }
         }

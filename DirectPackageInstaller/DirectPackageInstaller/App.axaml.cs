@@ -21,6 +21,15 @@ namespace DirectPackageInstaller
     {
         public override void Initialize()
         {
+            AppDomain.CurrentDomain.UnhandledException += async (sender, args) =>
+            {
+                if (args.IsTerminating)
+                {
+                    var ErrorInfo = args.ExceptionObject.ToString();
+                    File.WriteAllText("DPI-CARSH.log", ErrorInfo);
+                }
+            };
+            
             AvaloniaXamlLoader.Load(this);
         }
 
