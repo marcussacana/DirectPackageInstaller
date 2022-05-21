@@ -17,6 +17,7 @@ using DirectPackageInstaller.Host;
 using DirectPackageInstaller.IO;
 using DirectPackageInstaller.Tasks;
 using DirectPackageInstaller.ViewModels;
+using LibOrbisPkg.GP4;
 using LibOrbisPkg.PKG;
 using LibOrbisPkg.SFO;
 using SharpCompress.Archives;
@@ -37,6 +38,8 @@ namespace DirectPackageInstaller.Views
         private Source InputType = Source.NONE;
 
         private string? LastForcedSource = null;
+
+        private List<(string Source, string Name)> BatchList = new List<(string Source, string Name)>();
 
         private MainWindow Parent;
 
@@ -84,18 +87,24 @@ namespace DirectPackageInstaller.Views
 
             string SourcePackage = Model.CurrentURL;
 
+            //Check if the BtnLoadOnClicked has manually called with an file path as source
             if (ForcedSource != null && ForcedSource.Length > 2 && (ForcedSource[1] == ':' || ForcedSource[0] == '/'))
                 SourcePackage = LastForcedSource = ForcedSource;
+            
+            //To hide the Packages menu if a different source is loaded
+            if (BatchList.All(x => x.Source != SourcePackage))
+                BatchList.Clear();
 
             if (string.IsNullOrWhiteSpace(SourcePackage) && !string.IsNullOrWhiteSpace(LastForcedSource))
                 SourcePackage = LastForcedSource;
 
+            //Already Loaded, then Let's Install it!
             if (InputType != Source.NONE) {
                 var Success = await Install(SourcePackage, false);
 
                 if (InputType.HasFlag(Source.File) && Success)
-                    Model.CurrentURL = string.Empty;
-
+                    App.Callback(() => Model.CurrentURL = string.Empty);
+                
                 return;
             }
 
@@ -115,11 +124,24 @@ namespace DirectPackageInstaller.Views
                         Extensions = new List<string>() { "*" }
                     }
                 };
+
+                FD.AllowMultiple = true;
                 
                 var Result = await FD.ShowAsync(Parent);
-                if (Result != null && Result.Length > 0)
-                    Model.CurrentURL = Result.First();
                 
+                BatchList.Clear();
+                
+                if (Result is {Length: > 0})
+                {
+                    
+                    if (Result.Length > 1)
+                        BatchList.AddRange(Result.Select(x => (x, Path.GetFileName(x))));
+                    
+                    ListEntries(Result);
+                    
+                    App.Callback(() => Model.CurrentURL = Result.First());
+                }
+
                 return;
             }
 
@@ -137,7 +159,7 @@ namespace DirectPackageInstaller.Views
 
             if (ForcedSource == null)
             {
-                PackagesMenu.IsVisible = false;
+                PackagesMenu.IsVisible = BatchList.Any();
                 Installer.CurrentFileList = null;
             }
 
@@ -145,9 +167,9 @@ namespace DirectPackageInstaller.Views
 
             if (!Uri.IsWellFormedUriString(SourcePackage, UriKind.Absolute) && !File.Exists(SourcePackage)) {
                 await MessageBox.ShowAsync(Parent, "Invalid URL or File Path", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
-
                 return;
             }
+            
             try
             {
                 PKGStream = null;
@@ -304,14 +326,14 @@ namespace DirectPackageInstaller.Views
              
             if (App.Config.SearchPS4 || string.IsNullOrEmpty(App.Config.PS4IP))
             {
-                _ = PS4Finder.StartFinder((IP) =>
+                _ = PS4Finder.StartFinder((PS4IP, PCIP) =>
                 {
                     Dispatcher.UIThread.InvokeAsync(() =>
                     {
                         if (string.IsNullOrEmpty(Model.PS4IP))
                         {
-                            Model.PS4IP = IP.ToString();
-                            Model.PCIP = IPHelper.FindLocalIP(IP.ToString());
+                            Model.PS4IP = PS4IP.ToString();
+                            Model.PCIP = PCIP?.ToString() ?? IPHelper.FindLocalIP(PS4IP.ToString()) ?? "";
                             RestartServer_OnClick(null, null);
                         }
                     });
@@ -370,12 +392,13 @@ namespace DirectPackageInstaller.Views
         private void UrlChanged(string Url)
         {
             InputType = Source.NONE;
+
+            btnLoad.Content = (string.IsNullOrWhiteSpace(Url) && !File.Exists(Url)) ? "Open" : "Load";
             
-            btnLoad.Content = (string.IsNullOrWhiteSpace(Url) || File.Exists(Url)) ? "Open" : "Load";
             Installer.CurrentFileList = null;
             LastForcedSource = null;
 
-            PackagesMenu.IsVisible = false;
+            PackagesMenu.IsVisible = BatchList.Any();
 
             if (Url.Contains("\n"))
             {
@@ -496,7 +519,7 @@ namespace DirectPackageInstaller.Views
                 btnLoad.Content = "Install";
             }
         }
-
+        
         private async void BtnInstallAllOnClick(object? sender, RoutedEventArgs? e)
         {
             if (e != null)
@@ -505,40 +528,54 @@ namespace DirectPackageInstaller.Views
                 return;
             }
 
-            if (Installer.CurrentFileList == null || CurrentDecompressor == null)
+            if (!BatchList.Any() && (Installer.CurrentFileList == null || CurrentDecompressor == null))
                 return;
 
-            foreach (var File in Installer.CurrentFileList)
+            foreach (var File in Installer.CurrentFileList ?? BatchList.Select(x => x.Source))
             {
-                var Source = tbURL.Text;
+                var ContentSource = tbURL.Text;
                 
-                if (string.IsNullOrWhiteSpace(Source))
-                    Source = File;
+                if (string.IsNullOrWhiteSpace(ContentSource))
+                    ContentSource = File;
                 else
                     Installer.EntryName = File;
 
-                Stream Stream = null;
-                try
+                if (InputType.HasFlag(Source.SevenZip) || InputType.HasFlag(Source.RAR))
                 {
-                    var Entry = CurrentDecompressor.Entries.Single(x =>
-                        x.Key.EndsWith(File, StringComparison.InvariantCultureIgnoreCase));
-                    Stream = Entry.OpenEntryStream();
+                    Stream? Stream = null;
+                    
+                    try
+                    {
+                        var Entry = CurrentDecompressor.Entries.Single(x =>
+                            x.Key.EndsWith(File, StringComparison.InvariantCultureIgnoreCase));
+                        Stream = Entry.OpenEntryStream();
 
-                    if (!Stream.CanSeek)
-                        Stream = new ReadSeekableStream(Stream, TempHelper.GetTempFile(null));
+                        if (!Stream.CanSeek)
+                            Stream = new ReadSeekableStream(Stream, TempHelper.GetTempFile(null));
 
-                    Installer.CurrentPKG = Stream.GetPKGInfo() ?? throw new Exception();
-                }
-                catch
+                        Installer.CurrentPKG = Stream.GetPKGInfo() ?? throw new Exception();
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+                    finally
+                    {
+                        Stream?.Close();
+                    }
+                } 
+                else if (InputType.HasFlag(Source.File))
                 {
-                    continue;
-                }
-                finally
-                {
-                    Stream?.Close();
+                    ContentSource = File;
+                    
+                    try
+                    {
+                         using (FileStream Stream = new FileStream(File, FileMode.Open))
+                            Installer.CurrentPKG = Stream.GetPKGInfo() ?? throw new Exception();
+                    } catch { continue; }
                 }
 
-                if (!await Install(Source, true)) {
+                if (!await Install(ContentSource, true)) {
                     var Reply = await MessageBox.ShowAsync("Continue trying install the others packages?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                     if (Reply != DialogResult.Yes)
                         break;

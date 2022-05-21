@@ -35,7 +35,7 @@ namespace DirectPackageInstaller
 
         const string UpdateList = "Update.ini";
 
-        Version CurrentVersion = new Version("6.0.0");
+        Version CurrentVersion = new Version("6.0.1");
 
         string Runtime;
 

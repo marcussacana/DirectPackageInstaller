@@ -12,6 +12,10 @@ namespace DirectPackageInstaller
 {
     static class IPHelper
     {
+        public static string[] EnumLocalIPs()
+        {
+            return SearchInterfaces();
+        }
         public static string? FindLocalIP(string RemoteIP)
         {
             try
