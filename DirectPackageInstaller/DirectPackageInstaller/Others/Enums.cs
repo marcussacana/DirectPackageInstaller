@@ -3,7 +3,7 @@
 namespace DirectPackageInstaller
 {
     [Flags]
-    enum Source : ulong
+    public enum Source : ulong
     {
         NONE      = 0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000,
         URL       = 0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000001,

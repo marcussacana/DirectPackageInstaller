@@ -16,6 +16,8 @@ namespace DirectPackageInstaller.Host
 {
     public class PS4Server
     {
+        public DateTime? LastRequest { get; private set; } = null;
+
         const long MaxSkipBufferSize = 1024 * 1024 * 100;
 
         public Dictionary<string, string> JSONs = new Dictionary<string, string>();
@@ -26,8 +28,8 @@ namespace DirectPackageInstaller.Host
         static TextWriter LOGWRITER = System.IO.File.CreateText("DPIServer.log");
 #endif
         public int Connections { get; private set; } = 0;
-        
-        Webserver Server;
+
+        public Webserver Server { get; private set; }
 
         public DecompressService Decompress = new DecompressService();
 
@@ -71,6 +73,8 @@ namespace DirectPackageInstaller.Host
 
         async Task Process(HttpContext Context)
         {
+            LastRequest = DateTime.Now;
+            
             LOG("Request Received: {0}", Context.Request.Url.Full);
             foreach (var Header in Context.Request.Headers)
                 LOG("Request Header: {0}: {1}", Header.Key, Header.Value);
@@ -136,6 +140,7 @@ namespace DirectPackageInstaller.Host
             }
             finally
             {
+                LastRequest = DateTime.Now;
                 Connections--;
             }
 
@@ -347,5 +352,15 @@ namespace DirectPackageInstaller.Host
                 GC.Collect();
             }
         }
+        
+        public string RegisterJSON(string URL, string PCIP, PKGHelper.PKGInfo Info)
+        {
+            var ID = JSONs.Count().ToString();
+            var JSON = string.Format("{{\n  \"originalFileSize\": {0},\n  \"packageDigest\": \"{1}\",\n  \"numberOfSplitFiles\": 1,\n  \"pieces\": [\n    {{\n      \"url\": \"{2}\",\n      \"fileOffset\": 0,\n      \"fileSize\": {0},\n      \"hashValue\": \"0000000000000000000000000000000000000000\"\n    }}\n  ]\n}}", Info.PackageSize, Info.Digest, URL);
+            JSONs.Add(ID, JSON);
+
+            return $"http://{PCIP}:{Server.Settings.Port}/json/{ID}.json";
+        }
+
     }
 }

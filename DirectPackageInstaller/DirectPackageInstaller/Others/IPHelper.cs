@@ -10,7 +10,7 @@ using DirectPackageInstaller.Views;
 
 namespace DirectPackageInstaller
 {
-    static class IPHelper
+    public static class IPHelper
     {
         public static string[] EnumLocalIPs()
         {

@@ -15,7 +15,7 @@ using DirectPackageInstaller.Views;
 
 namespace DirectPackageInstaller.Tasks
 {
-    static class Installer
+    public static class Installer
     {
         public const int ServerPort = 9898;
         public static PS4Server? Server;
@@ -271,7 +271,7 @@ namespace DirectPackageInstaller.Tasks
             if (Offset == -1)
                 return false;
 
-            URL = RegisterJSON(URL, PCIP);
+            URL = Server.RegisterJSON(URL, PCIP, CurrentPKG);
 
             Socket InfoSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             
@@ -398,15 +398,6 @@ namespace DirectPackageInstaller.Tasks
             }
 
             return PayloadSocket.Connected;
-        }
-
-        private static string RegisterJSON(string URL, string PCIP)
-        {
-            var ID = Server.JSONs.Count().ToString();
-            var JSON = string.Format("{{\n  \"originalFileSize\": {0},\n  \"packageDigest\": \"{1}\",\n  \"numberOfSplitFiles\": 1,\n  \"pieces\": [\n    {{\n      \"url\": \"{2}\",\n      \"fileOffset\": 0,\n      \"fileSize\": {0},\n      \"hashValue\": \"0000000000000000000000000000000000000000\"\n    }}\n  ]\n}}", CurrentPKG.PackageSize, CurrentPKG.Digest, URL);
-            Server.JSONs.Add(ID, JSON);
-
-            return $"http://{PCIP}:{ServerPort}/json/{ID}.json";
         }
 
         private static int IndexOf(this IEnumerable<byte> Buffer, byte[] Content)

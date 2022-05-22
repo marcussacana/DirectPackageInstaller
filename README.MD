@@ -85,6 +85,12 @@ The tool allow you to install pkgs from RAR as well, in this case the tool will 
 
 The Segmented Download mode will start a background multithreaded download of the PKG to your computer and send to your PS4 at the same time, this should be faster than the Proxied Mode with the disadvantage of having to allocate the PKG on your HD.
 
+### Command Line Interface
+The DirectPackageInstaller has an experimental CLI,  
+In his current state isn't possible push RAR/7z or do Segmented Dowloads yet.  
+For more details run `DirectPackageInstaller.Desktop -help`  
+Or if you're on windows: `DirectPackageInstaller.Desktop.exe -help`
+
 ### Dependencies
 The Direct Package Installer Requires the .NET 6.0 Runtime installed in your machine, you can dowload it [here](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime)
 

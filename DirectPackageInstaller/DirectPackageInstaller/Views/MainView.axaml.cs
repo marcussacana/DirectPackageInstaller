@@ -349,7 +349,7 @@ namespace DirectPackageInstaller.Views
              {
                  if (await App.Updater.HasUpdates())
                  {
-                     var Response = await MessageBox.ShowAsync("New Update Found, Download now?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                     var Response = await MessageBox.ShowAsync($"New Update Found, You're using the {SelfUpdate.CurrentVersion},\nDo you wanna update the DirectPackageInstaller now?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                      if (Response != DialogResult.Yes)
                          return;
                      
