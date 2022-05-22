@@ -13,6 +13,7 @@ Or alternatively the RemotePackageInstaller Homebrew.
 - Support for few file hosting links
 - Support for PSN update manifest (Splited PKGs)
 - Works with or without RemotePackageInstaller
+- Command Line Interface
 
 
 ### Supported File Hostings
