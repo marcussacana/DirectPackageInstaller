@@ -355,6 +355,7 @@ namespace DirectPackageInstaller.Tasks
 
             return true;
         }
+        
         public static void StartServer(string LocalIP)
         {
             if (string.IsNullOrEmpty(LocalIP))
@@ -370,8 +371,15 @@ namespace DirectPackageInstaller.Tasks
             }
             catch
             {
-                Server = new PS4Server("0.0.0.0", ServerPort);
-                Server.Start();
+                try
+                {
+                    Server = new PS4Server("0.0.0.0", ServerPort);
+                    Server.Start();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.ShowSync($"Failed to Open the Http Server\n{ex.Message}", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
 

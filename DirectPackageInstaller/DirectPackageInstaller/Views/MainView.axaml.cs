@@ -645,8 +645,17 @@ namespace DirectPackageInstaller.Views
                 return;
             }
 
-            App.Callback(() => this.Status.Text = Status);
+            try
+            {
+                this.Status.Text = Status;
+                App.DoEvents();
+            }
+            catch
+            {
+                App.Callback(() => this.Status.Text = Status);
+            }
         }
+        
         private void RestartServer_OnClick(object? sender, RoutedEventArgs? e)
         {
             if (Model == null)
