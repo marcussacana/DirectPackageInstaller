@@ -38,8 +38,8 @@ namespace DirectPackageInstaller.Views
             MB.View.DataContext = MB.DataContext;
             MB.View.Initialize(MB);
             
-            MB.ShowDialogSync(Parent);
-
+            MB.ShowDialogSync(Parent ?? MainWindow.Instance);
+            
             return MB.Model?.Result ?? DialogResult.Cancel;
         }
 

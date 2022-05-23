@@ -59,6 +59,25 @@ public partial class LinkListView : UserControl
             if (string.IsNullOrWhiteSpace(Link) && i + 1 < Model.Links.Count)
                 Model.Links.RemoveAt(i);
         }
+
+        var DistinctLinks = Model.Links.DistinctBy(x => x.Content).ToArray();
+
+        if (DistinctLinks.Length != Model.Links.Count)
+        {
+            Model.Links.Clear();
+            Model.Links.AddRange(DistinctLinks);
+        }
+
+        int Count = Model.Links.Count;
+        for (int i = 0; i < Count; i++)
+        {
+            if (Count < 10)
+                Model.Links[i].Name = $"Part {i + 1}";
+            else if (Count < 100)
+                Model.Links[i].Name = $"Part {i + 1:D2}";
+            else
+                Model.Links[i].Name = $"Part {i + 1:D3}";
+        }
             
         if (Model.Links.Count == 0 || Model.Links.Last().Content != "")
             Model.Links.Add(new LinkListViewModel.LinkEntry(string.Empty));
@@ -93,6 +112,11 @@ public partial class LinkListView : UserControl
         }
         
         ((DialogModel)Window.DataContext).Result = DialogResult.OK;
-        Window.Close();
+
+        App.Callback(() =>
+        {
+            Window.Hide();
+            App.Callback(Window.Close);
+        });
     }
 }

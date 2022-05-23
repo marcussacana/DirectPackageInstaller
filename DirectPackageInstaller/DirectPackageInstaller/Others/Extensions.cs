@@ -1,39 +1,84 @@
 using System;
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
+using Avalonia.Controls;
+using Avalonia.Platform;
+using Avalonia.Threading;
 using LibOrbisPkg.SFO;
 
 namespace DirectPackageInstaller;
 
 public static class Extensions
 {
-        /// <summary>
-        /// We aren't kids microsoft, we shouldn't need this
-        /// </summary>
-        public static void UnlockHeaders()
+       [DllImport("/usr/lib/libobjc.dylib")]
+        private static extern IntPtr objc_getClass(string name);
+        
+        [DllImport("/usr/lib/libobjc.dylib", EntryPoint = "sel_registerName")]
+        private static extern IntPtr GetHandle(string name);
+        
+        [DllImport("/usr/lib/libobjc.dylib", EntryPoint = "objc_msgSend")]
+        private static extern long Int64_objc_msgSend_IntPtr(
+            IntPtr receiver,
+            IntPtr selector,
+            IntPtr arg1);
+
+        [DllImport("/usr/lib/libobjc.dylib", EntryPoint = "objc_msgSend")]
+        private static extern void Void_objc_msgSend(
+            IntPtr receiver,
+            IntPtr selector);
+
+        [DllImport("/usr/lib/libobjc.dylib", EntryPoint = "objc_msgSend")]
+        private static extern IntPtr IntPtr_objc_msgSend(IntPtr receiver, IntPtr selector);
+        
+        public static void ShowDialogSync(this Window window, Window owner)
         {
-            try
-            {
-                var tHashtable = typeof(WebHeaderCollection).Assembly.GetType("System.Net.HeaderInfoTable")
-                                .GetFields(BindingFlags.NonPublic | BindingFlags.Static)
-                                .Where(x => x.FieldType.Name == "Hashtable").Single();
-
-                var Table = (Hashtable)tHashtable.GetValue(null);
-                foreach (var Key in Table.Keys.Cast<string>().ToArray())
-                {
-                    var HeaderInfo = Table[Key];
-                    HeaderInfo.GetType().GetField("IsRequestRestricted", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(HeaderInfo, false);
-                    HeaderInfo.GetType().GetField("IsResponseRestricted", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(HeaderInfo, false);
-                    Table[Key] = HeaderInfo;
-                }
-
-                tHashtable.SetValue(null, Table);
-            }
-            catch { }
+            window.ShowDialogSync<object>(owner);
         }
 
+        [return: MaybeNull]
+        public static T ShowDialogSync<T>(this Window window, Window owner)
+        {
+            if (window.PlatformImpl.Handle is IMacOSTopLevelPlatformHandle handle)
+            {
+                var nsAppStaticClass = objc_getClass("NSApplication");
+                var sharedApplicationSelector = GetHandle("sharedApplication");
+                var sharedApplication = IntPtr_objc_msgSend(nsAppStaticClass, sharedApplicationSelector);
+                var runModalForSelector = GetHandle("runModalForWindow:");
+                var stopModalSelector = GetHandle("stopModal");
+
+                void DialogClosed(object sender, EventArgs e)
+                {
+                    Void_objc_msgSend(sharedApplication, stopModalSelector);
+                    window.Closed -= DialogClosed;
+                }
+
+                window.Closed += DialogClosed;
+                var task = window.ShowDialog<T>(owner);
+                Int64_objc_msgSend_IntPtr(sharedApplication, runModalForSelector, handle.NSWindow);
+                return task.Result;
+            }
+            else
+            {
+                using var source = new CancellationTokenSource();
+                var result = default(T);
+                window.ShowDialog<T>(owner).ContinueWith(
+                    t =>
+                    {
+                        if (t.IsCompletedSuccessfully)
+                            result = t.Result;
+                        source.Cancel();
+                    },
+                    TaskScheduler.FromCurrentSynchronizationContext());
+                Dispatcher.UIThread.MainLoop(source.Token);
+                return result;
+            }
+        }
         public static bool HasName(this ParamSfo This, string name)
         {
             foreach (var v in This.Values)

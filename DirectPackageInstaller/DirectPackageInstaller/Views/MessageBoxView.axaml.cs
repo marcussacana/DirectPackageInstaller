@@ -152,6 +152,10 @@ public partial class MessageBoxView : UserControl
                 return;
         }
         
-        Window.Close();
+        App.Callback(() =>
+        {
+            Window.Hide();
+            App.Callback(Window.Close);
+        });
     }
 }

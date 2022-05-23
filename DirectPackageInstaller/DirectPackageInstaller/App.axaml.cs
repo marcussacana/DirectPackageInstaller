@@ -108,32 +108,9 @@ namespace DirectPackageInstaller
             catch { }
         }
 
-        public static readonly bool IsOSX = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+        public static async Task DoEvents() => await Task.Delay(100);
         
-        public static void DoEvents()
-        {
-            if (IsOSX)
-                return;
-            
-            try
-            {
-                if (!Dispatcher.UIThread.CheckAccess())
-                {
-                    Dispatcher.UIThread.InvokeAsync(DoEvents).ConfigureAwait(false).GetAwaiter().GetResult();
-                    return;
-                }
-            }
-            catch
-            {
-                Dispatcher.UIThread.InvokeAsync(DoEvents).ConfigureAwait(false).GetAwaiter().GetResult();
-                return;
-            }
-            
-            var Delay = new CancellationTokenSource();
-            Delay.CancelAfter(100);
-            
-            Dispatcher.UIThread.MainLoop(Delay.Token);
-        }
+
         public static void Callback(Action Callback)
         {
             Action CBCopy = Callback;

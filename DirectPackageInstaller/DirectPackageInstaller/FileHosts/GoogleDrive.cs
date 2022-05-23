@@ -36,7 +36,7 @@ namespace DirectPackageInstaller.FileHosts
                 {
                     CookieAsked = true;
                     var CManager = new CookieManager();
-                    CManager.ShowDialogSync();
+                    CManager.ShowDialogSync(MainWindow.Instance);
                     return GetDownloadInfo(URL);
                 }
                 

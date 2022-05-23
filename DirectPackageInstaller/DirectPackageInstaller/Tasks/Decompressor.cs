@@ -7,9 +7,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Enumeration;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using DirectPackageInstaller.ViewModels;
 using DirectPackageInstaller.Views;
+using DynamicData;
+using LibOrbisPkg.GP4;
 using ReaderOptions = SharpCompress.Readers.ReaderOptions;
 
 namespace DirectPackageInstaller.Tasks
@@ -60,7 +64,7 @@ namespace DirectPackageInstaller.Tasks
                 else
                 {
                     var List = new LinkList(true, Encrypted, FirstUrl);
-                    if (List.ShowDialogSync() != DialogResult.OK)
+                    if (await List.ShowDialogAsync() != DialogResult.OK)
                         throw new Exception();
 
                     CompressInfo[FirstUrl] = (List.Links, List.Password)!;
@@ -75,7 +79,7 @@ namespace DirectPackageInstaller.Tasks
                     if (CompressInfo[FirstUrl].Password == null)
                     {
                         var List = new LinkList(false, Encrypted, FirstUrl);
-                        if (List.ShowDialogSync() != DialogResult.OK)
+                        if (await List.ShowDialogAsync() != DialogResult.OK)
                             throw new Exception();
 
                         CompressInfo[FirstUrl] = (CompressInfo[FirstUrl].Links, List.Password);
@@ -98,7 +102,7 @@ namespace DirectPackageInstaller.Tasks
                 else
                 {
                     var List = new LinkList(false, Encrypted, FirstUrl);
-                    if (List.ShowDialogSync() != DialogResult.OK)
+                    if (await List.ShowDialogAsync() != DialogResult.OK)
                         throw new Exception();
 
                     CompressInfo[FirstUrl] = (List.Links ?? new string[] { FirstUrl }, List.Password);
@@ -113,7 +117,7 @@ namespace DirectPackageInstaller.Tasks
             if (!Archive.IsComplete)
             {
                 if (!Silent)
-                    MessageBox.ShowSync("Corrupted, missing or RAR parts with wrong sorting.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    await MessageBox.ShowAsync("Corrupted, missing or RAR parts with wrong sorting.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return null;
             }
 
@@ -136,102 +140,81 @@ namespace DirectPackageInstaller.Tasks
             if (await App.RunInNewThread(() => Archive = SevenZipArchive.Open(new MergedStream(Volumes), Options)))
                 return null;
 
-            bool Encrypted = true;
-            if (await App.RunInNewThread(() => Encrypted = Archive.Entries.Any(x => x.IsEncrypted)))
-                return null;
-
             bool Multipart = false;
-
+            
+            bool? Encrypted = null;
+            if (await App.RunInNewThread(() => Encrypted = Archive.Entries.Any(x => x.IsEncrypted)))
+            {
+                if (Volumes.First() is FileHostStream || Volumes.First() is PartialHttpStream)
+                    Multipart = ((PartialHttpStream)Volumes.First()).Filename.EndsWith("1");
+               
+                if (Multipart && Volumes.Length > 1)
+                    return null;
+            }
+            
             if (Volumes.First() is FileHostStream || Volumes.First() is PartialHttpStream)
                 Multipart = ((PartialHttpStream)Volumes.First()).Filename.EndsWith("1");
 
-            if (Multipart && Volumes.Count() == 1)
+            bool MustReload = false;
+
+            if (Multipart && CompressInfo.ContainsKey(FirstUrl) && CompressInfo[FirstUrl].Links.Length == 1)
+                CompressInfo.Remove(FirstUrl);
+
+            if (Password == null && CompressInfo.ContainsKey(FirstUrl) && CompressInfo[FirstUrl].Password != null)
             {
-                Archive.Dispose();
-
-                if (CompressInfo.ContainsKey(FirstUrl))
-                {
-                    var List = CompressInfo[FirstUrl];
-                    
-                    if (List.Links.Length == 1)
-                    {
-                        CompressInfo.Remove(FirstUrl);
-                        return null; 
-                    }
-                    
-                    return await Un7zPKG(List.Links.Select(x => new FileHostStream(x)).ToArray(), FirstUrl, EntryName, Seekable, List.Password);
-                }
-                else
-                {
-                    var List = new LinkList(true, Encrypted, FirstUrl);
-                    if (List.ShowDialogSync() != DialogResult.OK)
-                        throw new Exception();
-
-                    CompressInfo[FirstUrl] = (List.Links, List.Password)!;
-
-                    return await Un7zPKG(List.Links.Select(x => new FileHostStream(x)).ToArray(), FirstUrl, EntryName, Seekable, List.Password);
-                }
-            }
-            else if (Encrypted && Password == null && !Multipart)
-            {
-                if (CompressInfo.ContainsKey(FirstUrl))
-                {
-                    if (CompressInfo[FirstUrl].Password == null)
-                    {
-                        var List = new LinkList(false, Encrypted, FirstUrl);
-                        if (List.ShowDialogSync() != DialogResult.OK)
-                            throw new Exception();
-
-                        CompressInfo[FirstUrl] = (CompressInfo[FirstUrl].Links, List.Password);
-
-                        var Volume = Volumes.Single();
-                        Volume.Seek(0, SeekOrigin.Begin);
-
-                        return await Un7zPKG(Volume, FirstUrl, EntryName, Seekable, List.Password);
-                    }
-                    else
-                    {
-                        var List = CompressInfo[FirstUrl];
-
-                        var Volume = Volumes.Single();
-                        Volume.Seek(0, SeekOrigin.Begin);
-
-                        return await Un7zPKG(Volume, FirstUrl, EntryName, Seekable, List.Password);
-                    }
-                }
-                else
-                {
-                    var List = new LinkList(false, Encrypted, FirstUrl);
-                    if (List.ShowDialogSync() != DialogResult.OK)
-                        throw new Exception();
-
-                    CompressInfo[FirstUrl] = (List.Links ?? new string[] { FirstUrl }, List.Password);
-
-                    var Volume = Volumes.Single();
-                    Volume.Seek(0, SeekOrigin.Begin);
-
-                    return await Un7zPKG(Volume, FirstUrl, EntryName, Seekable, List.Password);
-                }
+                Password = CompressInfo[FirstUrl].Password;
+                MustReload = true;
             }
 
-            if (Encrypted && Password == null)
+            string[]? Links = null;
+            
+            bool MissingData = Multipart && Volumes.Count() == 1;
+
+            if (CompressInfo.ContainsKey(FirstUrl))
             {
-                var List = new LinkList(false, Encrypted, FirstUrl);
-                if (List.ShowDialogSync() != DialogResult.OK)
+                Links = CompressInfo[FirstUrl].Links;
+                
+                MissingData = false;
+
+                if (Volumes.Length != Links.Length)
+                    MustReload = true;
+            }
+
+            MissingData |= (Encrypted ?? false) && Password == null;
+
+            if (MissingData)
+            {
+                var List = new LinkList(Multipart && (Links == null || Links.Length == 1), Encrypted, FirstUrl);
+                List.SetInitialInfo(Links, Password);
+                if (await List.ShowDialogAsync() != DialogResult.OK)
                     throw new Exception();
 
-                CompressInfo[FirstUrl] = (List.Links ?? new string[] { FirstUrl }, List.Password)!;
+                CompressInfo[FirstUrl] = (List.Links, List.Password);
+
+                Links = List.Links;
+                Password = List.Password;
+                MustReload = true;
+            }
+
+            if (Links == null)
+                Links = new string[] { FirstUrl };
+
+            if (MustReload)
+            {
+                Archive.Dispose();
 
                 foreach (var Volume in Volumes)
                     Volume.Seek(0, SeekOrigin.Begin);
 
-                return await Un7zPKG(Volumes, FirstUrl, EntryName, Seekable, List.Password);
+                Volumes = Links.Select(x => new FileHostStream(x)).ToArray();
+
+                return await Un7zPKG(Volumes, FirstUrl, EntryName, Seekable, Password);
             }
 
             if (!Archive.IsComplete)
             {
                 if (!Silent)
-                    MessageBox.ShowSync("Corrupted, missing or 7z parts with wrong sorting", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    await MessageBox.ShowAsync("Corrupted, missing or 7z parts with wrong sorting", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return null;
             }
 
@@ -269,7 +252,7 @@ namespace DirectPackageInstaller.Tasks
             if (!Silent)
             {
                 var ChoiceBox = new Select(Files);
-                if (ChoiceBox.ShowDialogSync() != DialogResult.OK)
+                if (await ChoiceBox.ShowDialogAsync() != DialogResult.OK)
                     return null;
                 EntryName = ChoiceBox.Choice;
             }

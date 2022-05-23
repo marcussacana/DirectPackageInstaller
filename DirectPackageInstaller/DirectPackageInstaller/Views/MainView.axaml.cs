@@ -169,9 +169,12 @@ namespace DirectPackageInstaller.Views
                 await MessageBox.ShowAsync(Parent, "Invalid URL or File Path", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
-            
+
             try
             {
+                btnLoad.IsEnabled = false;
+                await App.DoEvents();
+                
                 PKGStream = null;
 
                 if (SourcePackage.EndsWith(".json", StringComparison.InvariantCultureIgnoreCase))
@@ -187,16 +190,18 @@ namespace DirectPackageInstaller.Views
                 else
                 {
                     InputType = Source.URL;
-                    
+
                     var FHStream = new FileHostStream(SourcePackage);
                     LimitedFHost = FHStream.SingleConnection;
 
                     PKGStream = FHStream;
                 }
-                
+
                 if (LimitedFHost && !BadHostAlert)
                 {
-                    await MessageBox.ShowAsync("This Filehosting is limited, Even though it is compatible with DirectPackageInstaller it is not recommended for use, prefer services like alldebrid to download from this server, otherwise you may have connection and/or speed problems.\nDon't expect to compressed files works as expected as well, the DirectPackageInstaller will need download the entire file before can do anything", "Bad File Hosting Service", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    await MessageBox.ShowAsync(
+                        "This Filehosting is limited, Even though it is compatible with DirectPackageInstaller it is not recommended for use, prefer services like alldebrid to download from this server, otherwise you may have connection and/or speed problems.\nDon't expect to compressed files works as expected as well, the DirectPackageInstaller will need download the entire file before can do anything",
+                        "Bad File Hosting Service", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     BadHostAlert = true;
                 }
 
@@ -204,17 +209,17 @@ namespace DirectPackageInstaller.Views
                 {
                     if (PKGStream is FileHostStream)
                     {
-                        ((FileHostStream)PKGStream).TryBypassProxy = true;
-                        ((FileHostStream)PKGStream).KeepAlive = true;
+                        ((FileHostStream) PKGStream).TryBypassProxy = true;
+                        ((FileHostStream) PKGStream).KeepAlive = true;
                     }
 
                     var DownTask = Downloader.CreateTask(SourcePackage, PKGStream);
-                    
+
                     while (DownTask.SafeLength == 0)
                         await Task.Delay(100);
 
                     InputType |= Source.DiskCache;
-                    PKGStream = new VirtualStream(DownTask.OpenRead(), 0, DownTask.SafeLength) { ForceAmount = true };
+                    PKGStream = new VirtualStream(DownTask.OpenRead(), 0, DownTask.SafeLength) {ForceAmount = true};
                 }
 
                 byte[] Magic = new byte[4];
@@ -222,19 +227,21 @@ namespace DirectPackageInstaller.Views
                 PKGStream.Position = 0;
 
                 if (LimitedFHost && Common.DetectCompressionFormat(Magic) != CompressionFormat.None)
-                    await MessageBox.ShowAsync("You're trying open a compressed file from a limited file hosting,\nMaybe the compressed file must be fully downloaded to open it.", "Bad File Hosting Service", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                    await MessageBox.ShowAsync(
+                        "You're trying open a compressed file from a limited file hosting,\nMaybe the compressed file must be fully downloaded to open it.",
+                        "Bad File Hosting Service", MessageBoxButtons.OK, MessageBoxIcon.Stop);
 
                 ArchiveDataInfo? DataInfo = null;
                 switch (Common.DetectCompressionFormat(Magic))
                 {
                     case CompressionFormat.RAR:
                         InputType |= Source.RAR;
-                        SetStatus(LimitedFHost ? "Downloading... (It may take a while)" : "Decompressing...");
+                        await SetStatus(LimitedFHost ? "Downloading... (It may take a while)" : "Decompressing...");
                         DataInfo = await Decompressor.UnrarPKG(PKGStream, SourcePackage, ForcedSource);
                         break;
                     case CompressionFormat.SevenZip:
                         InputType |= Source.SevenZip;
-                        SetStatus(LimitedFHost ? "Downloading... (It may take a while)" : "Decompressing...");
+                        await SetStatus(LimitedFHost ? "Downloading... (It may take a while)" : "Decompressing...");
                         DataInfo = await Decompressor.Un7zPKG(PKGStream, SourcePackage, ForcedSource);
                         break;
                 }
@@ -248,21 +255,22 @@ namespace DirectPackageInstaller.Views
                     ListEntries(Installer.CurrentFileList = DataInfo?.PKGList ?? throw new Exception());
                 }
 
-                SetStatus("Reading PKG...");
+                await SetStatus("Reading PKG...");
 
-                var Info =  Installer.CurrentPKG = PKGStream.GetPKGInfo() ?? throw new Exception();
-                
-                SetStatus(Info.Description);
+                var Info = Installer.CurrentPKG = PKGStream.GetPKGInfo() ?? throw new Exception();
+
+                await SetStatus(Info.Description);
 
                 Model.PKGParams.Clear();
                 Model.PKGParams = Info.Params;
-                
+
                 IconBox.Source = Info.Icon;
 
                 btnLoad.Content = "Install";
             }
-            catch {
-                
+            catch
+            {
+
                 IconBox.Source = null;
                 Model.PKGParams?.Clear();
 
@@ -271,7 +279,11 @@ namespace DirectPackageInstaller.Views
 
                 PackagesMenu.IsVisible = false;
 
-                SetStatus("Failed to Open the PKG");
+                await SetStatus("Failed to Open the PKG");
+            }
+            finally
+            {
+                btnLoad.IsEnabled = true;
             }
 
             PKGStream?.Close();
@@ -388,80 +400,6 @@ namespace DirectPackageInstaller.Views
                     break;
             }
         }
-
-        private void UrlChanged(string Url)
-        {
-            InputType = Source.NONE;
-
-            btnLoad.Content = (string.IsNullOrWhiteSpace(Url) && !File.Exists(Url)) ? "Open" : "Load";
-            
-            Installer.CurrentFileList = null;
-            LastForcedSource = null;
-
-            PackagesMenu.IsVisible = BatchList.Any();
-
-            if (Url.Contains("\n"))
-            {
-                var Links = Url.Replace("\r\n", "\n").Split('\n')
-                    .Where(x => x.Trim().StartsWith("http", StringComparison.InvariantCultureIgnoreCase))
-                    .Select(x => x.Trim()).ToArray();
-                
-                if (!Links.Any())
-                {
-                    App.Callback(() => Model!.CurrentURL = "");
-                    return;
-                }
-                
-                Url = Links.First();
-                Decompressor.CompressInfo[Url.Trim()] = (Links.Select(x =>x.Trim()).ToArray(), null);
-                
-                new Task(async() =>
-                {
-                    var Link = Links.First();
-                    await Task.Delay(20);
-                    await Dispatcher.UIThread.InvokeAsync(() => Model!.CurrentURL = Link);
-                }).Start();
-                return;
-            }
-
-            if (Url.StartsWith("http", StringComparison.InvariantCultureIgnoreCase) && !Uri.IsWellFormedUriString(Url, UriKind.Absolute)) {
-                int PathOrQueryPos = Url.IndexOfAny(new char[] { '/', '?' }, Url.IndexOf("://", StringComparison.Ordinal) + 3);
-                var Host = Url.Substring(0, PathOrQueryPos);
-
-                var PathAndQuery = Url.Substring(PathOrQueryPos);
-
-
-                var PathOnly = Uri.UnescapeDataString(PathAndQuery.Split('?').First());
-                var QueryOnly = PathAndQuery.Contains('?') ? PathAndQuery.Substring(PathAndQuery.IndexOf('?')) : "";
-
-                PathOnly = Uri.EscapeDataString(PathOnly);
-
-                Dictionary<string, string> PathReplaces = new Dictionary<string, string>()
-                { 
-                    { "%2f", "/" }, { "%2F", "/" }, { "[", "%5b" }, { "]", "%5d" }, { "%2b", "+" }, { "%2B", "+" },
-                    { "%28", "(" }, { "%29", ")" } 
-                };
-
-                Dictionary<string, string> QueryReplaces = new Dictionary<string, string>()
-                {
-                    { "%2f", "/" }, { "%2F", "/" }, { "[", "%5b" }, { "]", "%5d" }
-                };
-
-                foreach (var Pair in PathReplaces)
-                    PathOnly = PathOnly.Replace(Pair.Key, Pair.Value);
-
-                foreach (var Pair in QueryReplaces)
-                    QueryOnly = QueryOnly.Replace(Pair.Key, Pair.Value);
-
-                var NewUrl = $"{Host}{PathOnly}{QueryOnly}";
-                if (Uri.IsWellFormedUriString(NewUrl, UriKind.Absolute))
-                    Model!.CurrentURL = NewUrl;
-            }
-
-            PKGStream?.Close();
-            PKGStream?.Dispose();
-        }
-
 
         private void BtnSegmentedDownloadOnClick(object? sender, RoutedEventArgs e)
         {
@@ -637,18 +575,92 @@ namespace DirectPackageInstaller.Views
                 PackagesMenu.Items = Items;
             }
         }
+        
+        private void UrlChanged(string Url)
+        {
+            InputType = Source.NONE;
 
-        private void SetStatus(string Status) {
+            btnLoad.Content = (string.IsNullOrWhiteSpace(Url) && !File.Exists(Url)) ? "Open" : "Load";
+            
+            Installer.CurrentFileList = null;
+            LastForcedSource = null;
+
+            PackagesMenu.IsVisible = BatchList.Any();
+
+            if (Url.Contains("\n"))
+            {
+                var Links = Url.Replace("\r\n", "\n").Split('\n')
+                    .Where(x => x.Trim().StartsWith("http", StringComparison.InvariantCultureIgnoreCase))
+                    .Select(x => x.Trim()).ToArray();
+                
+                if (!Links.Any())
+                {
+                    App.Callback(() => Model!.CurrentURL = "");
+                    return;
+                }
+                
+                Url = Links.First();
+                Decompressor.CompressInfo[Url.Trim()] = (Links.Select(x =>x.Trim()).ToArray(), null);
+                
+                new Task(async() =>
+                {
+                    var Link = Links.First();
+                    await Task.Delay(20);
+                    await Dispatcher.UIThread.InvokeAsync(() => Model!.CurrentURL = Link);
+                }).Start();
+                return;
+            }
+
+            if (Url.StartsWith("http", StringComparison.InvariantCultureIgnoreCase) && !Uri.IsWellFormedUriString(Url, UriKind.Absolute)) {
+                int PathOrQueryPos = Url.IndexOfAny(new char[] { '/', '?' }, Url.IndexOf("://", StringComparison.Ordinal) + 3);
+                var Host = Url.Substring(0, PathOrQueryPos);
+
+                var PathAndQuery = Url.Substring(PathOrQueryPos);
+
+
+                var PathOnly = Uri.UnescapeDataString(PathAndQuery.Split('?').First());
+                var QueryOnly = PathAndQuery.Contains('?') ? PathAndQuery.Substring(PathAndQuery.IndexOf('?')) : "";
+
+                PathOnly = Uri.EscapeDataString(PathOnly);
+
+                Dictionary<string, string> PathReplaces = new Dictionary<string, string>()
+                { 
+                    { "%2f", "/" }, { "%2F", "/" }, { "[", "%5b" }, { "]", "%5d" }, { "%2b", "+" }, { "%2B", "+" },
+                    { "%28", "(" }, { "%29", ")" } 
+                };
+
+                Dictionary<string, string> QueryReplaces = new Dictionary<string, string>()
+                {
+                    { "%2f", "/" }, { "%2F", "/" }, { "[", "%5b" }, { "]", "%5d" }
+                };
+
+                foreach (var Pair in PathReplaces)
+                    PathOnly = PathOnly.Replace(Pair.Key, Pair.Value);
+
+                foreach (var Pair in QueryReplaces)
+                    QueryOnly = QueryOnly.Replace(Pair.Key, Pair.Value);
+
+                var NewUrl = $"{Host}{PathOnly}{QueryOnly}";
+                if (Uri.IsWellFormedUriString(NewUrl, UriKind.Absolute))
+                    Model!.CurrentURL = NewUrl;
+            }
+
+            PKGStream?.Close();
+            PKGStream?.Dispose();
+        }
+
+
+        private async Task SetStatus(string Status) {
             if (!Dispatcher.UIThread.CheckAccess())
             {
-                Dispatcher.UIThread.InvokeAsync(() => SetStatus(Status));
+                await Dispatcher.UIThread.InvokeAsync(async () => await SetStatus(Status));
                 return;
             }
 
             try
             {
                 this.Status.Text = Status;
-                App.DoEvents();
+                await App.DoEvents();
             }
             catch
             {

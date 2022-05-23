@@ -29,7 +29,7 @@ namespace DirectPackageInstaller.Tasks
         private static Socket? PayloadSocket;
         private static bool ForceProxy = false;
 
-        public static async Task<bool> PushPackage(Settings Config, Source InputType, Stream PKGStream, string URL, Action<string> SetStatus, Func<string> GetStatus, bool Silent)
+        public static async Task<bool> PushPackage(Settings Config, Source InputType, Stream PKGStream, string URL, Func<string, Task> SetStatus, Func<string> GetStatus, bool Silent)
         {
             if (string.IsNullOrEmpty(Config.PS4IP))
             {
@@ -121,7 +121,7 @@ namespace DirectPackageInstaller.Tasks
                     }
 
                     var OriStatus = GetStatus();
-                    SetStatus("Initializing Decompressor...");
+                    await SetStatus("Initializing Decompressor...");
 
                     if (!Retry)
                     {
@@ -146,10 +146,10 @@ namespace DirectPackageInstaller.Tasks
 
                     while (DecompressTask.SafeTotalDecompressed < LastResource)
                     {
-                        SetStatus($"Preloading Compressed PKG... ({(double)DecompressTask.SafeTotalDecompressed / LastResource:P})");
+                        await SetStatus($"Preloading Compressed PKG... ({(double)DecompressTask.SafeTotalDecompressed / LastResource:P})");
                         await Task.Delay(100);
                     }
-                    SetStatus(OriStatus);
+                    await SetStatus(OriStatus);
 
                     URL = $"http://{Server.IP}:{ServerPort}/{(InputType.HasFlag(Source.SevenZip) ? "un7z" : "unrar")}/?id={ID}";
                     break;
@@ -161,10 +161,10 @@ namespace DirectPackageInstaller.Tasks
                     OriStatus = GetStatus();
                     while (CacheTask.SafeReadyLength < LastResource)
                     {
-                        SetStatus($"Preloading PKG... ({(double)(CacheTask.SafeReadyLength) / LastResource:P})");
+                        await SetStatus($"Preloading PKG... ({(double)(CacheTask.SafeReadyLength) / LastResource:P})");
                         await Task.Delay(100);
                     }
-                    SetStatus(OriStatus);
+                    await SetStatus(OriStatus);
 
                     URL = $"http://{Server.IP}:{ServerPort}/cache/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
                     break;

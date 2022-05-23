@@ -12,10 +12,13 @@ namespace DirectPackageInstaller.Views
     {
         LinkListViewModel? Model => (LinkListViewModel?)View.DataContext;
         
-        public string[]? Links => Model?.Links.Distinct().Select(x => x.Content).ToArray();
+        public string[]? Links => Model?.Links.Distinct()
+            .Where(x => !string.IsNullOrWhiteSpace(x.Content))
+            .Select(x => x.Content).ToArray();
+        
         public string? Password => Model?.Password;
         
-        public LinkList(bool Multipart, bool Encrypted, string FirstUrl) : this()
+        public LinkList(bool Multipart, bool? Encrypted, string FirstUrl) : this()
         {
             if (Model != null)
             {
@@ -36,6 +39,20 @@ namespace DirectPackageInstaller.Views
             DataContext = new LinkListViewModel();
             if (Model == null)
                 View.DataContext = (LinkListViewModel)DataContext;
+        }
+
+        public void SetInitialInfo(string[]? Links, string? Password)
+        {
+            if (Links != null)
+            {
+                Model.Links.Clear();
+                Model.Links.AddRange(Links.Select(x=>new LinkListViewModel.LinkEntry(x)));
+            }
+
+            if (Password != null)
+            {
+                Model.Password = Password;
+            }
         }
     }
 }
