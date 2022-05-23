@@ -218,7 +218,7 @@ namespace DirectPackageInstaller.Views
                 }
 
                 byte[] Magic = new byte[4];
-                PKGStream.Read(Magic, 0, Magic.Length);
+                await PKGStream.ReadAsync(Magic, 0, Magic.Length);
                 PKGStream.Position = 0;
 
                 if (LimitedFHost && Common.DetectCompressionFormat(Magic) != CompressionFormat.None)
@@ -230,12 +230,12 @@ namespace DirectPackageInstaller.Views
                     case CompressionFormat.RAR:
                         InputType |= Source.RAR;
                         SetStatus(LimitedFHost ? "Downloading... (It may take a while)" : "Decompressing...");
-                        DataInfo = Decompressor.UnrarPKG(PKGStream, SourcePackage, ForcedSource);
+                        DataInfo = await Decompressor.UnrarPKG(PKGStream, SourcePackage, ForcedSource);
                         break;
                     case CompressionFormat.SevenZip:
                         InputType |= Source.SevenZip;
                         SetStatus(LimitedFHost ? "Downloading... (It may take a while)" : "Decompressing...");
-                        DataInfo = Decompressor.Un7zPKG(PKGStream, SourcePackage, ForcedSource);
+                        DataInfo = await Decompressor.Un7zPKG(PKGStream, SourcePackage, ForcedSource);
                         break;
                 }
 
@@ -403,7 +403,8 @@ namespace DirectPackageInstaller.Views
             if (Url.Contains("\n"))
             {
                 var Links = Url.Replace("\r\n", "\n").Split('\n')
-                    .Where(x => x.StartsWith("http", StringComparison.InvariantCultureIgnoreCase)).ToArray();
+                    .Where(x => x.Trim().StartsWith("http", StringComparison.InvariantCultureIgnoreCase))
+                    .Select(x => x.Trim()).ToArray();
                 
                 if (!Links.Any())
                 {
@@ -643,10 +644,8 @@ namespace DirectPackageInstaller.Views
                 Dispatcher.UIThread.InvokeAsync(() => SetStatus(Status));
                 return;
             }
-            
-            this.Status.Text = Status;
-            
-            App.DoEvents();
+
+            App.Callback(() => this.Status.Text = Status);
         }
         private void RestartServer_OnClick(object? sender, RoutedEventArgs? e)
         {

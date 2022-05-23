@@ -11,7 +11,7 @@ namespace DirectPackageInstaller.Views
     public partial class MessageBox : DialogWindow
     {
         private DialogModel? Model => (DialogModel?) DataContext;
-        public MessageBox()
+        public MessageBox() 
         {
             InitializeComponent();
 
@@ -39,9 +39,7 @@ namespace DirectPackageInstaller.Views
             MB.View.Initialize(MB);
             
             MB.ShowDialogSync(Parent);
-            
-            App.DoEvents();
-            
+
             return MB.Model?.Result ?? DialogResult.Cancel;
         }
 

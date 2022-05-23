@@ -22,9 +22,7 @@ public abstract class DialogWindow : Window
             ShowDialog(Parent ?? MainWindow.Instance).ContinueWith(t => source.Cancel(), TaskScheduler.FromCurrentSynchronizationContext());
             Dispatcher.UIThread.MainLoop(source.Token);
         }
-        
-        App.DoEvents();
-        
+
         return ((DialogModel)DataContext).Result;
     }
     public async Task<DialogResult> ShowDialogAsync(Window? Parent = null)

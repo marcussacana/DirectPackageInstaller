@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Platform;
 using Avalonia.Threading;
 using DirectPackageInstaller.ViewModels;
 using DirectPackageInstaller.Views;
@@ -105,15 +106,7 @@ namespace DirectPackageInstaller
             }
             catch { }
         }
-        public static void DoEvents()
-        {
-            var Delay = new CancellationTokenSource();
-            Delay.CancelAfter(100);
-            
-            Dispatcher.UIThread.MainLoop(Delay.Token);
-        }
-
-
+        
         public static void Callback(Action Callback)
         {
             Action CBCopy = Callback;
@@ -122,6 +115,37 @@ namespace DirectPackageInstaller
                 await Task.Delay(50);
                 CBCopy.Invoke();
             });
+        }
+        
+        
+        /// <summary>
+        /// If the action thorws an exception returns true, otherwise returns false
+        /// </summary>
+        public static async Task<bool> RunInNewThread(Action Function)
+        {
+            bool Failed = false;
+            TaskCompletionSource CompletationSource = new TaskCompletionSource();
+            Thread BackgroundThread = new Thread(() =>
+            {
+                try
+                {
+                    Function.Invoke();
+                }
+                catch
+                {
+                    Failed = true;
+                }
+                finally
+                {
+                    CompletationSource.SetResult();
+                }
+            });
+            
+            BackgroundThread.Start();
+            
+            await CompletationSource.Task;
+
+            return Failed;
         }
         
         internal static Settings Config;

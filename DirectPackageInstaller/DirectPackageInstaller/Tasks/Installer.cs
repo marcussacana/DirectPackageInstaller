@@ -263,7 +263,7 @@ namespace DirectPackageInstaller.Tasks
                 return false;
             }
         }
-        public static async Task<bool> SendPKGPayload(string PS4IP, string PCIP, string URL, bool Silent, int PayloadPort = 0)
+        public static async Task<bool> SendPKGPayload(string PS4IP, string PCIP, string URL, bool Silent)
         {
             var Payload = Resources.Payload;
             
@@ -280,7 +280,7 @@ namespace DirectPackageInstaller.Tasks
 
             if (PayloadSocket == null || !PayloadSocket.Connected)
             {
-                if (!await TryConnectSocket(PS4IP, PayloadPort))
+                if (!await TryConnectSocket(PS4IP))
                     return false;
             }
 
@@ -375,12 +375,9 @@ namespace DirectPackageInstaller.Tasks
             }
         }
 
-        public static async Task<bool> TryConnectSocket(string IP, int PayloadPort = 0, bool Retry = true)
+        public static async Task<bool> TryConnectSocket(string IP, bool Retry = true)
         {
             int[] Ports = new int[] { 9090, 9021, 9020 };
-            if (PayloadPort > 0)
-                Ports = new int[] {PayloadPort}.Concat(Ports).ToArray();
-            
             foreach (var Port in Ports)
             {
                 PayloadSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -397,7 +394,7 @@ namespace DirectPackageInstaller.Tasks
             if (!PayloadSocket!.Connected && Retry)
             {
                 await Task.Delay(3000);
-                return await TryConnectSocket(IP, PayloadPort, false);
+                return await TryConnectSocket(IP, false);
             }
 
             return PayloadSocket.Connected;
