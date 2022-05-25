@@ -27,7 +27,7 @@ jobs:
 
       # Runs a single command using the runners shell
       - name: Build it
-        run: sh  ${GITHUB_WORKSPACE}/Build.com
+        run: sh  Build.cmd
 
       - name: Archive production artifacts
         uses: actions/upload-artifact@v3
