@@ -3,23 +3,18 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
-using Avalonia.Media.Imaging;
-using Avalonia.Platform.Interop;
 using Avalonia.Threading;
 using DirectPackageInstaller.Compression;
 using DirectPackageInstaller.Host;
 using DirectPackageInstaller.IO;
 using DirectPackageInstaller.Tasks;
 using DirectPackageInstaller.ViewModels;
-using LibOrbisPkg.GP4;
 using LibOrbisPkg.PKG;
-using LibOrbisPkg.SFO;
 using SharpCompress.Archives;
 using Path = System.IO.Path;
 
@@ -27,7 +22,9 @@ namespace DirectPackageInstaller.Views
 {
     public partial class MainView : UserControl
     {
-        
+
+        public CNLServer CNL = new CNLServer();
+
         private Stream PKGStream;
         
         private PkgReader PKGParser;
@@ -61,6 +58,7 @@ namespace DirectPackageInstaller.Views
             btnRestartServer = this.Find<MenuItem>("btnRestartServer");
             btnAllDebirdEnabled = this.Find<MenuItem>("btnAllDebirdEnabled");
             btnSegmentedDownload = this.Find<MenuItem>("btnSegmentedDownload");
+            btnCNLService = this.Find<MenuItem>("btnCNLService");
             btnLoad = this.Find<Button>("btnLoad");
 
             btnInstallAll.Click += BtnInstallAllOnClick;
@@ -68,8 +66,11 @@ namespace DirectPackageInstaller.Views
             btnProxyDownload.Click += BtnProxyDownloadOnClick;
             btnAllDebirdEnabled.Click += BtnAllDebirdEnabledOnClick;
             btnSegmentedDownload.Click += BtnSegmentedDownloadOnClick;
+            btnCNLService.Click += BtnCNLServiceOnClick;
             
             btnLoad.Click += BtnLoadOnClick;
+            
+            CNL.OnLinksReceived = OnLinksReceived;
         }
 
         private async void BtnLoadOnClick(object? sender, RoutedEventArgs e)
@@ -307,6 +308,7 @@ namespace DirectPackageInstaller.Views
                 App.Config.SegmentedDownload = IniReader.GetBooleanValue("SegmentedDownload");
                 App.Config.UseAllDebrid = IniReader.GetBooleanValue("UseAllDebrid");
                 App.Config.AllDebridApiKey = IniReader.GetValue("AllDebridApiKey");
+                App.Config.EnableCNL = IniReader.GetBooleanValue("EnableCNL");
 
                 var Concurrency = IniReader.GetValue("Concurrency");
                 if (!string.IsNullOrWhiteSpace(Concurrency) && int.TryParse(Concurrency, out int ConcurrencyNum))
@@ -323,12 +325,14 @@ namespace DirectPackageInstaller.Views
                     ProxyDownload = false,
                     SegmentedDownload = true,
                     UseAllDebrid = false,
+                    EnableCNL = true,
                     AllDebridApiKey = null
                 };
 
                 await MessageBox.ShowAsync($"Hello User, The focus of this tool is download PKGs from direct links but we have others minor features as well.\n\nGood to know:\nWhen using the direct download mode, you can turn off the computer or close the DirectPakcageInstaller and your PS4 will continue the download alone.\n\nWhen using the \"Proxy Downloads\" feature, the PS4 can't download the game alone and the DirectPackageInstaller must keep open.\n\nDirect PKG urls, using the \"Proxy Download\" feature or not, can be resumed anytime by just selecting 'resume' in your PS4 download list.\n\nThe DirectPackageInstaller use the port {Installer.ServerPort} in the \"Proxy Downloads\" feature, maybe you will need to open the ports in your firewall.\n\nWhen downloading directly from compressed files, you can't resume the download after the DirectPackageInstaller is closed, but before close the DirectPackageInstaller you still can pause and resume the download in your PS4.\n\nIf your download speed is very slow, you can try enable the \"Proxy Downloads\" feature, since this feature has been created just to optimize the download speed.\n\nCreated by marcussacana", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
 
+             Model.CNLService = App.Config.EnableCNL;
              Model.ProxyMode = App.Config.ProxyDownload;
              Model.UseAllDebird = App.Config.UseAllDebrid;
              Model.SegmentedMode = App.Config.SegmentedDownload;
@@ -354,6 +358,21 @@ namespace DirectPackageInstaller.Views
             
              if (!string.IsNullOrEmpty(App.Config.PS4IP))
                  new Thread(() => Installer.StartServer(App.Config.PCIP)).Start();
+
+             if (App.Config.EnableCNL)
+             {
+                 try
+                 {
+                     CNL.Server.Start();
+                 }
+                 catch
+                 {
+                     App.Callback(async () =>
+                     {
+                         await MessageBox.ShowAsync("Failed to start the CNL Server\nMaybe another process is already listening?", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                     });
+                 }
+             }
              
              Model.PropertyChanged += ModelOnPropertyChanged;
              
@@ -361,7 +380,7 @@ namespace DirectPackageInstaller.Views
              {
                  if (await App.Updater.HasUpdates())
                  {
-                     var Response = await MessageBox.ShowAsync($"New Update Found, You're using the {SelfUpdate.CurrentVersion},\nDo you wanna update the DirectPackageInstaller now?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                     var Response = await MessageBox.ShowAsync($"New Update Found, You're using the {SelfUpdate.CurrentVersion} the last version is {SelfUpdate.LastVersion},\nDo you wanna update the DirectPackageInstaller now?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                      if (Response != DialogResult.Yes)
                          return;
                      
@@ -395,12 +414,41 @@ namespace DirectPackageInstaller.Views
                 case "AllDebirdApiKey":
                     App.Config.AllDebridApiKey = Model.AllDebirdApiKey;
                     break;
+                case "CNLService":
+                    App.Config.EnableCNL = Model.CNLService;
+
+                    try
+                    {
+                        if (Model.CNLService && !CNL.Server.IsListening)
+                            CNL.Server.Start();
+                        else if (!Model.CNLService)
+                            CNL.Server.Stop();
+                    }
+                    catch
+                    {
+                        if (Model.CNLService)
+                        {
+                            App.Callback(async () =>
+                            {
+                                await MessageBox.ShowAsync("Failed to start the CNL Server\nMaybe another process is already listening?", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            });
+                        }
+                    }
+                    break;
                 case "CurrentURL":
                     UrlChanged(Model.CurrentURL);
                     break;
             }
         }
 
+        private void BtnCNLServiceOnClick(object? sender, RoutedEventArgs e)
+        {
+            if (Model == null)
+                return;
+            
+            Model.CNLService = !Model.CNLService;
+        }
+        
         private void BtnSegmentedDownloadOnClick(object? sender, RoutedEventArgs e)
         {
             if (Model == null)
@@ -574,6 +622,30 @@ namespace DirectPackageInstaller.Views
 
                 PackagesMenu.Items = Items;
             }
+        }
+        
+
+        private void OnLinksReceived((string[] Links, string Password) Info)
+        {
+            try
+            {
+                if (!Dispatcher.UIThread.CheckAccess())
+                {
+                    App.Callback(() => OnLinksReceived(Info));
+                    return;
+                }
+            }
+            catch
+            {
+                App.Callback(() => OnLinksReceived(Info));
+                return;
+            }
+            
+            var Url = Info.Links.First();
+            Decompressor.CompressInfo[Url.Trim()] = (Info.Links, null);
+
+            tbURL.Text = Url;
+            App.Callback(() => BtnLoadOnClick(null, new RoutedEventArgs()));
         }
         
         private void UrlChanged(string Url)

@@ -14,6 +14,7 @@ Or alternatively the RemotePackageInstaller Homebrew.
 - Support for PSN update manifest (Splited PKGs)
 - Works with or without RemotePackageInstaller
 - Command Line Interface
+- JDown Click'n Load Support
 
 
 ### Supported File Hostings
@@ -84,7 +85,7 @@ With that said, the tool can do more than that as well, the PS4 have a very poor
 
 The tool can works without the Remote Package Installer if you want, for that, just enable your binloader and the DirectPackageInstaller will be able to tell how the package should be installed. If the Bin Loader server is running and the Remote Package Installer too, the DirectPackageInstaller will give priority to the Remote Package Installer.
 
-The tool allow you to install pkgs from RAR as well, in this case the tool will work in a very similar way to the other existing ones, but with the advantage that everything is done simultaneously, while the file is downloaded from the internet, it is being decompressed to your disk temporarily and is sent to your PS4, in this scenario you don't need to waste time extracting large PKGs or depending on your file manager downloads, doing the post-download file reconstruction, everything is done simultaneously saving a lot of time of your life.
+This tool allow you to install pkgs from RAR as well, in this case the tool will work in a very similar way to the other existing ones, but with the advantage that everything is done simultaneously, while the file is downloaded from the internet, it is being decompressed to your disk temporarily and is sent to your PS4, in this scenario you don't need to waste time extracting large PKGs or depending on your file manager downloads, doing the post-download file reconstruction, everything is done simultaneously saving a lot of time of your life.
 
 The Segmented Download mode will start a background multithreaded download of the PKG to your computer and send to your PS4 at the same time, this should be faster than the Proxied Mode with the disadvantage of having to allocate the PKG on your HD.
 
@@ -103,6 +104,8 @@ this file is actually a hybrid bash and batch file, so despite the `cmd` extensi
 A "Release" Directory will be creted in the root of this repo with the binaries.
 
 The Payload must be manually built if you want modify the retail one, just run `make` in the payload source directory and replace the genareted payload.bin with the `DirectPackageInstaller/DirectPackageInstaller/payload` and rebuild the project.
+
+Alternatively, create an fork and start the github action build
 
 ### Warnings
 - The DirectPackageInstaller don't handle well parallel decompressions, If you're downloading from a compressed file, try download one per time.

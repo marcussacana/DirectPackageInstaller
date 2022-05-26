@@ -16,5 +16,7 @@ namespace DirectPackageInstaller
         public bool SearchPS4;
         public bool ProxyDownload;
         public bool SegmentedDownload;
+
+        public bool EnableCNL;
     }
 }

@@ -64,6 +64,7 @@ namespace DirectPackageInstaller.Views
                 IniWriter.SetValue("ProxyDownload", App.Config.ProxyDownload.ToString());
                 IniWriter.SetValue("SegmentedDownload", App.Config.SegmentedDownload.ToString());
                 IniWriter.SetValue("UseAllDebrid", App.Config.UseAllDebrid.ToString());
+                IniWriter.SetValue("EnableCNL", App.Config.EnableCNL.ToString());
                 IniWriter.SetValue("AllDebridApiKey", App.Config.AllDebridApiKey);
                 IniWriter.Save();
             } catch {}

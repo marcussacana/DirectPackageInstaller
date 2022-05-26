@@ -70,6 +70,14 @@ namespace DirectPackageInstaller.ViewModels
             set => this.RaiseAndSetIfChanged(ref _UseAllDebird, value);
         }
 
+
+        private bool _CNLService = false;
+        public bool CNLService 
+        {
+            get => _CNLService;
+            set => this.RaiseAndSetIfChanged(ref _CNLService, value);
+        }
+
         private List<PkgParamInfo> _PKGParams = new List<PkgParamInfo>();
         public List<PkgParamInfo> PKGParams
         {

@@ -35,6 +35,11 @@
                         <CheckBox BorderThickness="0" IsChecked="{Binding SegmentedMode, Mode=TwoWay}"/>
                     </MenuItem.Icon>
                 </MenuItem>
+                <MenuItem Header="_CNL Support" Name="btnCNLService" >
+                    <MenuItem.Icon>
+                        <CheckBox BorderThickness="0" IsChecked="{Binding CNLService, Mode=TwoWay}"/>
+                    </MenuItem.Icon>
+                </MenuItem>
                 <MenuItem Header="_IP Address">
                     <Grid Margin="10">
                         <Grid.ColumnDefinitions>

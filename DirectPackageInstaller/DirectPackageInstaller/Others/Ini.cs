@@ -62,7 +62,7 @@ namespace DirectPackageInstaller
         public bool GetBooleanValue(string Name, string Group = null)
         {
             var Value = GetValue(Name, Group)?.ToLowerInvariant();
-            return Value == "true" || Value == "1" || Value == "yes";
+            return Value is "true" or "1" or "yes";
         }
 
         public Dictionary<string, string> GetValues(string Group)

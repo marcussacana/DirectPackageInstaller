@@ -35,7 +35,9 @@ namespace DirectPackageInstaller
 
         const string UpdateList = "Update.ini";
 
-        public static Version CurrentVersion = new Version("6.0.6");
+        public static Version CurrentVersion = new Version("6.0.7");
+
+        public static Version? LastVersion = null;
 
         string Runtime;
 
@@ -83,7 +85,7 @@ namespace DirectPackageInstaller
                 Ini IniReader = new Ini(UpdateInfo.Replace("\r\n", "\n").Split('\n'));
                 var Values = IniReader.GetValues(Runtime);
 
-                Version LastVersion = null;
+                LastVersion = null;
                 if (Values.ContainsKey("lastversion"))
                     LastVersion = new Version(Values["lastversion"]);
 
