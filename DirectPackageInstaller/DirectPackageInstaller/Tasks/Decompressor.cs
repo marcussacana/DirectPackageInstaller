@@ -110,9 +110,10 @@ namespace DirectPackageInstaller.Tasks
                 foreach (var Volume in Volumes)
                     Volume.Seek(0, SeekOrigin.Begin);
 
-                Volumes = Links.Select(x => new FileHostStream(x))
-                    .Where(x => !x.Filename.EndsWith(".pkg", StringComparison.InvariantCultureIgnoreCase))
-                    .ToArray();
+                await App.RunInNewThread(() =>
+                    Volumes = Links.Select(x => new FileHostStream(x))
+                        .Where(x => !x.Filename.EndsWith(".pkg", StringComparison.InvariantCultureIgnoreCase))
+                        .ToArray());
 
                 return await UnrarPKG(Volumes, FirstUrl, EntryName, Seekable, Password);
             }
@@ -209,9 +210,10 @@ namespace DirectPackageInstaller.Tasks
                 foreach (var Volume in Volumes)
                     Volume.Seek(0, SeekOrigin.Begin);
 
-                Volumes = Links.Select(x => new FileHostStream(x))
-                    .Where(x => !x.Filename.EndsWith(".pkg", StringComparison.InvariantCultureIgnoreCase))
-                    .ToArray();
+                await App.RunInNewThread(() =>
+                    Volumes = Links.Select(x => new FileHostStream(x))
+                                   .Where(x => !x.Filename.EndsWith(".pkg", StringComparison.InvariantCultureIgnoreCase))
+                                   .ToArray());
 
                 return await Un7zPKG(Volumes, FirstUrl, EntryName, Seekable, Password);
             }

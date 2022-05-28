@@ -173,6 +173,7 @@ namespace DirectPackageInstaller.Views
 
             try
             {
+                tbURL.IsEnabled = false;
                 btnLoad.IsEnabled = false;
                 await App.DoEvents();
                 
@@ -284,6 +285,7 @@ namespace DirectPackageInstaller.Views
             }
             finally
             {
+                tbURL.IsEnabled = true;
                 btnLoad.IsEnabled = true;
             }
 
@@ -295,6 +297,8 @@ namespace DirectPackageInstaller.Views
                 return;
 
             this.Parent = Parent;
+
+            Parent.Title += $" - v{SelfUpdate.CurrentVersion}";
             
              if (File.Exists(App.SettingsPath))
             {

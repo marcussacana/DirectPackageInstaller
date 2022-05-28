@@ -129,11 +129,14 @@ namespace DirectPackageInstaller.Tasks
                         
                         string Entry = null;
 
-                        if (InputType.HasFlag(Source.SevenZip))
-                            Entry = Server.Decompress.Decompressor.CreateUn7z(URL, EntryName);
-                        else 
-                            Entry = Server.Decompress.Decompressor.CreateUnrar(URL, EntryName);
-
+                        await App.RunInNewThread(() =>
+                        {
+                            if (InputType.HasFlag(Source.SevenZip))
+                                Entry = Server.Decompress.Decompressor.CreateUn7z(URL, EntryName);
+                            else
+                                Entry = Server.Decompress.Decompressor.CreateUnrar(URL, EntryName);
+                        });
+                        
                         EntryName = Entry;
 
                         if (Entry == null)
