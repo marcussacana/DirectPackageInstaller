@@ -79,9 +79,9 @@ Or alternatively the RemotePackageInstaller Homebrew.
 	- It's done, you can't close the DirectPackageInstaller or turn off your computer.
 
 ### For OSX Users
-You must run the DirectPackageInstaller.Desktop file with help of the terminal `./DirectPackageInstaller.Desktop`. 
-We have App builds as well, but isn't working very well right now, you can try: [OSX x64 App](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/OSX-X64.zip) or [OSX ARM64 App](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/OSX-ARM64.zip)
-The App Builds aren't working yet because of permissions problems, that can be easy solved by changing the paths of where the DirectPackageInstaller store his data, but the Auto-Update keep not working even with that
+You must run the `DirectPackageInstaller.Desktop` file with help of the terminal `./DirectPackageInstaller.Desktop`  
+We have App builds as well, but isn't working very well right now, you can try: [OSX x64 App](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/OSX-X64.zip) or [OSX ARM64 App](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/OSX-ARM64.zip).  
+The App Builds aren't working too well because of permissions problems, that can be easy solved by changing the paths of where the DirectPackageInstaller store his data, but the Auto-Update with the App container not works because the app can't modify himself.
 
 ### How It Works
 The tool it self is very simple, the Remote Package Installer have an API that allow you put packages from URLs into your PS4 download queue, the DirectPackageInstaller just use that API to push to your PS4 the download URL, helping only to you preview the PKG that you're installing.
