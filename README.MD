@@ -36,8 +36,8 @@ Or alternatively the RemotePackageInstaller Homebrew.
 	- [Linux x64](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/Linux-X64.zip)
 	- [Linux ARM](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/Linux-ARM.zip)
 	- [Linux ARM64](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/Linux-ARM64.zip)
-	- [OSX x64](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/OSX-X64-APP.zip)
-	- [OSX ARM64](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/OSX-ARM64-APP.zip)
+	- [OSX x64](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/OSX-X64.zip)
+	- [OSX ARM64](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/OSX-ARM64.zip)
 
 
 ### How to Use 
@@ -77,6 +77,11 @@ Or alternatively the RemotePackageInstaller Homebrew.
 	- [Optional] Select the correct PKG in the file list
 	- Click at "Install" and wait again.
 	- It's done, you can't close the DirectPackageInstaller or turn off your computer.
+
+### For OSX Users
+You must run the DirectPackageInstaller.Desktop file with help of the terminal `./DirectPackageInstaller.Desktop`. 
+We have App builds as well, but isn't working very well right now, you can try: [OSX x64 App](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/OSX-X64.zip) or [OSX ARM64 App](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/OSX-ARM64.zip)
+The App Builds aren't working yet because of permissions problems, that can be easy solved by changing the paths of where the DirectPackageInstaller store his data, but the Auto-Update keep not working even with that
 
 ### How It Works
 The tool it self is very simple, the Remote Package Installer have an API that allow you put packages from URLs into your PS4 download queue, the DirectPackageInstaller just use that API to push to your PS4 the download URL, helping only to you preview the PKG that you're installing.
