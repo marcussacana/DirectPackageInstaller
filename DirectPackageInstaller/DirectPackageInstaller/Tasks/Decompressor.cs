@@ -8,6 +8,7 @@ using System.IO;
 using System.IO.Enumeration;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using DirectPackageInstaller.ViewModels;
@@ -20,7 +21,7 @@ namespace DirectPackageInstaller.Tasks
 {
     static class Decompressor
     {
-        public static readonly Dictionary<string, (string[] Links, string? Password)> CompressInfo = new Dictionary<string, (string[] Links, string? Password)>();
+        public static Dictionary<string, string?> Passwords = new Dictionary<string, string?>();
         
         public static async Task<ArchiveDataInfo?> UnrarPKG(Stream Volume, string FirstUrl, string? EntryName = null, bool Seekable = true, string? Password = null) => await UnrarPKG(new Stream[] { Volume }, FirstUrl, EntryName, Seekable, Password);
         public static async Task<ArchiveDataInfo?> UnrarPKG(Stream[] Volumes, string FirstUrl, string? EntryName = null, bool Seekable = true, string? Password = null)
@@ -61,26 +62,28 @@ namespace DirectPackageInstaller.Tasks
             
             bool MustReload = false;
 
-            if (Multipart && CompressInfo.ContainsKey(FirstUrl) && CompressInfo[FirstUrl].Links.Length == 1)
-                CompressInfo.Remove(FirstUrl);
+            if (Multipart && URLAnalyzer.URLInfos.ContainsKey(FirstUrl) && URLAnalyzer.URLInfos[FirstUrl].Urls.Length == 1)
+                URLAnalyzer.URLInfos.Remove(FirstUrl);
 
-            if (Password == null && CompressInfo.ContainsKey(FirstUrl) && CompressInfo[FirstUrl].Password != null)
+            if (Password == null && Passwords.ContainsKey(FirstUrl) && Passwords[FirstUrl] != null)
             {
-                Password = CompressInfo[FirstUrl].Password;
+                Password = Passwords[FirstUrl];
                 MustReload = true;
             }
 
-            string[]? Links = null;
+            URLAnalyzer.URLInfo? Info = null;
             
             bool MissingData = Multipart && Volumes.Count() == 1;
 
-            if (CompressInfo.ContainsKey(FirstUrl))
-            {
-                Links = CompressInfo[FirstUrl].Links;
+            if (URLAnalyzer.URLInfos.ContainsKey(FirstUrl))
+            { 
+                Info = URLAnalyzer.URLInfos[FirstUrl];
+                if (Info?.Failed ?? true)
+                    return null;
                 
                 MissingData = false;
 
-                if (Volumes.Length != Links.Length)
+                if (Volumes.Length != Info?.Urls.Length)
                     MustReload = true;
             }
 
@@ -88,20 +91,19 @@ namespace DirectPackageInstaller.Tasks
 
             if (MissingData)
             {
-                var List = new LinkList(Multipart && (Links == null || Links.Length == 1), Encrypted, FirstUrl);
-                List.SetInitialInfo(Links, Password);
+                var List = new LinkList(Multipart && (Info == null || Info?.Urls.Length == 1), Encrypted, FirstUrl);
+                List.SetInitialInfo(Info?.Links, Password);
+                
                 if (await List.ShowDialogAsync() != DialogResult.OK)
                     throw new Exception();
 
-                CompressInfo[FirstUrl] = (List.Links, List.Password);
+                Passwords[FirstUrl] = List.Password;
 
-                Links = List.Links;
+                Info = await URLAnalyzer.Analyze(List.Links!);
+                
                 Password = List.Password;
                 MustReload = true;
             }
-
-            if (Links == null)
-                Links = new string[] { FirstUrl };
 
             if (MustReload)
             {
@@ -110,10 +112,7 @@ namespace DirectPackageInstaller.Tasks
                 foreach (var Volume in Volumes)
                     Volume.Seek(0, SeekOrigin.Begin);
 
-                await App.RunInNewThread(() =>
-                    Volumes = Links.Select(x => new FileHostStream(x))
-                        .Where(x => !x.Filename.EndsWith(".pkg", StringComparison.InvariantCultureIgnoreCase))
-                        .ToArray());
+                Volumes = Info!.Value.Urls.SortRarFiles().Select(x => x.Stream).Cast<Stream>().ToArray();
 
                 return await UnrarPKG(Volumes, FirstUrl, EntryName, Seekable, Password);
             }
@@ -161,26 +160,28 @@ namespace DirectPackageInstaller.Tasks
 
             bool MustReload = false;
 
-            if (Multipart && CompressInfo.ContainsKey(FirstUrl) && CompressInfo[FirstUrl].Links.Length == 1)
-                CompressInfo.Remove(FirstUrl);
+            if (Multipart && URLAnalyzer.URLInfos.ContainsKey(FirstUrl) && URLAnalyzer.URLInfos[FirstUrl].Urls.Length == 1)
+                URLAnalyzer.URLInfos.Remove(FirstUrl);
 
-            if (Password == null && CompressInfo.ContainsKey(FirstUrl) && CompressInfo[FirstUrl].Password != null)
+            if (Password == null && Passwords.ContainsKey(FirstUrl) && Passwords[FirstUrl] != null)
             {
-                Password = CompressInfo[FirstUrl].Password;
+                Password = Passwords[FirstUrl];
                 MustReload = true;
             }
 
-            string[]? Links = null;
+            URLAnalyzer.URLInfo? Info = null;
             
             bool MissingData = Multipart && Volumes.Count() == 1;
 
-            if (CompressInfo.ContainsKey(FirstUrl))
-            {
-                Links = CompressInfo[FirstUrl].Links;
+            if (URLAnalyzer.URLInfos.ContainsKey(FirstUrl))
+            { 
+                Info = URLAnalyzer.URLInfos[FirstUrl];
+                if (Info?.Failed ?? true)
+                    return null;
                 
                 MissingData = false;
 
-                if (Volumes.Length != Links.Length)
+                if (Volumes.Length != Info?.Urls.Length)
                     MustReload = true;
             }
 
@@ -188,20 +189,19 @@ namespace DirectPackageInstaller.Tasks
 
             if (MissingData)
             {
-                var List = new LinkList(Multipart && (Links == null || Links.Length == 1), Encrypted, FirstUrl);
-                List.SetInitialInfo(Links, Password);
+                var List = new LinkList(Multipart && (Info == null || Info?.Urls.Length == 1), Encrypted, FirstUrl);
+                List.SetInitialInfo(Info?.Links, Password);
+                
                 if (await List.ShowDialogAsync() != DialogResult.OK)
                     throw new Exception();
 
-                CompressInfo[FirstUrl] = (List.Links, List.Password);
+                Passwords[FirstUrl] = List.Password;
 
-                Links = List.Links;
+                Info = await URLAnalyzer.Analyze(List.Links!);
+                
                 Password = List.Password;
                 MustReload = true;
             }
-
-            if (Links == null)
-                Links = new string[] { FirstUrl };
 
             if (MustReload)
             {
@@ -210,10 +210,7 @@ namespace DirectPackageInstaller.Tasks
                 foreach (var Volume in Volumes)
                     Volume.Seek(0, SeekOrigin.Begin);
 
-                await App.RunInNewThread(() =>
-                    Volumes = Links.Select(x => new FileHostStream(x))
-                                   .Where(x => !x.Filename.EndsWith(".pkg", StringComparison.InvariantCultureIgnoreCase))
-                                   .ToArray());
+                Volumes = Info!.Value.Urls.Sort7zFiles().Select(x => x.Stream).Cast<Stream>().ToArray();
 
                 return await Un7zPKG(Volumes, FirstUrl, EntryName, Seekable, Password);
             }
@@ -226,6 +223,93 @@ namespace DirectPackageInstaller.Tasks
             }
 
             return await UnArchive(Archive, Silent, EntryName, Seekable);
+        }
+
+        public static IEnumerable<URLAnalyzer.URLInfoEntry> SortRarFiles(this IEnumerable<URLAnalyzer.URLInfoEntry> Entries)
+        {
+            var AllEntries = Entries.ToArray();
+            var AllNames = Entries.Select(x => x.Filename).ToArray();
+            
+            Array.Sort(AllNames, AllEntries);
+
+            var ListEntries = AllEntries.ToList();
+            var ListNames = AllNames.ToList();
+
+            int? RarExtPart = null;
+            for (int i = 0; i < AllEntries.Length; i++)
+            {
+                var CurrentName = ListNames[i];
+                if (CurrentName.Contains(".part", StringComparison.InvariantCultureIgnoreCase))
+                    continue;
+                
+                if (CurrentName.EndsWith(".r00", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    RarExtPart = i;
+                    continue;
+                }
+
+                if (CurrentName.EndsWith(".rar", StringComparison.InvariantCultureIgnoreCase) && RarExtPart != null)
+                {
+                    ListEntries.MoveItem(i, RarExtPart.Value);
+                    ListNames.MoveItem(i, RarExtPart.Value);
+                    RarExtPart = null;
+                    continue;
+                }
+            }
+
+            bool Verify(string Name)
+            {
+                var Ext = Path.GetFileName(Name);
+                if (Ext.Equals(".rar", StringComparison.InvariantCultureIgnoreCase))
+                    return true;
+
+                if (Ext.StartsWith(".r", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    if (int.TryParse(Path.GetExtension(Ext).Substring(2), out int _))
+                        return true;
+                }
+
+                return false;
+            }
+
+            return ListEntries.Where(x => Verify(x.Filename));
+        }
+        
+        public static IEnumerable<URLAnalyzer.URLInfoEntry> Sort7zFiles(this IEnumerable<URLAnalyzer.URLInfoEntry> Entries)
+        {
+            var AllEntries = Entries.ToArray();
+            var AllNames = Entries.Select(x => x.Filename).ToArray();
+            
+            Array.Sort(AllNames, AllEntries);
+
+            var ListEntries = AllEntries.ToList();
+            var ListNames = AllNames.ToList();
+            
+            bool Verify(string Name)
+            {
+                var Ext = Path.GetFileName(Name);
+                if (Ext.Equals(".7z", StringComparison.InvariantCultureIgnoreCase))
+                    return true;
+
+                if (int.TryParse(Path.GetExtension(Ext).Substring(1), out int _))
+                    return true;
+
+                return false;
+            }
+
+            return ListEntries.Where(x => Verify(x.Filename));
+        }
+        
+
+        public static void MoveItem<T>(this List<T> List, int From, int To)
+        {
+            T Item = List[From];
+            List.RemoveAt(From);
+            
+            if (To > From)
+                To--;
+            
+            List.Insert(To, Item);
         }
 
         public static async Task<ArchiveDataInfo?> UnArchive(IArchive Archive, bool Silent, string? EntryName, bool Seekable)

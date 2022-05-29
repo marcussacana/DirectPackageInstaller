@@ -31,9 +31,15 @@ namespace DirectPackageInstaller.Tasks
 
         public static async Task<bool> PushPackage(Settings Config, Source InputType, Stream PKGStream, string URL, Func<string, Task> SetStatus, Func<string> GetStatus, bool Silent)
         {
-            if (string.IsNullOrEmpty(Config.PS4IP))
+            if (string.IsNullOrEmpty(Config.PS4IP) || Config.PS4IP == "0.0.0.0")
             {
                 await MessageBox.ShowAsync("PS4 IP not defined, please, type the PS4 IP in the Options Menu", "PS4 IP Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+            
+            if (string.IsNullOrEmpty(Config.PCIP) || Config.PCIP == "0.0.0.0")
+            {
+                await MessageBox.ShowAsync("PC IP not defined, please, type your PC LAN IP in the Options Menu", "PS4 IP Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
 
@@ -154,7 +160,7 @@ namespace DirectPackageInstaller.Tasks
                     }
                     await SetStatus(OriStatus);
 
-                    URL = $"http://{Server.IP}:{ServerPort}/{(InputType.HasFlag(Source.SevenZip) ? "un7z" : "unrar")}/?id={ID}";
+                    URL = $"http://{Config.PCIP}:{ServerPort}/{(InputType.HasFlag(Source.SevenZip) ? "un7z" : "unrar")}/?id={ID}";
                     break;
 
                 case Source.URL | Source.DiskCache:
@@ -169,18 +175,18 @@ namespace DirectPackageInstaller.Tasks
                     }
                     await SetStatus(OriStatus);
 
-                    URL = $"http://{Server.IP}:{ServerPort}/cache/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
+                    URL = $"http://{Config.PCIP}:{ServerPort}/cache/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
                     break;
 
                 case Source.URL | Source.Proxy:
-                    URL = $"http://{Server.IP}:{ServerPort}/proxy/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
+                    URL = $"http://{Config.PCIP}:{ServerPort}/proxy/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
                     break;
 
                 case Source.URL | Source.JSON:
-                    URL = $"http://{Server.IP}:{ServerPort}/merge/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
+                    URL = $"http://{Config.PCIP}:{ServerPort}/merge/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
                     break;
                 case Source.File:
-                    URL = $"http://{Server.IP}:{ServerPort}/file/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
+                    URL = $"http://{Config.PCIP}:{ServerPort}/file/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
                     break;
 
                 case Source.URL:

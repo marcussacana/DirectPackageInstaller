@@ -353,7 +353,11 @@ namespace DirectPackageInstaller.Views
                         if (string.IsNullOrEmpty(Model.PS4IP))
                         {
                             Model.PS4IP = PS4IP.ToString();
-                            Model.PCIP = PCIP?.ToString() ?? IPHelper.FindLocalIP(PS4IP.ToString()) ?? "";
+                            
+                            var NewPCIP = PCIP?.ToString() ?? IPHelper.FindLocalIP(PS4IP.ToString()) ?? "";
+                            if (!string.IsNullOrWhiteSpace(NewPCIP) && NewPCIP != "0.0.0.0")
+                                Model.PCIP = NewPCIP;
+                            
                             RestartServer_OnClick(null, null);
                         }
                     });
@@ -631,24 +635,15 @@ namespace DirectPackageInstaller.Views
 
         private void OnLinksReceived((string[] Links, string Password) Info)
         {
-            try
-            {
-                if (!Dispatcher.UIThread.CheckAccess())
-                {
-                    App.Callback(() => OnLinksReceived(Info));
-                    return;
-                }
-            }
-            catch
+            if (!Dispatcher.UIThread.CheckAccess())
             {
                 App.Callback(() => OnLinksReceived(Info));
                 return;
             }
             
-            var Url = Info.Links.First();
-            Decompressor.CompressInfo[Url.Trim()] = (Info.Links, null);
+            _ = URLAnalyzer.Analyze(Info.Links);
 
-            tbURL.Text = Url;
+            tbURL.Text = Info.Links.First();
             App.Callback(() => BtnLoadOnClick(null, new RoutedEventArgs()));
         }
         
@@ -674,16 +669,10 @@ namespace DirectPackageInstaller.Views
                     App.Callback(() => Model!.CurrentURL = "");
                     return;
                 }
+
+                _ = URLAnalyzer.Analyze(Links.Select(x =>x.Trim()).ToArray());
                 
-                Url = Links.First();
-                Decompressor.CompressInfo[Url.Trim()] = (Links.Select(x =>x.Trim()).ToArray(), null);
-                
-                new Task(async() =>
-                {
-                    var Link = Links.First();
-                    await Task.Delay(20);
-                    await Dispatcher.UIThread.InvokeAsync(() => Model!.CurrentURL = Link);
-                }).Start();
+                App.Callback(() => Model!.CurrentURL = Links.First());
                 return;
             }
 
@@ -727,6 +716,7 @@ namespace DirectPackageInstaller.Views
 
 
         private async Task SetStatus(string Status) {
+            
             if (!Dispatcher.UIThread.CheckAccess())
             {
                 await Dispatcher.UIThread.InvokeAsync(async () => await SetStatus(Status));

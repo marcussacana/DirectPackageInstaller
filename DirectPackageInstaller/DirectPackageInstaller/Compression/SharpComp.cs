@@ -9,6 +9,8 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Dialogs;
+using DirectPackageInstaller.Tasks;
+using Microsoft.CodeAnalysis;
 
 namespace DirectPackageInstaller.Compression
 {
@@ -22,34 +24,26 @@ namespace DirectPackageInstaller.Compression
         public string? CreateUnrar(string Url, string? EntryName)
         {
             Stream[] Inputs;
-            string[] Links;
 
             string? Password = null;
-            if (DirectPackageInstaller.Tasks.Decompressor.CompressInfo.ContainsKey(Url))
+            
+            if (URLAnalyzer.URLInfos.ContainsKey(Url))
             {
-                var Info = DirectPackageInstaller.Tasks.Decompressor.CompressInfo[Url];
-                Inputs = Info.Links.Select(x => new DecompressorHelperStream(new FileHostStream(x, 1024 * 512), CompCommon.MultipartHelper)).ToArray();
-                Password = Info.Password;
-                Links = Info.Links;
+                var Info = URLAnalyzer.URLInfos[Url].Urls.SortRarFiles();
+                Inputs = Info.Select(x => new DecompressorHelperStream(x.Stream, CompCommon.MultipartHelper)).Cast<Stream>().ToArray();
+                Password = Decompressor.Passwords.ContainsKey(Url) ?  Decompressor.Passwords[Url] : null;
             }
             else
             {
                 Inputs = new Stream[] { new DecompressorHelperStream(new FileHostStream(Url, 1024 * 512), CompCommon.MultipartHelper) };
-                Links = new string[] { Url };
             }
 
-            for (var i = 0; i < Links.Length; i++)
-            {
-                if (DirectPackageInstaller.Tasks.Downloader.Tasks.ContainsKey(Links[i]))
-                    Inputs[i] = DirectPackageInstaller.Tasks.Downloader.Tasks[Links[i]].OpenRead();
-            }
-
-            return CreateUnrar(Inputs, Links, EntryName, Password);
+            return CreateUnrar(Inputs, EntryName, Password);
         }
 
-        private string? CreateUnrar(Stream[] Inputs, string[] Links, string? EntryName, string? Password)
+        private string? CreateUnrar(Stream[] Inputs, string? EntryName, string? Password)
         {
-            var Archive = RarArchive.Open(Inputs, new global::SharpCompress.Readers.ReaderOptions()
+            var Archive = RarArchive.Open(Inputs, new SharpCompress.Readers.ReaderOptions()
             {
                 Password = Password,
                 DisableCheckIncomplete = true
@@ -63,7 +57,7 @@ namespace DirectPackageInstaller.Compression
             else
                 PKG = PKGs.Single(x => Path.GetFileName(x.Key) == EntryName);
 
-            if (!StartDecompressor(PKG, Inputs, Links))
+            if (!StartDecompressor(PKG, Inputs))
                 return null;
 
             return Path.GetFileName(PKG.Key);
@@ -72,34 +66,24 @@ namespace DirectPackageInstaller.Compression
         public string? CreateUn7z(string Url, string? EntryName)
         {
             Stream[] Inputs;
-            string[] Links;
 
             string? Password = null;
            
-            if (DirectPackageInstaller.Tasks.Decompressor.CompressInfo.ContainsKey(Url))
+            if (URLAnalyzer.URLInfos.ContainsKey(Url))
             {
-                var Info = DirectPackageInstaller.Tasks.Decompressor.CompressInfo[Url];
-                Inputs = Info.Links.Select(x => new DecompressorHelperStream(new FileHostStream(x, 1024 * 512) { TryBypassProxy = true }, CompCommon.MultipartHelper)).ToArray();
-
-                Password = Info.Password;
-                Links = Info.Links;
+                var Info = URLAnalyzer.URLInfos[Url].Urls.Sort7zFiles();
+                Inputs = Info.Select(x => new DecompressorHelperStream(x.Stream, CompCommon.MultipartHelper)).Cast<Stream>().ToArray();
+                Password = Decompressor.Passwords.ContainsKey(Url) ?  Decompressor.Passwords[Url] : null;
             }
             else
             {
-                Inputs = new Stream[] { new DecompressorHelperStream(new FileHostStream(Url, 1024 * 512) { TryBypassProxy = true }, CompCommon.MultipartHelper) };
-                Links = new string[] { Url };
+                Inputs = new Stream[] { new DecompressorHelperStream(new FileHostStream(Url, 1024 * 512), CompCommon.MultipartHelper) };
             }
-
-            for (var i = 0; i < Links.Length; i++)
-            {
-                if (DirectPackageInstaller.Tasks.Downloader.Tasks.ContainsKey(Links[i]))
-                    Inputs[i] = DirectPackageInstaller.Tasks.Downloader.Tasks[Links[i]].OpenRead();
-            }
-
-            return CreateUn7z(Inputs, Links, EntryName, Password);
+            
+            return CreateUn7z(Inputs, EntryName, Password);
         }
 
-        public string? CreateUn7z(Stream[] Inputs, string[] Links, string? EntryName, string? Password)
+        public string? CreateUn7z(Stream[] Inputs, string? EntryName, string? Password)
         {
             var Options = new SharpCompress.Readers.ReaderOptions()
             {
@@ -117,13 +101,13 @@ namespace DirectPackageInstaller.Compression
             else
                 PKG = PKGs.Single(x => Path.GetFileName(x.Key) == EntryName);
 
-            if (!StartDecompressor(PKG, Inputs, Links))
+            if (!StartDecompressor(PKG, Inputs))
                 return null;
 
             return Path.GetFileName(PKG.Key);
         }
 
-        private unsafe bool StartDecompressor(IArchiveEntry Entry, Stream[] Inputs, string[] Links)
+        private unsafe bool StartDecompressor(IArchiveEntry Entry, Stream[] Inputs)
         {
             var TaskCompSrc = new TaskCompletionSource<bool>();
             using var BGWorker = new BackgroundWorker();
@@ -154,7 +138,6 @@ namespace DirectPackageInstaller.Compression
                     TotalDecompressed = &TDecomp,
                     InSegmentTranstion = &InTrans,
                     PartsStream = Inputs.Cast<DecompressorHelperStream>().ToArray(),
-                    PartsLinks = Links,
                     Error = null
                 };
 
@@ -233,7 +216,6 @@ namespace DirectPackageInstaller.Compression
 
         public Exception? Error { get; internal set; }
 
-        public string[] PartsLinks;
         public DecompressorHelperStream[] PartsStream;
 
         public bool* InSegmentTranstion;

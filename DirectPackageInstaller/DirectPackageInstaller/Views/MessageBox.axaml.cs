@@ -25,6 +25,11 @@ namespace DirectPackageInstaller.Views
         
         public static DialogResult ShowSync(Window? Parent, string Message, string Title, MessageBoxButtons Buttons, MessageBoxIcon Icon)
         {
+            if (!Dispatcher.UIThread.CheckAccess())
+            {
+                return Dispatcher.UIThread.InvokeAsync(() => ShowSync(Parent, Message, Title, Buttons, Icon)).GetAwaiter().GetResult();
+            }
+            
             MessageBox MB = new MessageBox() {
                 DataContext = new DialogModel()
                 {
