@@ -141,8 +141,16 @@ namespace DirectPackageInstaller.Compression
                     Error = null
                 };
 
+                bool First = true;
                 foreach (var Strm in Inputs.Cast<DecompressorHelperStream>())
+                {
                     Strm.Info = TaskInfo;
+                    
+                    if (!First && Strm.Base is PartialHttpStream strmBase)
+                        strmBase.CloseConnection();
+                    
+                    First = false;
+                }
 
                 var TaskKey = Path.GetFileName(Entry.Key);
                 Tasks[TaskKey] = TaskInfo;

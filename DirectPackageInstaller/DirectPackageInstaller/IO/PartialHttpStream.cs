@@ -38,7 +38,6 @@ namespace DirectPackageInstaller.IO
         // Cache for short requests.
         private byte[] cache;
         private int cacheLen;
-        private Stream stream;
         //private WebResponse response;
         private long? length;
         private long cachePosition;
@@ -87,6 +86,32 @@ namespace DirectPackageInstaller.IO
         /// </summary>
         public int HttpRequestsCount { get; private set; }
 
+        /// <summary>
+        /// Close the Http Connection but keep the stream
+        /// available for reuse.
+        /// </summary>
+        public void CloseConnection()
+        {
+
+            if (ResponseStream != null)
+            {
+                ResponseStream?.Close();
+                ResponseStream?.Dispose();
+                ResponseStream = null;
+            }
+
+            if (req != null){
+                req.ServicePoint.CloseConnectionGroup(req.ConnectionGroupName);
+                req = null;
+            }
+
+            if (resp != null)
+            {
+                resp?.Close();
+                resp?.Dispose();
+                resp = null;
+            }
+        }
         public override void SetLength(long value)
         { throw new NotImplementedException(); }
         public override int Read(byte[] buffer, int offset, int count)
@@ -365,26 +390,7 @@ namespace DirectPackageInstaller.IO
 
         private new void Dispose()
         {
-            if (stream != null)
-            {
-                stream.Dispose();
-                stream = null;
-            }
-
-            if (ResponseStream != null)
-            {
-                ResponseStream.Close();
-                ResponseStream?.Dispose();
-                ResponseStream = null;
-            }
-
-            if (resp != null)
-            {
-                resp?.Close();
-                resp?.Dispose();
-                resp = null;
-            }
-
+            CloseConnection();
             base.Dispose();
         }
     }

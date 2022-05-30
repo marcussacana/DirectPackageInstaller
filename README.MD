@@ -112,6 +112,31 @@ The Payload must be manually built if you want modify the retail one, just run `
 
 Alternatively, create an fork and start the github action build
 
+### Q&A
+- My download is taking a long time just to begin
+	- Let me guess, Downloading multipart compressed files?  
+	This will happen when the file is splitted in many volumes, how much more volumes it was, more time will take it.  
+	This slowdown is caused by the random access in the compressed files that are made to check if any part is missing.  
+	There's no way to fix this since isn't a bug at all, just a problem when someone try open compressed files remotely.  
+	Then... Just wait a bit more...
+- My download speed is very slow even using segmented mode.  
+	- The segmented mode make the PS4 unaware of the real download progress, don't trust in the PS4 informations,  
+	for an real estimation of your download speed, check the network usage in your task manager.
+- Segmented mode and just 2mbps of download speed?!
+	- I noticied this problem during downloads from Zippyshare, but that isn't a problem of the DirectPackageInstaller,  
+	is just the zippyshare servers being slow or limited, who knows. If you want confirm by your self, I recommend upload  
+	an PKG to google drive and try install by yourself, since the google drive have a high download speed.
+- What is the file hostings that you recommend?
+	- Alldebird > Google Drive > Mediafire > Zippyshare > The whole universe > 1Fichier  
+	This is the list of which hosts has best download performances.
+- When I tries to install a **insert your error here** error happens
+	- Create an issue! Just... Just Create! Serious, no one will bite you, if it was just a mistake there's no problem as well!  
+	By the way, if is an crash the "DPI-Crash.log" will contains good informations about the error.
+
+### Disclaimer
+This program was made for legitimate purposes, purposes which I cannot invent at the moment, and for that reason I condon and do not support any kind of piracy.  
+I'm no responsible for what you do with this tool, like, you know very well what you're doing.
+
 ### Warnings
 - The DirectPackageInstaller don't handle well parallel decompressions, If you're downloading from a compressed file, try download one per time.
 - Compressed file downloads generate a temporary PKG 'cache' on your hard drive, which will require free space according to the size of the PKG on your hard drive.

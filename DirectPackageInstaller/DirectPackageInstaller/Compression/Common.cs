@@ -1,7 +1,6 @@
 ﻿using DirectPackageInstaller.IO;
 using System;
 using System.IO;
-using System.Runtime.InteropServices;
 
 namespace DirectPackageInstaller.Compression
 {
@@ -32,15 +31,7 @@ namespace DirectPackageInstaller.Compression
             if (CantBuffer || !App.Config.SegmentedDownload)
                 return;
 
-            if (Buffering)
-            {
-                SegmentedStream Strm = Args.This.Base as SegmentedStream;
-
-                while (Strm.Position + 1024 * 1024 * 2 < Strm.ScanProgress && !Strm.Finished)
-                     System.Threading.Tasks.Task.Delay(30).Wait();
-            }
-
-            if (!Buffering && Args.This.TotalReaded > 1024 * 1024 * 2)
+            if (!Buffering && Args.This.TotalReaded > 1024 * 1024 * 4)
             {
                 if (DecompressInfo.SafeInSegmentTranstion)
                     return;

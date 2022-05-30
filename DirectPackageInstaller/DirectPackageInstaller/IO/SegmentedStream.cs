@@ -440,6 +440,9 @@ namespace DirectPackageInstaller.IO
                 }
 
             } while (Input.Position < Input.Length && !e.Cancel);
+            
+            if (Input.Base is PartialHttpStream inputBase)
+                inputBase.CloseConnection();
 
             Input.Close();
         }

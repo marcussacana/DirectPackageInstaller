@@ -130,7 +130,15 @@ namespace DirectPackageInstaller.Tasks
                 return null;
             }
 
-            return await UnArchive(Archive, Silent, EntryName, Seekable);
+            var Result = await UnArchive(Archive, Silent, EntryName, Seekable);
+            
+            foreach (var Volume in Volumes)
+            {
+                if (Volume is PartialHttpStream volStream)
+                    volStream.CloseConnection();
+            }
+
+            return Result;
         }
 
         public static async Task<ArchiveDataInfo?> Un7zPKG(Stream Volume, string FirstUrl, string? EntryName = null, bool Seekable = true, string? Password = null) => await Un7zPKG(new Stream[] { Volume }, FirstUrl, EntryName, Seekable, Password);
@@ -241,7 +249,16 @@ namespace DirectPackageInstaller.Tasks
                 return null;
             }
 
-            return await UnArchive(Archive, Silent, EntryName, Seekable);
+
+            var Result = await UnArchive(Archive, Silent, EntryName, Seekable);
+            
+            foreach (var Volume in Volumes)
+            {
+                if (Volume is PartialHttpStream volStream)
+                    volStream.CloseConnection();
+            }
+
+            return Result;
         }
 
         public static IEnumerable<URLAnalyzer.URLInfoEntry> SortRarFiles(this IEnumerable<URLAnalyzer.URLInfoEntry> Entries)

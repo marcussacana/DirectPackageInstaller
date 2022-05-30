@@ -197,7 +197,7 @@ namespace DirectPackageInstaller.Views
                     
                     
                     var UrlInfo = await URLAnalyzer.Analyze(SourcePackage);
-                    var FName = UrlInfo.Urls.First().Filename;
+                    var FName = UrlInfo.Urls.First().Filename.ToLowerInvariant();
                     
                     bool ValidExt = FName.EndsWith(".rar") || FName.EndsWith(".7z") || FName.EndsWith(".pkg");
 
@@ -205,7 +205,7 @@ namespace DirectPackageInstaller.Views
                     {
                         if (UrlInfo.Urls.Length == 1)
                         {
-                            await MessageBox.ShowAsync($"This url contains a .{Path.GetExtension(FName)} file but isn't supported,\nSupported Files: .rar .7z .pkg", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            await MessageBox.ShowAsync($"This url contains a {Path.GetExtension(FName)} file but isn't supported,\nSupported Files: .rar .7z .pkg", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                             return;
                         }
 
@@ -310,6 +310,7 @@ namespace DirectPackageInstaller.Views
                 
                 Parent.BringIntoView();
                 Parent.Focus();
+                Parent.Activate();
 
                 btnLoad.Content = "Install";
             }
@@ -621,7 +622,7 @@ namespace DirectPackageInstaller.Views
 
                 if (Installer.Server != null)
                 {
-                    while (Installer.Server.Decompress.Tasks.Any(x => x.Value.Running))
+                    while (Installer.Server.Decompress.Tasks.Any(x => x.Value.Running) || Installer.Server.Connections > 0)
                         await Task.Delay(5000);
                 }
             }
