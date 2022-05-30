@@ -30,7 +30,7 @@ namespace DirectPackageInstaller.Compression
             if (URLAnalyzer.URLInfos.ContainsKey(Url))
             {
                 var Info = URLAnalyzer.URLInfos[Url].Urls.SortRarFiles();
-                Inputs = Info.Select(x => new DecompressorHelperStream(x.Stream, CompCommon.MultipartHelper)).Cast<Stream>().ToArray();
+                Inputs = Info.Select(x => new DecompressorHelperStream(x.Stream(), CompCommon.MultipartHelper)).Cast<Stream>().ToArray();
                 Password = Decompressor.Passwords.ContainsKey(Url) ?  Decompressor.Passwords[Url] : null;
             }
             else
@@ -72,7 +72,7 @@ namespace DirectPackageInstaller.Compression
             if (URLAnalyzer.URLInfos.ContainsKey(Url))
             {
                 var Info = URLAnalyzer.URLInfos[Url].Urls.Sort7zFiles();
-                Inputs = Info.Select(x => new DecompressorHelperStream(x.Stream, CompCommon.MultipartHelper)).Cast<Stream>().ToArray();
+                Inputs = Info.Select(x => new DecompressorHelperStream(x.Stream(), CompCommon.MultipartHelper)).Cast<Stream>().ToArray();
                 Password = Decompressor.Passwords.ContainsKey(Url) ?  Decompressor.Passwords[Url] : null;
             }
             else

@@ -36,8 +36,8 @@ namespace DirectPackageInstaller.IO
         private const int CacheLen = 1024 * 8;
 
         // Cache for short requests.
-        private readonly byte[] cache;
-        private readonly int cacheLen;
+        private byte[] cache;
+        private int cacheLen;
         private Stream stream;
         //private WebResponse response;
         private long? length;
@@ -63,9 +63,9 @@ namespace DirectPackageInstaller.IO
 
         public string Url { get; protected set; }
 
-        public override bool CanRead { get { return true; } }
-        public override bool CanWrite { get { return false; } }
-        public override bool CanSeek { get { return true; } }
+        public override bool CanRead => true;
+        public override bool CanWrite => false;
+        public override bool CanSeek => true;
 
         public override long Position { get; set; }
 
@@ -89,7 +89,6 @@ namespace DirectPackageInstaller.IO
 
         public override void SetLength(long value)
         { throw new NotImplementedException(); }
-
         public override int Read(byte[] buffer, int offset, int count)
         {
             if (count == 0)

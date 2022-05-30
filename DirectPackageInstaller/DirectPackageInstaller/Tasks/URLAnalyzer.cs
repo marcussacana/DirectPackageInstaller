@@ -1,8 +1,10 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using DirectPackageInstaller.IO;
+using Microsoft.CodeAnalysis;
 
 namespace DirectPackageInstaller.Tasks;
 
@@ -10,6 +12,10 @@ public static class URLAnalyzer
 {
     public static Dictionary<string, URLInfo> URLInfos = new Dictionary<string, URLInfo>();
 
+    public static async Task<URLInfo> Analyze(string URL)
+    {
+        return await Analyze(new string[] {URL});
+    }
     public static async Task<URLInfo> Analyze(string[] URLs)
     {
         string MainURL = URLs.First();
@@ -33,24 +39,30 @@ public static class URLAnalyzer
             }).ToArray()
         };
 
-        var Result = Parallel.For(0, URLs.Length, (i, loop) =>
+        await App.RunInNewThread(() =>
         {
-            try
+            Parallel.For(0, URLs.Length, (i, loop) =>
             {
-                ref var Info = ref URLInfos[MainURL].Urls[i];
-                Info.Stream = new FileHostStream(Info.URL, 1024 * 512);
-                _ = Info.Stream.Filename;
-                Info.Verified = true;
-            }
-            catch
-            {
-                URLInfos[MainURL].SetFailed();
-                loop.Break();
-            }
+                try
+                {
+                    ref var Info = ref URLInfos[MainURL].Urls[i];
+
+                    string URL = Info.URL;
+                    Info.Stream = () => new FileHostStream(URL);
+
+                    using (FileHostStream Head = Info.Stream())
+                        Info.Filename = Head.Filename;
+
+                    Info.Verified = true;
+                }
+                catch
+                {
+                    URLInfos[MainURL].SetFailed();
+                    loop.Break();
+                }
+            });
         });
 
-        while (!Result.IsCompleted)
-            await Task.Delay(100);
 
         return URLInfos[MainURL];
     }
@@ -73,8 +85,8 @@ public static class URLAnalyzer
     {
         public string URL;
         public bool Verified;
-        public FileHostStream Stream;
-        public string Filename => Stream.Filename;
+        public Func<FileHostStream> Stream;
+        public string Filename;
     }
 }
 

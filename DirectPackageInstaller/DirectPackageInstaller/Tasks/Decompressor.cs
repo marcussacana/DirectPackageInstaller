@@ -5,16 +5,9 @@ using SharpCompress.Archives.SevenZip;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Enumeration;
 using System.Linq;
-using System.Reflection;
-using System.Security.Cryptography;
-using System.Threading;
 using System.Threading.Tasks;
-using DirectPackageInstaller.ViewModels;
 using DirectPackageInstaller.Views;
-using DynamicData;
-using LibOrbisPkg.GP4;
 using ReaderOptions = SharpCompress.Readers.ReaderOptions;
 
 namespace DirectPackageInstaller.Tasks
@@ -26,6 +19,21 @@ namespace DirectPackageInstaller.Tasks
         public static async Task<ArchiveDataInfo?> UnrarPKG(Stream Volume, string FirstUrl, string? EntryName = null, bool Seekable = true, string? Password = null) => await UnrarPKG(new Stream[] { Volume }, FirstUrl, EntryName, Seekable, Password);
         public static async Task<ArchiveDataInfo?> UnrarPKG(Stream[] Volumes, string FirstUrl, string? EntryName = null, bool Seekable = true, string? Password = null)
         {
+            URLAnalyzer.URLInfo? Info = null;
+
+            if (URLAnalyzer.URLInfos.ContainsKey(FirstUrl))
+            { 
+                Info = await URLAnalyzer.Analyze(FirstUrl);
+                if (Info?.Failed ?? true)
+                    return null;
+
+                foreach (var Volume in Volumes)
+                    Volume.Close();
+                
+                
+                Volumes = Info!.Value.Urls.SortRarFiles().Select(x => x.Stream()).Cast<Stream>().ToArray();
+            }
+            
             bool Silent = EntryName != null;
             
             RarArchive? Archive = null;
@@ -70,8 +78,6 @@ namespace DirectPackageInstaller.Tasks
                 Password = Passwords[FirstUrl];
                 MustReload = true;
             }
-
-            URLAnalyzer.URLInfo? Info = null;
             
             bool MissingData = Multipart && Volumes.Count() == 1;
 
@@ -110,9 +116,9 @@ namespace DirectPackageInstaller.Tasks
                 Archive.Dispose();
 
                 foreach (var Volume in Volumes)
-                    Volume.Seek(0, SeekOrigin.Begin);
+                    Volume.Close();
 
-                Volumes = Info!.Value.Urls.SortRarFiles().Select(x => x.Stream).Cast<Stream>().ToArray();
+                Volumes = Info!.Value.Urls.SortRarFiles().Select(x => x.Stream()).Cast<Stream>().ToArray();
 
                 return await UnrarPKG(Volumes, FirstUrl, EntryName, Seekable, Password);
             }
@@ -131,6 +137,21 @@ namespace DirectPackageInstaller.Tasks
 
         private static async Task<ArchiveDataInfo?> Un7zPKG(Stream[] Volumes, string FirstUrl, string? EntryName = null, bool Seekable = true, string? Password = null)
         {
+
+            URLAnalyzer.URLInfo? Info = null;
+
+            if (URLAnalyzer.URLInfos.ContainsKey(FirstUrl))
+            { 
+                Info = await URLAnalyzer.Analyze(FirstUrl);
+                if (Info?.Failed ?? true)
+                    return null;
+
+                foreach (var Volume in Volumes)
+                    Volume.Close();
+                
+                Volumes = Info!.Value.Urls.Sort7zFiles().Select(x => x.Stream()).Cast<Stream>().ToArray();
+            }
+            
             bool Silent = EntryName != null;
             var Options = new ReaderOptions()
             {
@@ -168,8 +189,6 @@ namespace DirectPackageInstaller.Tasks
                 Password = Passwords[FirstUrl];
                 MustReload = true;
             }
-
-            URLAnalyzer.URLInfo? Info = null;
             
             bool MissingData = Multipart && Volumes.Count() == 1;
 
@@ -208,9 +227,9 @@ namespace DirectPackageInstaller.Tasks
                 Archive.Dispose();
 
                 foreach (var Volume in Volumes)
-                    Volume.Seek(0, SeekOrigin.Begin);
-
-                Volumes = Info!.Value.Urls.Sort7zFiles().Select(x => x.Stream).Cast<Stream>().ToArray();
+                    Volume.Close();
+                
+                Volumes = Info!.Value.Urls.Sort7zFiles().Select(x => x.Stream()).Cast<Stream>().ToArray();
 
                 return await Un7zPKG(Volumes, FirstUrl, EntryName, Seekable, Password);
             }
@@ -259,13 +278,13 @@ namespace DirectPackageInstaller.Tasks
 
             bool Verify(string Name)
             {
-                var Ext = Path.GetFileName(Name);
+                var Ext = Path.GetExtension(Name);
                 if (Ext.Equals(".rar", StringComparison.InvariantCultureIgnoreCase))
                     return true;
 
                 if (Ext.StartsWith(".r", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    if (int.TryParse(Path.GetExtension(Ext).Substring(2), out int _))
+                    if (int.TryParse(Ext.Substring(2), out int _))
                         return true;
                 }
 
@@ -287,11 +306,11 @@ namespace DirectPackageInstaller.Tasks
             
             bool Verify(string Name)
             {
-                var Ext = Path.GetFileName(Name);
+                var Ext = Path.GetExtension(Name);
                 if (Ext.Equals(".7z", StringComparison.InvariantCultureIgnoreCase))
                     return true;
 
-                if (int.TryParse(Path.GetExtension(Ext).Substring(1), out int _))
+                if (int.TryParse(Ext.Substring(1), out int _))
                     return true;
 
                 return false;

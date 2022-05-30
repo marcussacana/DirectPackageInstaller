@@ -176,7 +176,7 @@ namespace DirectPackageInstaller.Views
                 tbURL.IsEnabled = false;
                 btnLoad.IsEnabled = false;
                 await App.DoEvents();
-                
+
                 PKGStream = null;
 
                 if (SourcePackage.EndsWith(".json", StringComparison.InvariantCultureIgnoreCase))
@@ -192,6 +192,46 @@ namespace DirectPackageInstaller.Views
                 else
                 {
                     InputType = Source.URL;
+
+                    await SetStatus("Analyzing Urls...");
+                    
+                    
+                    var UrlInfo = await URLAnalyzer.Analyze(SourcePackage);
+                    var FName = UrlInfo.Urls.First().Filename;
+                    
+                    bool ValidExt = FName.EndsWith(".rar") || FName.EndsWith(".7z") || FName.EndsWith(".pkg");
+
+                    if (!ValidExt)
+                    {
+                        if (UrlInfo.Urls.Length == 1)
+                        {
+                            await MessageBox.ShowAsync($"This url contains a .{Path.GetExtension(FName)} file but isn't supported,\nSupported Files: .rar .7z .pkg", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            return;
+                        }
+
+                        var Rar = UrlInfo.Urls.SortRarFiles().ToArray();
+                        var SevenZip = UrlInfo.Urls.Sort7zFiles().ToArray();
+
+                        if (Rar.Length > 0)
+                        {
+                            SourcePackage = Rar.First().URL;
+                            UrlInfo.Urls = Rar;
+                        }
+
+                        if (SevenZip.Length > 0)
+                        {
+                            SourcePackage = SevenZip.First().URL;
+                            UrlInfo.Urls = SevenZip;
+                        }
+
+                        if (UrlInfo.Urls.Any(x => x.Filename.EndsWith(".pkg", StringComparison.InvariantCultureIgnoreCase)))
+                        {
+                            SourcePackage = UrlInfo.Urls.First().URL;
+                        }
+
+                        URLAnalyzer.URLInfos[SourcePackage] = UrlInfo;
+                    }
+
 
                     var FHStream = new FileHostStream(SourcePackage);
                     LimitedFHost = FHStream.SingleConnection;
@@ -270,7 +310,7 @@ namespace DirectPackageInstaller.Views
 
                 btnLoad.Content = "Install";
             }
-            catch
+            catch (Exception ex)
             {
 
                 IconBox.Source = null;
@@ -670,9 +710,8 @@ namespace DirectPackageInstaller.Views
                     return;
                 }
 
-                _ = URLAnalyzer.Analyze(Links.Select(x =>x.Trim()).ToArray());
-                
                 App.Callback(() => Model!.CurrentURL = Links.First());
+                _ = App.RunInNewThread(() => _ = URLAnalyzer.Analyze(Links.Select(x =>x.Trim()).ToArray()));
                 return;
             }
 
