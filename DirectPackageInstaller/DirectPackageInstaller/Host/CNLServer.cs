@@ -31,7 +31,8 @@ public class CNLServer
             Http.Response.StatusCode = 200;
             Http.Response.Headers["Server"] = "DirectPackageInstaller";
             
-            await Http.Response.SendAsync(Encoding.UTF8.GetBytes("var jdownloader = true;"));
+            await Http.Response.TrySendAsync(Encoding.UTF8.GetBytes("var jdownloader = true;"));
+            Http.Response.Close();
             return;
         }
 
@@ -40,7 +41,8 @@ public class CNLServer
             Http.Response.StatusCode = 200;
             Http.Response.Headers["Server"] = "DirectPackageInstaller";
             
-            await Http.Response.SendAsync(Encoding.UTF8.GetBytes("<?xml version=\"1.0\" ?>\n<cross-domain-policy>\n<site-control permitted-cross-domain-policies=\"master-only\"/><allow-access-from domain=\"*\"/>\n<allow-http-request-headers-from domain=\"*\" headers=\"*\"/>\n</cross-domain-policy>"));
+            await Http.Response.TrySendAsync(Encoding.UTF8.GetBytes("<?xml version=\"1.0\" ?>\n<cross-domain-policy>\n<site-control permitted-cross-domain-policies=\"master-only\"/><allow-access-from domain=\"*\"/>\n<allow-http-request-headers-from domain=\"*\" headers=\"*\"/>\n</cross-domain-policy>"));
+            Http.Response.Close();
             return;
         }
         
@@ -48,7 +50,6 @@ public class CNLServer
         {
             Http.Response.StatusCode = 400;
             Http.Response.TrySend(true);
-            Http.Close();
             return;
         }
 
@@ -77,7 +78,6 @@ public class CNLServer
             {
                 Http.Response.StatusCode = 400;
                 Http.Response.TrySend(true);
-                Http.Close();
                 return;
             }
             

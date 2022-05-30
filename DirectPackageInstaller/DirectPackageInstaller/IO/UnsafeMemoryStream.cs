@@ -70,34 +70,21 @@ namespace DirectPackageInstaller.IO
 
         public override void Flush() { }
         
-        static SemaphoreSlim innerLock = new SemaphoreSlim(1, 1);
-        static SemaphoreSlim outerLock = new SemaphoreSlim(1, 1);
-        static SemaphoreSlim ReadWriteLocker = new SemaphoreSlim(1, 1);
         static int ReadWriteCount = 0;
-        
+
+        static int WantsDispose = 0;
+
         static void MasterReadWriteLock()
         {
-            ReadWriteLocker.Wait();
-            outerLock.Wait();
-
-            if (ReadWriteCount == 0)
-                innerLock.Wait();
-
+            while (WantsDispose > 0)
+                Thread.Sleep(100);
+            
             ReadWriteCount++;
-
-            outerLock.Release();
-            ReadWriteLocker.Release();
         }
 
         static void MasterReadWriteUnlock()
         {
-            ReadWriteLocker.Wait();
             ReadWriteCount--;
-
-            if (ReadWriteCount == 0)
-                innerLock.Release();
-
-            ReadWriteLocker.Release();
         }
 
         public override int Read(byte[] buffer, int offset, int count)
@@ -236,8 +223,11 @@ namespace DirectPackageInstaller.IO
 
         protected override void Dispose(bool Disposing)
         {
-            outerLock.Wait();
-            innerLock.Wait();
+            WantsDispose++;
+            
+            while (ReadWriteCount > 0)
+                Thread.Sleep(100);
+            
             try
             {
                 if (Disposed)
@@ -270,8 +260,7 @@ namespace DirectPackageInstaller.IO
             }
             finally
             {
-                outerLock.Release();
-                innerLock.Release();
+                WantsDispose--;
             }
         }
     }

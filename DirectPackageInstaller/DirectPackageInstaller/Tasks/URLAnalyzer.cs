@@ -12,11 +12,11 @@ public static class URLAnalyzer
 {
     public static Dictionary<string, URLInfo> URLInfos = new Dictionary<string, URLInfo>();
 
-    public static async Task<URLInfo> Analyze(string URL)
+    public static async Task<URLInfo> Analyze(string URL, bool Wait)
     {
-        return await Analyze(new string[] {URL});
+        return await Analyze(new string[] {URL}, Wait);
     }
-    public static async Task<URLInfo> Analyze(string[] URLs)
+    public static async Task<URLInfo> Analyze(string[] URLs, bool Wait)
     {
         string MainURL = URLs.First();
 
@@ -24,7 +24,7 @@ public static class URLAnalyzer
         {
             var Info = URLInfos[MainURL];
             
-            while (!Info.Ready & !Info.Failed)
+            while (Wait && !Info.Ready & !Info.Failed)
                 await Task.Delay(100);
             
             return Info;
@@ -39,9 +39,12 @@ public static class URLAnalyzer
             }).ToArray()
         };
 
-        await App.RunInNewThread(() =>
+        var BGTask = App.RunInNewThread(() =>
         {
-            Parallel.For(0, URLs.Length, (i, loop) =>
+            Parallel.For(0, URLs.Length, new ParallelOptions()
+            {
+                MaxDegreeOfParallelism = 4
+            }, (i, loop) =>
             {
                 try
                 {
@@ -55,7 +58,7 @@ public static class URLAnalyzer
 
                     Info.Verified = true;
                 }
-                catch
+                catch (Exception ex)
                 {
                     URLInfos[MainURL].SetFailed();
                     loop.Break();
@@ -63,7 +66,9 @@ public static class URLAnalyzer
             });
         });
 
-
+        if (Wait)
+            await BGTask;
+        
         return URLInfos[MainURL];
     }
     
@@ -75,6 +80,8 @@ public static class URLAnalyzer
         public bool Ready => Urls.All(x => x.Verified);
         public bool Failed;
 
+        public int TotalVerified => Urls.Count(x => x.Verified);
+        public string Progress => $"{TotalVerified}/{Urls.Length} ({(double)TotalVerified/Urls.Length:P0})";
         internal void SetFailed()
         {
             Failed = true;

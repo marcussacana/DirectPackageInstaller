@@ -32,6 +32,10 @@ namespace DirectPackageInstaller
                 }
             };
             
+            ServicePointManager.UseNagleAlgorithm = true;
+            ServicePointManager.MaxServicePointIdleTime = 100000;
+            ServicePointManager.DefaultConnectionLimit = 100;
+            
             AvaloniaXamlLoader.Load(this);
         }
 

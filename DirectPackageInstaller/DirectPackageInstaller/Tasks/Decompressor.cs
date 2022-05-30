@@ -23,7 +23,7 @@ namespace DirectPackageInstaller.Tasks
 
             if (URLAnalyzer.URLInfos.ContainsKey(FirstUrl))
             { 
-                Info = await URLAnalyzer.Analyze(FirstUrl);
+                Info = await URLAnalyzer.Analyze(FirstUrl, true);
                 if (Info?.Failed ?? true)
                     return null;
 
@@ -105,7 +105,7 @@ namespace DirectPackageInstaller.Tasks
 
                 Passwords[FirstUrl] = List.Password;
 
-                Info = await URLAnalyzer.Analyze(List.Links!);
+                Info = await URLAnalyzer.Analyze(List.Links!, true);
                 
                 Password = List.Password;
                 MustReload = true;
@@ -150,7 +150,7 @@ namespace DirectPackageInstaller.Tasks
 
             if (URLAnalyzer.URLInfos.ContainsKey(FirstUrl))
             { 
-                Info = await URLAnalyzer.Analyze(FirstUrl);
+                Info = await URLAnalyzer.Analyze(FirstUrl, true);
                 if (Info?.Failed ?? true)
                     return null;
 
@@ -224,7 +224,7 @@ namespace DirectPackageInstaller.Tasks
 
                 Passwords[FirstUrl] = List.Password;
 
-                Info = await URLAnalyzer.Analyze(List.Links!);
+                Info = await URLAnalyzer.Analyze(List.Links!, true);
                 
                 Password = List.Password;
                 MustReload = true;

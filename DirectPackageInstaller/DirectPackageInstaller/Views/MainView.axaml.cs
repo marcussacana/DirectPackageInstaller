@@ -196,7 +196,14 @@ namespace DirectPackageInstaller.Views
                     await SetStatus("Analyzing Urls...");
                     
                     
-                    var UrlInfo = await URLAnalyzer.Analyze(SourcePackage);
+                    var UrlInfo = await URLAnalyzer.Analyze(SourcePackage, false);
+
+                    while (!UrlInfo.Ready && !UrlInfo.Failed)
+                    {
+                        await SetStatus($"Analyzing Urls... {UrlInfo.Progress}");
+                        await Task.Delay(100);
+                    }
+                    
                     var FName = UrlInfo.Urls.First().Filename.ToLowerInvariant();
                     
                     bool ValidExt = FName.EndsWith(".rar") || FName.EndsWith(".7z") || FName.EndsWith(".pkg");
@@ -685,7 +692,7 @@ namespace DirectPackageInstaller.Views
                 return;
             }
             
-            _ = URLAnalyzer.Analyze(Info.Links);
+            _ = URLAnalyzer.Analyze(Info.Links, false);
 
             tbURL.Text = Info.Links.First();
             App.Callback(() => BtnLoadOnClick(null, new RoutedEventArgs()));
@@ -705,8 +712,9 @@ namespace DirectPackageInstaller.Views
             if (Url.Contains("\n"))
             {
                 var Links = Url.Replace("\r\n", "\n").Split('\n')
-                    .Where(x => x.Trim().StartsWith("http", StringComparison.InvariantCultureIgnoreCase))
-                    .Select(x => x.Trim()).ToArray();
+                    .Select(x => x.Trim())
+                    .Where(x => x.StartsWith("http", StringComparison.InvariantCultureIgnoreCase))
+                    .ToArray();
                 
                 if (!Links.Any())
                 {
@@ -714,8 +722,11 @@ namespace DirectPackageInstaller.Views
                     return;
                 }
 
-                App.Callback(() => Model!.CurrentURL = Links.First());
-                _ = App.RunInNewThread(() => _ = URLAnalyzer.Analyze(Links.Select(x =>x.Trim()).ToArray()));
+                App.Callback(() =>
+                {
+                    Model!.CurrentURL = Links.First();
+                    _ = App.RunInNewThread(() => _ = URLAnalyzer.Analyze(Links, false));
+                });
                 return;
             }
 

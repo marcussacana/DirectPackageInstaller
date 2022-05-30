@@ -4,15 +4,18 @@ using System.Linq;
 using DirectPackageInstaller.Views;
 using System.Net;
 using System.Text;
+using System.Threading.Tasks;
 using System.Web;
+using DirectPackageInstaller.UIBase;
 
 namespace DirectPackageInstaller.FileHosts
 {
     class GoogleDrive : FileHostBase
     {
         public override string HostName => "GoogleDrive";
-
-        bool CookieAsked = false;
+        static bool WaitingCookies = false;
+        static bool CookieAsked = false;
+        
         static List<Cookie> UserCookies = new List<Cookie>();
 
         public override DownloadInfo GetDownloadInfo(string URL)
@@ -29,18 +32,29 @@ namespace DirectPackageInstaller.FileHosts
             
             if (Headers == null)
             {
-                var OldCount = UserCookies.Count;
+                var OldCount = Cookies.Count;
                 UserCookies = CookieManager.GetUserCookies("google.com");
 
-                if (OldCount == UserCookies.Count && (UserCookies.Count == 0 || !CookieAsked))
+                bool CookiesWaited = false;
+                while (WaitingCookies)
+                {
+                    CookiesWaited = true;
+                    Task.Delay(100).Wait();
+                }
+
+                if (OldCount == UserCookies.Count && (UserCookies.Count == 0 || !CookieAsked) && !CookiesWaited)
                 {
                     CookieAsked = true;
-                    var CManager = new CookieManager();
+                    WaitingCookies = true;
+                    
+                    var CManager = DialogWindow.CreateInstance<CookieManager>();
                     CManager.ShowDialogSync(MainWindow.Instance);
+
+                    WaitingCookies = false;
                     return GetDownloadInfo(URL);
                 }
                 
-                if (OldCount != UserCookies.Count)
+                if (CookiesWaited || OldCount != UserCookies.Count)
                     return GetDownloadInfo(URL);
                 
                 throw new Exception();
