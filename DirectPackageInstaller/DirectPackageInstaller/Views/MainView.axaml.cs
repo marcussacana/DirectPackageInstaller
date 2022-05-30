@@ -307,6 +307,9 @@ namespace DirectPackageInstaller.Views
                 Model.PKGParams = Info.Params;
 
                 IconBox.Source = Info.Icon;
+                
+                Parent.BringIntoView();
+                Parent.Focus();
 
                 btnLoad.Content = "Install";
             }
