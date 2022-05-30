@@ -138,7 +138,7 @@ Alternatively, create an fork and start the github action build
 	By the way, if is an crash the "DPI-Crash.log" will contains good informations about the error.
 
 ### Disclaimer
-This program was made for legitimate purposes, purposes which I cannot invent at the moment, and for that reason I condon and do not support any kind of piracy.  
+This program was made for legitimate purposes, you can use it only for download the your backups that you saved in cloud, and for that reason I condon and do not support any kind of piracy.  
 I'm no responsible for what you do with this tool, like, you know very well what you're doing.
 
 ### Warnings
