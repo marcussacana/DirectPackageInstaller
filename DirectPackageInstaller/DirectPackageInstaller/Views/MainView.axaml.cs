@@ -203,47 +203,60 @@ namespace DirectPackageInstaller.Views
                         await SetStatus($"Analyzing Urls... {UrlInfo.Progress}");
                         await Task.Delay(100);
                     }
-                    
-                    var FName = UrlInfo.Urls.First().Filename.ToLowerInvariant();
-                    
-                    bool ValidExt = FName.EndsWith(".rar") || FName.EndsWith(".7z") || FName.EndsWith(".pkg");
 
-                    if (!ValidExt)
+                    FileHostStream FHStream;
+                    
+                    if (UrlInfo.Urls.Any(x => x.SingleConnection))
                     {
-                        if (UrlInfo.Urls.Length == 1)
-                        {
-                            await MessageBox.ShowAsync($"This url contains a {Path.GetExtension(FName)} file but isn't supported,\nSupported Files: .rar .7z .pkg", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            return;
-                        }
-
-                        var Rar = UrlInfo.Urls.SortRarFiles().ToArray();
-                        var SevenZip = UrlInfo.Urls.Sort7zFiles().ToArray();
-
-                        if (Rar.Length > 0)
-                        {
-                            SourcePackage = Rar.First().URL;
-                            UrlInfo.Urls = Rar;
-                        }
-
-                        if (SevenZip.Length > 0)
-                        {
-                            SourcePackage = SevenZip.First().URL;
-                            UrlInfo.Urls = SevenZip;
-                        }
-
-                        if (UrlInfo.Urls.Any(x => x.Filename.EndsWith(".pkg", StringComparison.InvariantCultureIgnoreCase)))
-                        {
-                            SourcePackage = UrlInfo.Urls.First().URL;
-                        }
-
-                        URLAnalyzer.URLInfos[SourcePackage] = UrlInfo;
+                        FHStream = UrlInfo.Urls.First().Stream();
                     }
+                    else
+                    {
 
+                        var FName = UrlInfo.Urls.First().Filename.ToLowerInvariant();
 
-                    var FHStream = new FileHostStream(SourcePackage);
+                        bool ValidExt = FName.EndsWith(".rar") || FName.EndsWith(".7z") || FName.EndsWith(".pkg");
+
+                        if (!ValidExt)
+                        {
+                            if (UrlInfo.Urls.Length == 1)
+                            {
+                                await MessageBox.ShowAsync(
+                                    $"This url contains a {Path.GetExtension(FName)} file but isn't supported,\nSupported Files: .rar .7z .pkg",
+                                    "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                return;
+                            }
+
+                            var Rar = UrlInfo.Urls.SortRarFiles().ToArray();
+                            var SevenZip = UrlInfo.Urls.Sort7zFiles().ToArray();
+
+                            if (Rar.Length > 0)
+                            {
+                                SourcePackage = Rar.First().URL;
+                                UrlInfo.Urls = Rar;
+                            }
+
+                            if (SevenZip.Length > 0)
+                            {
+                                SourcePackage = SevenZip.First().URL;
+                                UrlInfo.Urls = SevenZip;
+                            }
+
+                            if (UrlInfo.Urls.Any(x =>
+                                    x.Filename.EndsWith(".pkg", StringComparison.InvariantCultureIgnoreCase)))
+                            {
+                                SourcePackage = UrlInfo.Urls.First().URL;
+                            }
+
+                            URLAnalyzer.URLInfos[SourcePackage] = UrlInfo;
+                        }
+
+                        FHStream = new FileHostStream(SourcePackage);
+                    }
+                    
                     LimitedFHost = FHStream.SingleConnection;
-
                     PKGStream = FHStream;
+
                 }
 
                 if (LimitedFHost && !BadHostAlert)

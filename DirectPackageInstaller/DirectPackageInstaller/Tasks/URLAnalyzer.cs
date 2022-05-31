@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using DirectPackageInstaller.IO;
 using Microsoft.CodeAnalysis;
+using ReactiveUI;
 
 namespace DirectPackageInstaller.Tasks;
 
@@ -52,10 +53,22 @@ public static class URLAnalyzer
 
                     string URL = Info.URL;
                     Info.Stream = () => new FileHostStream(URL);
+                    
+                    FileHostStream Head = Info.Stream();
 
-                    using (FileHostStream Head = Info.Stream())
+                    if (Head.SingleConnection)
+                    {
+                        Info.SingleConnection = true;
+                        Info.Stream = () => Head;
+                    }
+                    else
+                    {
                         Info.Filename = Head.Filename;
-
+                        
+                        Head.Close();
+                        Head.Dispose();
+                    }
+                    
                     Info.Verified = true;
                 }
                 catch (Exception ex)
@@ -91,6 +104,7 @@ public static class URLAnalyzer
     public struct URLInfoEntry
     {
         public string URL;
+        public bool SingleConnection;
         public bool Verified;
         public Func<FileHostStream> Stream;
         public string Filename;
