@@ -152,40 +152,90 @@ namespace DirectPackageInstaller.Desktop
             if (Port != 0)
                 Console.WriteLine($"Port: {Port}");
 
-
             PS4Server PSServer = new PS4Server(Server);
-            PSServer.Start();
             
+            try
+            {
+                PSServer.Start();
+            }
+            catch
+            {
+                Console.WriteLine("ERROR: Another Instance of the DPI is Running?");
+                throw;
+            }
+
             bool FileInput = !URL.StartsWith("http") && File.Exists(URL);
 
             var DirectURL = URL;
-
-            if (FileInput)
-            {
-                URL = $"http://{Server}:{PSServer.Server.Settings.Port}/file/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
-            } 
-            else if (Proxy)
-            {
-                URL = $"http://{Server}:{PSServer.Server.Settings.Port}/proxy/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
-            }
 
 
             Console.WriteLine($"Source: {DirectURL}");
 
             Stream PKG = null;
 
+            DownloaderTask? DownTask = null;
+
+            bool LimitedFHost = false;
+
             if (FileInput)
+            {
+                Proxy = true;
                 PKG = new FileStream(DirectURL, FileMode.Open);
+                URL = $"http://{Server}:{PSServer.Server.Settings.Port}/file/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
+            }
             else
-                PKG = new PartialHttpStream(DirectURL);
-            
+            {
+                var HostStream = new FileHostStream(DirectURL);
+                
+                if (HostStream.DirectLink && !HostStream.SingleConnection && !Proxy)
+                    URL = HostStream.Url;
+                
+                if ((!HostStream.DirectLink || Proxy) && !HostStream.SingleConnection)
+                {
+                    Proxy = true;
+                    URL = $"http://{Server}:{PSServer.Server.Settings.Port}/proxy/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
+                }
+
+                if (HostStream.SingleConnection)
+                {
+                    HostStream.TryBypassProxy = true;
+                    HostStream.KeepAlive = true;
+                    
+                    Console.WriteLine("WARNING: Limited File Hosting - The given url is supported but not recommended.");
+                    DownTask = Downloader.CreateTask(URL, HostStream);
+
+                    PKG = new VirtualStream(DownTask?.OpenRead() ?? throw new Exception(), 0, DownTask?.SafeLength ?? 0) {
+                        ForceAmount = true
+                    };
+
+                    LimitedFHost = true;
+                }
+                else
+                    PKG = HostStream;
+            }
+
             var Info = PKG.GetPKGInfo();
-            PKG.Close();
 
             if (Info == null)
             {
                 Console.WriteLine("Failed to get the PKG Info");
                 return;
+            }
+            
+            if (LimitedFHost)
+            {
+                Proxy = true;
+                
+                Console.WriteLine("Preloading PKG...");
+                
+                while (DownTask?.SafeReadyLength < Info?.PreloadLength)
+                    Task.Delay(1000).ConfigureAwait(false).GetAwaiter().GetResult();
+                
+                URL = $"http://{Server}:{PSServer.Server.Settings.Port}/cache/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
+            }
+            else
+            {
+                PKG.Close();
             }
             
             Console.WriteLine($"Pusing: {Info?.FriendlyName}");
@@ -214,11 +264,23 @@ namespace DirectPackageInstaller.Desktop
                 if (PSServer.Connections > 0)
                     continue;
 
-                if ((DateTime.Now - PSServer.LastRequest!.Value).TotalSeconds > 5)
+                if (DownTask is {Running: true})
+                    continue;
+
+                var IDLESeconds = (DateTime.Now - PSServer.LastRequest!.Value).TotalSeconds;
+                
+                if (Proxy && PSServer.LastRequestMode is "json" or null && IDLESeconds < 60)
+                    continue;
+
+                if (IDLESeconds > 5)
                     break;
             }
             
+            TempHelper.Clear();
+            
             Console.WriteLine("Sent!");
+            
+            Environment.Exit(0);
         }
 
         // Avalonia configuration, don't remove; also used by visual designer.

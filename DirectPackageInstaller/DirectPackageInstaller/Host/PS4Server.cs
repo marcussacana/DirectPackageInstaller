@@ -29,6 +29,7 @@ namespace DirectPackageInstaller.Host
 #endif
         public int Connections { get; private set; } = 0;
 
+        public string LastRequestMode = null;
         public Webserver Server { get; private set; }
 
         public DecompressService Decompress = new DecompressService();
@@ -115,6 +116,8 @@ namespace DirectPackageInstaller.Host
             try
             {
                 Connections++;
+
+                LastRequestMode = Path.Split('\\', '/', '?').First().ToLowerInvariant();
 
                 if (Path.StartsWith("unrar"))
                     await Decompress.Unrar(Context, Query, FromPS4);

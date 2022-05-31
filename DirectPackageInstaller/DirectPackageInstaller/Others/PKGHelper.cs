@@ -156,6 +156,8 @@ public static class PKGHelper
         }
 
         public (uint Offset, uint End, uint Size, EntryId Id)[] Entries;
+        
+        public uint PreloadLength => Entries.MaxBy(x => x.End).End;
 
         public List<PkgParamInfo> Params;
     }

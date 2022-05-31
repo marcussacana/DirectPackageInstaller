@@ -90,8 +90,8 @@ namespace DirectPackageInstaller.Tasks
             if (InputType.HasFlag(Source.DiskCache) || InputType.HasFlag(Source.Segmented))
                 InputType &= ~Source.Proxy;
 
-            
-            uint LastResource = CurrentPKG.Entries.MaxBy(x => x.End).End;
+
+            uint LastResource = CurrentPKG.PreloadLength;
 
             switch (InputType)
             {

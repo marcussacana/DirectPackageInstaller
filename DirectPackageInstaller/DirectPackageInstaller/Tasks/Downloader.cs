@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace DirectPackageInstaller.Tasks
 {
-    static class Downloader 
+    public static class Downloader 
     {
         public static Dictionary<string, DownloaderTask> Tasks = new Dictionary<string, DownloaderTask>();
 
@@ -116,7 +116,7 @@ namespace DirectPackageInstaller.Tasks
         }
     }
 
-    internal unsafe struct DownloaderTask
+    public unsafe struct DownloaderTask
     {
         public string TempFile;
         public string Url;

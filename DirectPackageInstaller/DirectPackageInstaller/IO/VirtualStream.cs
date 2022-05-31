@@ -10,7 +10,7 @@ namespace DirectPackageInstaller
         public long FilePos { get; private set; } = 0;
         private long Len;
 
-        internal VirtualStream(Stream Base, long Pos, long Len)
+        public VirtualStream(Stream Base, long Pos, long Len)
         {
             if (!Base.CanRead)
                 throw new IOException("The Stream bust be Readable");

@@ -259,14 +259,6 @@ namespace DirectPackageInstaller.Views
 
                 }
 
-                if (LimitedFHost && !BadHostAlert)
-                {
-                    await MessageBox.ShowAsync(
-                        "This Filehosting is limited, Even though it is compatible with DirectPackageInstaller it is not recommended for use, prefer services like alldebrid to download from this server, otherwise you may have connection and/or speed problems.\nDon't expect to compressed files works as expected as well, the DirectPackageInstaller will need download the entire file before can do anything",
-                        "Bad File Hosting Service", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    BadHostAlert = true;
-                }
-
                 if (LimitedFHost)
                 {
                     if (PKGStream is FileHostStream)
@@ -282,6 +274,14 @@ namespace DirectPackageInstaller.Views
 
                     InputType |= Source.DiskCache;
                     PKGStream = new VirtualStream(DownTask.OpenRead(), 0, DownTask.SafeLength) {ForceAmount = true};
+                }
+
+                if (LimitedFHost && !BadHostAlert)
+                {
+                    await MessageBox.ShowAsync(
+                        "This Filehosting is limited, Even though it is compatible with DirectPackageInstaller it is not recommended for use, prefer services like alldebrid to download from this server, otherwise you may have connection and/or speed problems.\nDon't expect to compressed files works as expected as well, the DirectPackageInstaller will need download the entire file before can do anything",
+                        "Bad File Hosting Service", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    BadHostAlert = true;
                 }
 
                 byte[] Magic = new byte[4];
