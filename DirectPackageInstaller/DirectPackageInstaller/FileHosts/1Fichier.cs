@@ -9,6 +9,8 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Web;
+using DirectPackageInstaller.UIBase;
+using DirectPackageInstaller.Views;
 
 namespace DirectPackageInstaller.FileHosts
 {
@@ -37,8 +39,44 @@ namespace DirectPackageInstaller.FileHosts
                         continue;
                     }
 
+                    bool HasPassword = HTML.Contains("Password");
+
+                    string Pass = null;
+
+                    if (URL.Contains("?"))
+                    {
+                        var Query = HttpUtility.ParseQueryString(URL.Substring(URL.IndexOf('?') + 1));
+                        
+                        if (Query.AllKeys.Contains("pass"))
+                            Pass = Query["pass"];
+                        
+                        if (Query.AllKeys.Contains("password"))
+                            Pass = Query["password"];
+                    }
+
+                    if (Pass == null && HasPassword)
+                    {
+                        var List = DialogWindow.CreateInstance<LinkList>();
+                        
+                        List.IsMultipart = false;
+                        List.HasPassword = true;
+                        List.Initialize();
+
+                        if (List.ShowDialogSync() != DialogResult.OK)
+                            throw new Exception();
+
+                        Pass = List.Password;
+                    }
+                    
+
                     var ADZ = HTML.Substring("name=\"adz\"").Substring("value=\"", "\"");
-                    HTML = PostString(URL, "application/x-www-form-urlencoded", $"adz={ADZ}&did=0&dl_no_ssl=on&dlinline=on");
+                    
+                    var PostData = $"adz={ADZ}&did=0&dl_no_ssl=on&dlinline=on";
+                    
+                    if (Pass != null)
+                        PostData += $"&pass={Pass}";
+                    
+                    HTML = PostString(URL, "application/x-www-form-urlencoded", PostData);
 
                     Proxy = App.HttpClient.Proxy as WebProxy;
                     App.HttpClient.Proxy = null;
