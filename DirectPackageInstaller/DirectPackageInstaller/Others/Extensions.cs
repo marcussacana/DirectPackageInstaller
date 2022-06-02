@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
@@ -10,6 +11,7 @@ using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Platform;
 using Avalonia.Threading;
+using DirectPackageInstaller.IO;
 using LibOrbisPkg.SFO;
 
 namespace DirectPackageInstaller;
@@ -88,6 +90,16 @@ public static class Extensions
             return false;
         }
 
+        public static string? TryGetRemoteFileName(this Stream Stream)
+        {
+            var Source = Stream;
+            if (Source is DecompressorHelperStream decomp)
+                Source = decomp.Base;
+            
+            if (Source is PartialHttpStream httpStream)
+                return httpStream.Filename;
+            return null;
+        }
         public static string Substring(this string String, string Substring)
         {
             return String.Substring(String.IndexOf(Substring) + Substring.Length);

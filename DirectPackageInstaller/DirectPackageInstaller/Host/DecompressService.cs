@@ -42,12 +42,12 @@ namespace DirectPackageInstaller.Host
                 Entry = Task.Entry;
             }
 
-            if (!EntryMap.ContainsKey(Url) || !Tasks.ContainsKey(EntryMap[Url]))
+            if (!EntryMap.ContainsKey(Url))
             {
-                if ((Entry = Decompressor.CreateUnrar(Url, Entry)) == null)
-                    throw new NotSupportedException();
-
-                EntryMap[Url] = Entry;
+                if (!Tasks.ContainsKey(EntryMap[Url]))
+                    return;
+                
+                EntryMap[Url] = Tasks[EntryMap[Url]].EntryName;
             }
 
             await Decompress(Context, Url, Entry, FromPS4);
@@ -74,12 +74,12 @@ namespace DirectPackageInstaller.Host
                 Entry = Task.Entry;
             }
 
-            if (!EntryMap.ContainsKey(Url) || !Tasks.ContainsKey(EntryMap[Url]!))
+            if (!EntryMap.ContainsKey(Url))
             {
-                if ((Entry = Decompressor.CreateUn7z(Url, Entry)) == null)
-                    throw new NotSupportedException();
-
-                EntryMap[Url] = Entry;
+                if (!Tasks.ContainsKey(EntryMap[Url]))
+                    return;
+                
+                EntryMap[Url] = Tasks[EntryMap[Url]].EntryName;
             }
 
             await Decompress(Context, Url, Entry, FromPS4);

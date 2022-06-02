@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace DirectPackageInstaller.IO
 {
-    class DecompressorHelperStream : Stream
+    public class DecompressorHelperStream : Stream
     {
         public DecompressTaskInfo? Info = null;
 
@@ -14,7 +14,7 @@ namespace DirectPackageInstaller.IO
 
         public readonly List<Stream> Instances = new List<Stream>();
 
-        private Action<(DecompressorHelperStream This, long Readed)> OnRead;
+        public Action<(DecompressorHelperStream This, long Readed)> OnRead;
 
         public DecompressorHelperStream(Stream Base, Action<(DecompressorHelperStream This, long Readed)> OnRead)
         {

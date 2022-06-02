@@ -47,10 +47,12 @@ public static class URLAnalyzer
                 MaxDegreeOfParallelism = 4
             }, (i, loop) =>
             {
+                if (loop.ShouldExitCurrentIteration)
+                    return;
+                
+                ref var Info = ref URLInfos[MainURL].Urls[i];
                 try
                 {
-                    ref var Info = ref URLInfos[MainURL].Urls[i];
-
                     string URL = Info.URL;
                     Info.Stream = () => new FileHostStream(URL);
                     
@@ -73,7 +75,7 @@ public static class URLAnalyzer
                 }
                 catch (Exception ex)
                 {
-                    URLInfos[MainURL].SetFailed();
+                    Info.Failed = true;
                     loop.Break();
                 }
             });
@@ -91,14 +93,10 @@ public static class URLAnalyzer
         public URLInfoEntry[] Urls;
         public string[] Links => Urls.Select(x => x.URL).ToArray();
         public bool Ready => Urls.All(x => x.Verified);
-        public bool Failed;
+        public bool Failed => Urls.Any(x => x.Failed);
 
         public int TotalVerified => Urls.Count(x => x.Verified);
         public string Progress => $"{TotalVerified}/{Urls.Length} ({(double)TotalVerified/Urls.Length:P0})";
-        internal void SetFailed()
-        {
-            Failed = true;
-        }
     }
 
     public struct URLInfoEntry
@@ -106,6 +104,7 @@ public static class URLAnalyzer
         public string URL;
         public bool SingleConnection;
         public bool Verified;
+        public bool Failed;
         public Func<FileHostStream> Stream;
         public string Filename;
     }

@@ -21,93 +21,26 @@ namespace DirectPackageInstaller.Compression
 
         public Dictionary<string, DecompressTaskInfo> Tasks = new Dictionary<string, DecompressTaskInfo>();
 
-        public string? CreateUnrar(string Url, string? EntryName)
+        public string? CreateDecompressor(IArchive Decompressor, DecompressorHelperStream[] Volumes, string? EntryName)
         {
-            Stream[] Inputs;
-
-            string? Password = null;
-            
-            if (URLAnalyzer.URLInfos.ContainsKey(Url))
-            {
-                var Info = URLAnalyzer.URLInfos[Url].Urls.SortRarFiles();
-                Inputs = Info.Select(x => new DecompressorHelperStream(x.Stream(), CompCommon.MultipartHelper)).Cast<Stream>().ToArray();
-                Password = Decompressor.Passwords.ContainsKey(Url) ?  Decompressor.Passwords[Url] : null;
-            }
-            else
-            {
-                Inputs = new Stream[] { new DecompressorHelperStream(new FileHostStream(Url, 1024 * 512), CompCommon.MultipartHelper) };
-            }
-
-            return CreateUnrar(Inputs, EntryName, Password);
-        }
-
-        private string? CreateUnrar(Stream[] Inputs, string? EntryName, string? Password)
-        {
-            var Archive = RarArchive.Open(Inputs, new SharpCompress.Readers.ReaderOptions()
-            {
-                Password = Password,
-                DisableCheckIncomplete = true
-            });
-
             IArchiveEntry PKG;
-            var PKGs = Archive.Entries.Where(x => x.Key.EndsWith(".pkg", StringComparison.OrdinalIgnoreCase));
+            var PKGs = Decompressor.Entries.Where(x => x.Key.EndsWith(".pkg", StringComparison.OrdinalIgnoreCase));
 
             if (PKGs.Count() == 1)
                 PKG = PKGs.Single();
             else
                 PKG = PKGs.Single(x => Path.GetFileName(x.Key) == EntryName);
 
-            if (!StartDecompressor(PKG, Inputs))
+            for (int i = 0; i < Volumes.Length; i++)
+                Volumes[i].OnRead = CompCommon.MultipartHelper;
+
+            if (!StartDecompressor(PKG, Volumes))
                 return null;
 
             return Path.GetFileName(PKG.Key);
         }
 
-        public string? CreateUn7z(string Url, string? EntryName)
-        {
-            Stream[] Inputs;
-
-            string? Password = null;
-           
-            if (URLAnalyzer.URLInfos.ContainsKey(Url))
-            {
-                var Info = URLAnalyzer.URLInfos[Url].Urls.Sort7zFiles();
-                Inputs = Info.Select(x => new DecompressorHelperStream(x.Stream(), CompCommon.MultipartHelper)).Cast<Stream>().ToArray();
-                Password = Decompressor.Passwords.ContainsKey(Url) ?  Decompressor.Passwords[Url] : null;
-            }
-            else
-            {
-                Inputs = new Stream[] { new DecompressorHelperStream(new FileHostStream(Url, 1024 * 512), CompCommon.MultipartHelper) };
-            }
-            
-            return CreateUn7z(Inputs, EntryName, Password);
-        }
-
-        public string? CreateUn7z(Stream[] Inputs, string? EntryName, string? Password)
-        {
-            var Options = new SharpCompress.Readers.ReaderOptions()
-            {
-                Password = Password,
-                DisableCheckIncomplete = true
-            };
-
-            var Archive = SevenZipArchive.Open(new MergedStream(Inputs), Options);
-
-            IArchiveEntry PKG;
-            var PKGs = Archive.Entries.Where(x => x.Key.EndsWith(".pkg", StringComparison.OrdinalIgnoreCase));
-
-            if (PKGs.Count() == 1)
-                PKG = PKGs.Single();
-            else
-                PKG = PKGs.Single(x => Path.GetFileName(x.Key) == EntryName);
-
-            if (!StartDecompressor(PKG, Inputs))
-                return null;
-
-            return Path.GetFileName(PKG.Key);
-        }
-
-        private unsafe bool StartDecompressor(IArchiveEntry Entry, Stream[] Inputs)
+        private unsafe bool StartDecompressor(IArchiveEntry Entry, DecompressorHelperStream[] Inputs)
         {
             var TaskCompSrc = new TaskCompletionSource<bool>();
             using var BGWorker = new BackgroundWorker();
@@ -137,12 +70,12 @@ namespace DirectPackageInstaller.Compression
                     Running = true,
                     TotalDecompressed = &TDecomp,
                     InSegmentTranstion = &InTrans,
-                    PartsStream = Inputs.Cast<DecompressorHelperStream>().ToArray(),
+                    PartsStream = Inputs.ToArray(),
                     Error = null
                 };
 
                 bool First = true;
-                foreach (var Strm in Inputs.Cast<DecompressorHelperStream>())
+                foreach (var Strm in Inputs)
                 {
                     Strm.Info = TaskInfo;
                     
@@ -207,7 +140,7 @@ namespace DirectPackageInstaller.Compression
         }
     }
 
-    unsafe struct DecompressTaskInfo
+    public unsafe struct DecompressTaskInfo
     {
         public bool Running;
         public long* TotalDecompressed;

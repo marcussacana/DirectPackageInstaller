@@ -42,6 +42,8 @@ namespace DirectPackageInstaller.Views
 
         private IArchive? CurrentDecompressor = null;
 
+        private DecompressorHelperStream[]? CurrentDecompressorVolumes = null;
+
         public MainViewModel? Model => (MainViewModel?)DataContext;
         
         public MainView()
@@ -117,7 +119,7 @@ namespace DirectPackageInstaller.Views
                     new FileDialogFilter()
                     {
                         Name = "ALL PKG Files",
-                        Extensions = new List<string>() { "pkg" }
+                        Extensions = new List<string>() { "pkg", "PKG" },
                     },
                     new FileDialogFilter()
                     {
@@ -299,12 +301,12 @@ namespace DirectPackageInstaller.Views
                     case CompressionFormat.RAR:
                         InputType |= Source.RAR;
                         await SetStatus(LimitedFHost ? "Downloading... (It may take a while)" : "Decompressing...");
-                        DataInfo = await Decompressor.UnrarPKG(PKGStream, SourcePackage, ForcedSource);
+                        DataInfo = await Decompressor.UnrarPKG(PKGStream, SourcePackage, async (s) => await SetStatus(s),ForcedSource);
                         break;
                     case CompressionFormat.SevenZip:
                         InputType |= Source.SevenZip;
                         await SetStatus(LimitedFHost ? "Downloading... (It may take a while)" : "Decompressing...");
-                        DataInfo = await Decompressor.Un7zPKG(PKGStream, SourcePackage, ForcedSource);
+                        DataInfo = await Decompressor.Un7zPKG(PKGStream, SourcePackage,async (s) => await SetStatus(s), ForcedSource);
                         break;
                 }
 
@@ -314,6 +316,7 @@ namespace DirectPackageInstaller.Views
                     Installer.EntryName = DataInfo?.Filename;
                     Installer.EntrySize = DataInfo?.Length ?? throw new Exception();
                     CurrentDecompressor = DataInfo?.Archive;
+                    CurrentDecompressorVolumes = DataInfo?.Volumes;
                     ListEntries(Installer.CurrentFileList = DataInfo?.PKGList ?? throw new Exception());
                 }
 
@@ -565,7 +568,7 @@ namespace DirectPackageInstaller.Views
                     return false;
                 }
 
-                return await Installer.PushPackage(App.Config, InputType, PKGStream, URL, SetStatus, () => Status.Text, Silent);
+                return await Installer.PushPackage(App.Config, InputType, PKGStream, URL, CurrentDecompressor, CurrentDecompressorVolumes, SetStatus, () => Status.Text, Silent);
             }
             catch
             {

@@ -71,7 +71,7 @@ namespace DirectPackageInstaller.FileHosts
 
                     var ADZ = HTML.Substring("name=\"adz\"").Substring("value=\"", "\"");
                     
-                    var PostData = $"adz={ADZ}&did=0&dl_no_ssl=on&dlinline=on";
+                    var PostData = $"adz={ADZ}&did=0&dl_no_ssl=off&dlinline=on";
                     
                     if (Pass != null)
                         PostData += $"&pass={Pass}";

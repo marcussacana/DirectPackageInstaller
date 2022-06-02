@@ -9,9 +9,11 @@ using System.Net.Sockets;
 using System.Reflection;
 using System.Resources;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using DirectPackageInstaller.Views;
+using SharpCompress.Archives;
 
 namespace DirectPackageInstaller.Tasks
 {
@@ -29,7 +31,7 @@ namespace DirectPackageInstaller.Tasks
         private static Socket? PayloadSocket;
         private static bool ForceProxy = false;
 
-        public static async Task<bool> PushPackage(Settings Config, Source InputType, Stream PKGStream, string URL, Func<string, Task> SetStatus, Func<string> GetStatus, bool Silent)
+        public static async Task<bool> PushPackage(Settings Config, Source InputType, Stream PKGStream, string URL, IArchive? Decompressor, DecompressorHelperStream[]? DecompressorStreams, Func<string, Task> SetStatus, Func<string> GetStatus, bool Silent)
         {
             if (string.IsNullOrEmpty(Config.PS4IP) || Config.PS4IP == "0.0.0.0")
             {
@@ -136,11 +138,8 @@ namespace DirectPackageInstaller.Tasks
                         string Entry = null;
 
                         await App.RunInNewThread(() =>
-                        {
-                            if (InputType.HasFlag(Source.SevenZip))
-                                Entry = Server.Decompress.Decompressor.CreateUn7z(URL, EntryName);
-                            else
-                                Entry = Server.Decompress.Decompressor.CreateUnrar(URL, EntryName);
+                        { 
+                            Entry = Server.Decompress.Decompressor.CreateDecompressor(Decompressor, DecompressorStreams, EntryName);
                         });
                         
                         EntryName = Entry;
@@ -312,8 +311,25 @@ namespace DirectPackageInstaller.Tasks
             PayloadSocket.Disconnect(false);
             PayloadSocket.Close();
             
-            var PKGInfoSocket = await InfoSocket.AcceptAsync();
             
+            CancellationTokenSource CToken = new CancellationTokenSource();
+            CToken.CancelAfter(10000);
+
+            Socket PKGInfoSocket;
+            
+            try
+            {
+                PKGInfoSocket = await InfoSocket.AcceptAsync(CToken.Token);
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                CToken.Dispose();
+            }
+
             List<byte> PKGInfoBuffer = new List<byte>();
 
             var UrlData = Encoding.UTF8.GetBytes(URL);

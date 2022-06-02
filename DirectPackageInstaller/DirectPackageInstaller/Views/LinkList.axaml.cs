@@ -13,22 +13,52 @@ namespace DirectPackageInstaller.Views
     public partial class LinkList : DialogWindow
     {
         LinkListViewModel? Model => (LinkListViewModel?)View.DataContext;
-        
-        public string[]? Links => Model?.Links.Distinct()
-            .Where(x => !string.IsNullOrWhiteSpace(x.Content))
-            .Select(x => x.Content).ToArray();
 
+        public string[]? Links
+        {
+            get
+            {
+                if (!CheckAccess())
+                    return Dispatcher.UIThread.InvokeAsync(() => Links).ConfigureAwait(false).GetAwaiter().GetResult();
+                
+                return Model?.Links.Distinct()
+                    .Where(x => !string.IsNullOrWhiteSpace(x.Content))
+                    .Select(x => x.Content).ToArray();
+            }
+        }
         private bool ViewInitialized;
-        public string? Password => Dispatcher.UIThread.InvokeAsync(() => Model?.Password).ConfigureAwait(false).GetAwaiter().GetResult();
+
+        public string? Password
+        {
+            get
+            {
+                if (!CheckAccess())
+                    return Dispatcher.UIThread.InvokeAsync(() => Password).ConfigureAwait(false).GetAwaiter().GetResult();
+
+                return Model?.Password;
+            }
+        }
 
         public bool HasPassword
         {
-            get => Dispatcher.UIThread.InvokeAsync(() => Model?.HasPassword).ConfigureAwait(false).GetAwaiter().GetResult() ?? false;
+            get
+            {
+                if (!CheckAccess())
+                    return Dispatcher.UIThread.InvokeAsync(() => HasPassword).ConfigureAwait(false).GetAwaiter().GetResult();
+
+                return Model?.HasPassword ?? false;
+            }
             set => App.Callback(() => Model!.HasPassword = value);
         }
         public bool IsMultipart
         {
-            get => Dispatcher.UIThread.InvokeAsync(() => Model?.IsMultipart).ConfigureAwait(false).GetAwaiter().GetResult() ?? false;
+            get
+            {
+                if (!CheckAccess())
+                    return  Dispatcher.UIThread.InvokeAsync(() => IsMultipart).ConfigureAwait(false).GetAwaiter().GetResult();
+
+                return Model?.IsMultipart ?? false;
+            }
             set => App.Callback(() => Model!.IsMultipart = value);
         }
         public LinkList(bool Multipart, bool? Encrypted, string FirstUrl) : this()

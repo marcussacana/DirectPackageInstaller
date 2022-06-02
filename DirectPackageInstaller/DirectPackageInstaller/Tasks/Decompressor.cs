@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using DirectPackageInstaller.Views;
+using SharpCompress.Common;
 using ReaderOptions = SharpCompress.Readers.ReaderOptions;
 
 namespace DirectPackageInstaller.Tasks
@@ -16,136 +17,42 @@ namespace DirectPackageInstaller.Tasks
     {
         public static Dictionary<string, string?> Passwords = new Dictionary<string, string?>();
         
-        public static async Task<ArchiveDataInfo?> UnrarPKG(Stream Volume, string FirstUrl, string? EntryName = null, bool Seekable = true, string? Password = null) => await UnrarPKG(new Stream[] { Volume }, FirstUrl, EntryName, Seekable, Password);
-        public static async Task<ArchiveDataInfo?> UnrarPKG(Stream[] Volumes, string FirstUrl, string? EntryName = null, bool Seekable = true, string? Password = null)
+        public static async Task<ArchiveDataInfo?> UnrarPKG(Stream Volume, string FirstUrl, Action<string> ProgressChanged, string? EntryName = null, bool Seekable = true, string? Password = null) => await UnrarPKG(new Stream[] { Volume }, FirstUrl, ProgressChanged, EntryName, Seekable, Password);
+        public static async Task<ArchiveDataInfo?> UnrarPKG(Stream[] Volumes, string FirstUrl, Action<string> ProgressChanged, string? EntryName = null, bool Seekable = true, string? Password = null)
         {
-            URLAnalyzer.URLInfo? Info = null;
-
-            if (URLAnalyzer.URLInfos.ContainsKey(FirstUrl))
-            { 
-                Info = await URLAnalyzer.Analyze(FirstUrl, true);
-                if (Info?.Failed ?? true)
-                    return null;
-
-                foreach (var Volume in Volumes)
-                    Volume.Close();
-                
-                
-                Volumes = Info!.Value.Urls.SortRarFiles().Select(x => x.Stream()).Cast<Stream>().ToArray();
-            }
-            
-            bool Silent = EntryName != null;
-            
-            RarArchive? Archive = null;
-
-            var Options = new ReaderOptions()
+            IArchive CreateUnrar(Stream[] Parts, string Pass)
             {
-                Password = Password,
-                DisableCheckIncomplete = true
-            };
-            
-            if (await App.RunInNewThread(() => Archive = RarArchive.Open(Volumes, Options)))
-                return null;
+                var Options = new ReaderOptions() { Password = Pass, DisableCheckIncomplete = true };
 
-            bool Multipart = false;
-            
-            bool? Encrypted = null;
-            if (await App.RunInNewThread(() => Encrypted = Archive.Entries.Any(x => x.IsEncrypted)))
-            {
-                if (Volumes.First() is FileHostStream || Volumes.First() is PartialHttpStream)
-                {
-                    var FN = ((PartialHttpStream) Volumes.First()).Filename;
-                    Multipart = FN.EndsWith("0") || FN.Contains(".part", StringComparison.InvariantCultureIgnoreCase);
-                }
-                
-                if (Multipart && Volumes.Length > 1)
-                    return null;
-            }
-            
-            if (Volumes.First() is FileHostStream || Volumes.First() is PartialHttpStream)
-            {
-                var FN = ((PartialHttpStream) Volumes.First()).Filename;
-                Multipart = FN.EndsWith("0") || FN.Contains(".part", StringComparison.InvariantCultureIgnoreCase);
-            }
-            
-            bool MustReload = false;
-
-            if (Multipart && URLAnalyzer.URLInfos.ContainsKey(FirstUrl) && URLAnalyzer.URLInfos[FirstUrl].Urls.Length == 1)
-                URLAnalyzer.URLInfos.Remove(FirstUrl);
-
-            if (Password == null && Passwords.ContainsKey(FirstUrl) && Passwords[FirstUrl] != null)
-            {
-                Password = Passwords[FirstUrl];
-                MustReload = true;
-            }
-            
-            bool MissingData = Multipart && Volumes.Count() == 1;
-
-            if (URLAnalyzer.URLInfos.ContainsKey(FirstUrl))
-            { 
-                Info = URLAnalyzer.URLInfos[FirstUrl];
-                if (Info?.Failed ?? true)
-                    return null;
-                
-                MissingData = false;
-
-                if (Volumes.Length != Info?.Urls.Length)
-                    MustReload = true;
+                return RarArchive.Open(Parts, Options);
             }
 
-            MissingData |= (Encrypted ?? false) && Password == null;
-
-            if (MissingData)
-            {
-                var List = new LinkList(Multipart && (Info == null || Info?.Urls.Length == 1), Encrypted, FirstUrl);
-                List.SetInitialInfo(Info?.Links, Password);
-                
-                if (await List.ShowDialogAsync() != DialogResult.OK)
-                    throw new Exception();
-
-                Passwords[FirstUrl] = List.Password;
-
-                Info = await URLAnalyzer.Analyze(List.Links!, true);
-                
-                Password = List.Password;
-                MustReload = true;
-            }
-
-            if (MustReload)
-            {
-                Archive.Dispose();
-
-                foreach (var Volume in Volumes)
-                    Volume.Close();
-
-                Volumes = Info!.Value.Urls.SortRarFiles().Select(x => x.Stream()).Cast<Stream>().ToArray();
-
-                return await UnrarPKG(Volumes, FirstUrl, EntryName, Seekable, Password);
-            }
-
-            if (!Archive.IsComplete)
-            {
-                if (!Silent)
-                    await MessageBox.ShowAsync("Corrupted, missing or RAR parts with wrong sorting.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return null;
-            }
-
-            var Result = await UnArchive(Archive, Silent, EntryName, Seekable);
-            
-            foreach (var Volume in Volumes)
-            {
-                if (Volume is PartialHttpStream volStream)
-                    volStream.CloseConnection();
-            }
-
-            return Result;
+            return await CommonDecompress(Volumes, FirstUrl, CreateUnrar, Source.RAR, ProgressChanged, EntryName, Seekable, Password);
         }
 
-        public static async Task<ArchiveDataInfo?> Un7zPKG(Stream Volume, string FirstUrl, string? EntryName = null, bool Seekable = true, string? Password = null) => await Un7zPKG(new Stream[] { Volume }, FirstUrl, EntryName, Seekable, Password);
-
-        private static async Task<ArchiveDataInfo?> Un7zPKG(Stream[] Volumes, string FirstUrl, string? EntryName = null, bool Seekable = true, string? Password = null)
+        public static async Task<ArchiveDataInfo?> Un7zPKG(Stream Volume, string FirstUrl, Action<string> ProgressChanged, string? EntryName = null, bool Seekable = true, string? Password = null) => await Un7zPKG(new Stream[] { Volume }, FirstUrl, ProgressChanged, EntryName, Seekable, Password);
+        private static async Task<ArchiveDataInfo?> Un7zPKG(Stream[] Volumes, string FirstUrl, Action<string> ProgressChanged, string? EntryName = null, bool Seekable = true, string? Password = null)
         {
 
+            bool Silent = EntryName != null;
+            
+            
+            IArchive CreateUn7z(Stream[] Parts, string Pass)
+            {
+                var Options = new ReaderOptions()
+                {
+                    Password = Pass,
+                    DisableCheckIncomplete = Parts.Length > 1
+                };
+
+                return SevenZipArchive.Open(new MergedStream(Parts), Options);
+            }
+
+            return await CommonDecompress(Volumes, FirstUrl, CreateUn7z, Source.SevenZip, ProgressChanged, EntryName, Seekable, Password);
+        }
+        
+        public static async Task<ArchiveDataInfo?> CommonDecompress(Stream[] Volumes, string FirstUrl, Func<Stream[], string, IArchive> Creator, Source CompType, Action<string> ProgressChanged, string? EntryName = null, bool Seekable = true, string? Password = null)
+        {
             URLAnalyzer.URLInfo? Info = null;
 
             if (URLAnalyzer.URLInfos.ContainsKey(FirstUrl))
@@ -156,109 +63,150 @@ namespace DirectPackageInstaller.Tasks
 
                 foreach (var Volume in Volumes)
                     Volume.Close();
-                
-                Volumes = Info!.Value.Urls.Sort7zFiles().Select(x => x.Stream()).Cast<Stream>().ToArray();
+
+
+                if (CompType.HasFlag(Source.RAR))
+                    Volumes = Info!.Value.Urls.SortRarFiles().Select(x => x.Stream()).Cast<Stream>().ToArray();
+                else if (CompType.HasFlag(Source.SevenZip))
+                    Volumes = Info!.Value.Urls.Sort7zFiles().Select(x => x.Stream()).Cast<Stream>().ToArray();
+                    
             }
+
+            bool Ready = false;
+            int LastAccess = 0;
             
-            bool Silent = EntryName != null;
-            var Options = new ReaderOptions()
+            for (int i = 0; i < Volumes.Length; i++)
             {
-                Password = Password,
-                DisableCheckIncomplete = Volumes.Length > 1
-            };
+                var Volume = Volumes[i];
+                if (Volume is DecompressorHelperStream Helper)
+                    Volume = Helper.Base;
 
-            SevenZipArchive? Archive = null;
+                var Index = i;
+                Volumes[i] = new DecompressorHelperStream(Volume, Info =>
+                {
+                    if (Ready)
+                        return;
+                    
+                    if (Index > LastAccess)
+                    {
+                        LastAccess = Index;
+                        App.Callback(() => ProgressChanged($"Decompressing... {Index}/{Volumes.Length} ({(double)Index/Volumes.Length:P0})"));
+                    }
+                } );
+            }
 
-            if (await App.RunInNewThread(() => Archive = SevenZipArchive.Open(new MergedStream(Volumes), Options)))
-                return null;
-
-            bool Multipart = false;
-            
-            bool? Encrypted = null;
-            if (await App.RunInNewThread(() => Encrypted = Archive.Entries.Any(x => x.IsEncrypted)))
+            try
             {
-                if (Volumes.First() is FileHostStream || Volumes.First() is PartialHttpStream)
-                    Multipart = ((PartialHttpStream)Volumes.First()).Filename.EndsWith("1");
-               
-                if (Multipart && Volumes.Length > 1)
+                bool Silent = EntryName != null;
+
+                IArchive? Archive = null;
+
+                if (await App.RunInNewThread(() => Archive = Creator(Volumes, Password)))
                     return null;
-            }
-            
-            if (Volumes.First() is FileHostStream || Volumes.First() is PartialHttpStream)
-                Multipart = ((PartialHttpStream)Volumes.First()).Filename.EndsWith("1");
 
-            bool MustReload = false;
+                bool Multipart = false;
 
-            if (Multipart && URLAnalyzer.URLInfos.ContainsKey(FirstUrl) && URLAnalyzer.URLInfos[FirstUrl].Urls.Length == 1)
-                URLAnalyzer.URLInfos.Remove(FirstUrl);
+                bool? Encrypted = null;
+                if (await App.RunInNewThread(() => Encrypted = Archive.Entries.Any(x => x.IsEncrypted)))
+                {
+                    var FN = Volumes.First().TryGetRemoteFileName();
+                    Multipart = FN.EndsWith("0") ||
+                                FN.Contains(".part", StringComparison.InvariantCultureIgnoreCase);
 
-            if (Password == null && Passwords.ContainsKey(FirstUrl) && Passwords[FirstUrl] != null)
-            {
-                Password = Passwords[FirstUrl];
-                MustReload = true;
-            }
-            
-            bool MissingData = Multipart && Volumes.Count() == 1;
+                    if (Multipart && Volumes.Length > 1)
+                        return null;
+                }
+                else
+                {
+                    var FN = Volumes.First().TryGetRemoteFileName();
+                    Multipart = FN.EndsWith("0") || FN.Contains(".part", StringComparison.InvariantCultureIgnoreCase);
+                }
 
-            if (URLAnalyzer.URLInfos.ContainsKey(FirstUrl))
-            { 
-                Info = URLAnalyzer.URLInfos[FirstUrl];
-                if (Info?.Failed ?? true)
-                    return null;
-                
-                MissingData = false;
+                bool MustReload = false;
 
-                if (Volumes.Length != Info?.Urls.Length)
+                if (Multipart && URLAnalyzer.URLInfos.ContainsKey(FirstUrl) &&
+                    URLAnalyzer.URLInfos[FirstUrl].Urls.Length == 1)
+                    URLAnalyzer.URLInfos.Remove(FirstUrl);
+
+                if (Password == null && Passwords.ContainsKey(FirstUrl) && Passwords[FirstUrl] != null)
+                {
+                    Password = Passwords[FirstUrl];
                     MustReload = true;
-            }
+                }
 
-            MissingData |= (Encrypted ?? false) && Password == null;
+                bool MissingData = Multipart && Volumes.Count() == 1;
 
-            if (MissingData)
-            {
-                var List = new LinkList(Multipart && (Info == null || Info?.Urls.Length == 1), Encrypted, FirstUrl);
-                List.SetInitialInfo(Info?.Links, Password);
-                
-                if (await List.ShowDialogAsync() != DialogResult.OK)
-                    throw new Exception();
+                if (URLAnalyzer.URLInfos.ContainsKey(FirstUrl))
+                {
+                    Info = URLAnalyzer.URLInfos[FirstUrl];
+                    if (Info?.Failed ?? true)
+                        return null;
 
-                Passwords[FirstUrl] = List.Password;
+                    MissingData = false;
 
-                Info = await URLAnalyzer.Analyze(List.Links!, true);
-                
-                Password = List.Password;
-                MustReload = true;
-            }
+                    if (Volumes.Length != Info?.Urls.Length)
+                        MustReload = true;
+                }
 
-            if (MustReload)
-            {
-                Archive.Dispose();
+                MissingData |= (Encrypted ?? false) && Password == null;
+
+                if (MissingData)
+                {
+                    var List = new LinkList(Multipart && (Info == null || Info?.Urls.Length == 1), Encrypted, FirstUrl);
+                    List.SetInitialInfo(Info?.Links, Password);
+
+                    if (await List.ShowDialogAsync() != DialogResult.OK)
+                        throw new Exception();
+
+                    Passwords[FirstUrl] = List.Password;
+
+                    Info = await URLAnalyzer.Analyze(List.Links!, false);
+
+                    while (!Info.Value.Ready && !Info.Value.Failed)
+                    {
+                        App.Callback(() => ProgressChanged($"Analyzing Urls... {Info?.Progress}"));
+                        await Task.Delay(100);
+                    }
+
+                    Password = List.Password;
+                    MustReload = true;
+                }
+
+                if (MustReload)
+                {
+                    Archive.Dispose();
+
+                    foreach (var Volume in Volumes)
+                        Volume.Close();
+
+                    Volumes = Info!.Value.Urls.SortRarFiles().Select(x => x.Stream()).Cast<Stream>().ToArray();
+
+                    return await CommonDecompress(Volumes, FirstUrl, Creator, CompType, ProgressChanged, EntryName, Seekable,
+                        Password);
+                }
+
+                if (!Archive.IsComplete)
+                {
+                    if (!Silent)
+                        await MessageBox.ShowAsync("Corrupted, missing or RAR parts with wrong sorting.",
+                            "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return null;
+                }
+
+                var Result = await UnArchive(Archive, Volumes.Cast<DecompressorHelperStream>().ToArray(), Silent, EntryName, Seekable);
 
                 foreach (var Volume in Volumes)
-                    Volume.Close();
-                
-                Volumes = Info!.Value.Urls.Sort7zFiles().Select(x => x.Stream()).Cast<Stream>().ToArray();
+                {
+                    if (Volume is PartialHttpStream volStream)
+                        volStream.CloseConnection();
+                }
 
-                return await Un7zPKG(Volumes, FirstUrl, EntryName, Seekable, Password);
+                return Result;
             }
-
-            if (!Archive.IsComplete)
+            finally
             {
-                if (!Silent)
-                    await MessageBox.ShowAsync("Corrupted, missing or 7z parts with wrong sorting", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return null;
+                Ready = true;
             }
-
-
-            var Result = await UnArchive(Archive, Silent, EntryName, Seekable);
-            
-            foreach (var Volume in Volumes)
-            {
-                if (Volume is PartialHttpStream volStream)
-                    volStream.CloseConnection();
-            }
-
-            return Result;
         }
 
         public static IEnumerable<URLAnalyzer.URLInfoEntry> SortRarFiles(this IEnumerable<URLAnalyzer.URLInfoEntry> Entries)
@@ -348,7 +296,7 @@ namespace DirectPackageInstaller.Tasks
             List.Insert(To, Item);
         }
 
-        public static async Task<ArchiveDataInfo?> UnArchive(IArchive Archive, bool Silent, string? EntryName, bool Seekable)
+        public static async Task<ArchiveDataInfo?> UnArchive(IArchive Archive, DecompressorHelperStream[] Volumes, bool Silent, string? EntryName, bool Seekable)
         {
 
             var Compressions = Archive.Entries.Where(x => Path.GetExtension(x.Key).StartsWith(".r", StringComparison.OrdinalIgnoreCase) || x.Key.Contains(".7z"));
@@ -371,7 +319,7 @@ namespace DirectPackageInstaller.Tasks
                 if (Seekable)
                     FileStream = new ReadSeekableStream(FileStream, TempHelper.GetTempFile(null)) { ReportLength = Entry.Size };
 
-                return new (Archive, FileStream, Path.GetFileName(Entry.Key), new[] { Entry.Key }, Entry.Size);
+                return new (Archive, FileStream, Volumes, Path.GetFileName(Entry.Key), new[] { Entry.Key }, Entry.Size);
             }
 
             var Files = PKGs.Select(x => Path.GetFileName(x.Key)).ToArray();
@@ -394,16 +342,17 @@ namespace DirectPackageInstaller.Tasks
             if (Seekable)
                 Stream = new ReadSeekableStream(Stream, TempHelper.GetTempFile(null)) { ReportLength = SelectedEntry.Size };
 
-            return new (Archive, Stream, SelectedFile, Files, SelectedEntry.Size);
+            return new (Archive, Stream, Volumes, SelectedFile, Files, SelectedEntry.Size);
         }
     }
 
     public struct ArchiveDataInfo
     {
-        public ArchiveDataInfo(IArchive Archive, Stream Buffer, string Filename, string[] PKGList, long Length)
+        public ArchiveDataInfo(IArchive Archive, Stream Buffer, DecompressorHelperStream[] Volumes, string Filename, string[] PKGList, long Length)
         {
             this.Archive = Archive;
             this.Buffer = Buffer;
+            this.Volumes = Volumes;
             this.Filename = Filename;
             this.PKGList = PKGList;
             this.Length = Length;
@@ -411,6 +360,7 @@ namespace DirectPackageInstaller.Tasks
         
         public readonly IArchive Archive;
         public readonly Stream Buffer;
+        public readonly DecompressorHelperStream[] Volumes;
         public readonly string Filename;
         public readonly string[] PKGList;
         public readonly long Length;
