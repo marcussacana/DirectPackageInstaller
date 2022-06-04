@@ -197,7 +197,6 @@ namespace DirectPackageInstaller.Views
 
                     await SetStatus("Analyzing Urls...");
                     
-                    
                     var UrlInfo = await URLAnalyzer.Analyze(SourcePackage, false);
 
                     while (!UrlInfo.Ready && !UrlInfo.Failed)
@@ -205,6 +204,9 @@ namespace DirectPackageInstaller.Views
                         await SetStatus($"Analyzing Urls... {UrlInfo.Progress}");
                         await Task.Delay(100);
                     }
+
+                    if (UrlInfo.Failed)
+                        throw new Exception();
 
                     FileHostStream FHStream;
                     
@@ -264,14 +266,11 @@ namespace DirectPackageInstaller.Views
                 if (LimitedFHost)
                 {
                     if (PKGStream is FileHostStream)
-                    {
-                        ((FileHostStream) PKGStream).TryBypassProxy = true;
                         ((FileHostStream) PKGStream).KeepAlive = true;
-                    }
-
+                    
                     var DownTask = Downloader.CreateTask(SourcePackage, PKGStream);
 
-                    while (DownTask.SafeLength == 0)
+                    while (DownTask.SafeLength == 0 && DownTask.Running)
                         await Task.Delay(100);
 
                     InputType |= Source.DiskCache;
@@ -339,7 +338,6 @@ namespace DirectPackageInstaller.Views
             }
             catch (Exception ex)
             {
-
                 IconBox.Source = null;
                 Model.PKGParams?.Clear();
 
@@ -381,10 +379,16 @@ namespace DirectPackageInstaller.Views
                 App.Config.AllDebridApiKey = IniReader.GetValue("AllDebridApiKey");
                 App.Config.EnableCNL = IniReader.GetBooleanValue("EnableCNL");
 
+                ConnectionHelper.AllowReconnect = IniReader.GetBooleanValue("AllowReconnect");
+
                 var Concurrency = IniReader.GetValue("Concurrency");
                 if (!string.IsNullOrWhiteSpace(Concurrency) && int.TryParse(Concurrency, out int ConcurrencyNum))
                     SegmentedStream.DefaultConcurrency = ConcurrencyNum;
-                
+
+                if (ConnectionHelper.AllowReconnect && !ConnectionHelper.IsWindowsAdministrator())
+                {
+                    await MessageBox.ShowAsync("Please, Restart the DirectPackageInstaller as Administrator\nto use the Auto Reconnection feature.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
             }
             else
             {

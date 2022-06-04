@@ -5,6 +5,7 @@ namespace DirectPackageInstaller.FileHosts
     class Mediafire : FileHostBase
     {
         public override string HostName => "Mediafire";
+        public override bool Limited => false;
 
         public override DownloadInfo GetDownloadInfo(string URL)
         {

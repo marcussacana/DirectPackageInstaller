@@ -43,6 +43,9 @@ namespace DirectPackageInstaller.Tasks
 
             while (Input == null ? (NewTask.SegmentedRead?.Length ?? 0) == 0 : NewTask.SafeLength == 0)
             {
+                if (!NewTask.Running)
+                    break;
+                
                 NewTask = Tasks[URL];
                 System.Threading.Thread.Sleep(10);
             }
@@ -50,7 +53,7 @@ namespace DirectPackageInstaller.Tasks
             return Tasks[URL];
         }
 
-        private unsafe static void DoDownload(object sender, DoWorkEventArgs e)
+        private static unsafe void DoDownload(object sender, DoWorkEventArgs e)
         {
             var Worker = (BackgroundWorker)sender;
             var This = (DownloaderTask)((object[])e.Argument)[0];
@@ -95,7 +98,7 @@ namespace DirectPackageInstaller.Tasks
             }
         }
 
-        private unsafe static void DoSegmentedDownload(object sender, DoWorkEventArgs e)
+        private static void DoSegmentedDownload(object sender, DoWorkEventArgs e)
         {
             var Worker = (BackgroundWorker)sender;
             var This = (DownloaderTask)((object[])e.Argument)[0];

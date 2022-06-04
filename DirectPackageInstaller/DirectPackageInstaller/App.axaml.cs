@@ -162,7 +162,30 @@ namespace DirectPackageInstaller
         internal static bool IsRunningOnMono => Type.GetType("Mono.Runtime") != null;
         internal static bool IsUnix => (int)Environment.OSVersion.Platform == 4 || (int)Environment.OSVersion.Platform == 6 || (int)Environment.OSVersion.Platform == 128;
 
-        internal static bool IsOSX => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);        
+        internal static bool IsOSX => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+
+        internal static OS CurrentPlatform 
+        {
+            get
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                    return OS.OSX;
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                    return OS.Linux;
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    return OS.Windows;
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD))
+                    return OS.FreeBSD;
+                
+                throw new PlatformNotSupportedException();
+            }
+        }
+        
+        public enum OS
+        {
+            OSX, Linux, Windows, FreeBSD
+        }
+
         internal static string WorkingDirectory => Environment.GetEnvironmentVariable("CD") ?? Directory.GetCurrentDirectory();
         internal static string SettingsPath => System.IO.Path.Combine(App.WorkingDirectory, "Settings.ini");
     }

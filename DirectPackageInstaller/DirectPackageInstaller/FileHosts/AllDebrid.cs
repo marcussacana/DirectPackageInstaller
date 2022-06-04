@@ -12,6 +12,7 @@ namespace DirectPackageInstaller.FileHosts
         static Dictionary<string, string> GenCache = new Dictionary<string, string>();
 
         public override string HostName => "AllDebrid";
+        public override bool Limited => false;
 
         public override DownloadInfo GetDownloadInfo(string URL)
         {

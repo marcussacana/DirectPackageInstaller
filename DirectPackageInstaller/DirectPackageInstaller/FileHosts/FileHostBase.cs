@@ -8,8 +8,9 @@ namespace DirectPackageInstaller.FileHosts
     public abstract class FileHostBase
     {
         public abstract string HostName { get; }
+        public abstract bool Limited { get; }
 
-        public abstract bool IsValidUrl(string URL);
+        public abstract  bool IsValidUrl(string URL);
         public abstract DownloadInfo GetDownloadInfo(string URL);
 
         public const string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.93 Safari/537.36 Edg/96.0.1054.53";
@@ -109,7 +110,5 @@ namespace DirectPackageInstaller.FileHosts
         public List<(string Key, string Value)> Headers;
         public Cookie[] Cookies;
         public WebProxy Proxy;
-
-        public bool SingleConnection;
     }
 }

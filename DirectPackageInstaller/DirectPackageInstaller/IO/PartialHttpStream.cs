@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Threading.Tasks;
 using System.Web;
 
 namespace DirectPackageInstaller.IO
@@ -29,8 +28,6 @@ namespace DirectPackageInstaller.IO
         }
 
         public int Timeout { get; set; }
-
-        public bool TryBypassProxy { get; set; } = false;
         public bool KeepAlive { get; set; } = false;
 
         private const int CacheLen = 1024 * 8;
@@ -208,6 +205,9 @@ namespace DirectPackageInstaller.IO
                 
                 if (RespPos != Position || ResponseStream == null)
                 {
+                    if (Url == null)
+                        RefreshUrl?.Invoke();
+                    
                     HttpRequestsCount++;
 
                     if (ResponseStream != null)
@@ -234,10 +234,6 @@ namespace DirectPackageInstaller.IO
 
                     req.KeepAlive = KeepAlive;
                     req.ServicePoint.SetTcpKeepAlive(KeepAlive, 1000 * 60 * 5, 1000);
-
-
-                    if (!TryBypassProxy || (TryBypassProxy && Tries >= 2))
-                        req.Proxy = Proxy;
 
                     foreach (var Header in Headers)
                         req.Headers[Header.Key] = Header.Value;
@@ -294,7 +290,7 @@ namespace DirectPackageInstaller.IO
                 ResponseStream?.Dispose();
                 ResponseStream = null;
 
-                if (TryBypassProxy ? Tries < 5 : Tries < 3)
+                if (Tries < 3)
                 {
                     RefreshUrl?.Invoke();
                     return HttpRead(buffer, ref offset, ref count, Tries + 1);
@@ -310,7 +306,7 @@ namespace DirectPackageInstaller.IO
                 ResponseStream?.Dispose();
                 ResponseStream = null;
 
-                if (TryBypassProxy ? Tries < 5 : Tries < 3)
+                if (Tries < 3)
                 {
                     RefreshUrl?.Invoke();
                     return HttpRead(buffer, ref offset, ref count, Tries + 1);
@@ -331,6 +327,9 @@ namespace DirectPackageInstaller.IO
         
         private long? HttpGetLength(bool NoHead = false)
         {
+            if (Url == null)
+                RefreshUrl?.Invoke();
+            
             if (HeadCache.ContainsKey(Url))
             {
                 _fn = HeadCache[Url].Filename;

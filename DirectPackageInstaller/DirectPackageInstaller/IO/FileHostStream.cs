@@ -8,9 +8,9 @@ namespace DirectPackageInstaller.IO
         static Dictionary<string, DownloadInfo> UrlCache = new Dictionary<string, DownloadInfo>();
 
         public string PageUrl;
-        public FileHostBase Host;
+        public FileHostBase? Host;
         public bool DirectLink { get; private set; } = true;
-        public bool SingleConnection { get; private set; } = false;
+        public bool SingleConnection => Host?.Limited ?? false;
 
         public FileHostStream(string Url, int cacheLen = 8192) : base(Url, cacheLen)
         {
@@ -24,9 +24,9 @@ namespace DirectPackageInstaller.IO
                 this.Host = Host;
 
                 PageUrl = Url;
+                this.Url = null;
+                
                 RefreshUrl = Refresh;
-
-                GetUrl();
                 break;
             }
         }
@@ -53,8 +53,6 @@ namespace DirectPackageInstaller.IO
             }
 
             Url = Info.Url;
-
-            SingleConnection = Info.SingleConnection;
 
             if (Info.Headers != null)
             {

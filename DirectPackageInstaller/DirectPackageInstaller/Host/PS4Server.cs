@@ -255,8 +255,6 @@ namespace DirectPackageInstaller.Host
 
             FileHostStream HttpStream;
             HttpStream = new FileHostStream(Url, 1024 * 8);
-            HttpStream.TryBypassProxy = true;
-                
 
             try
             {

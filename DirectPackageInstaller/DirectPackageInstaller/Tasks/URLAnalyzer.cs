@@ -57,7 +57,8 @@ public static class URLAnalyzer
                     Info.Stream = () => new FileHostStream(URL);
                     
                     FileHostStream Head = Info.Stream();
-
+                    Info.Filename = Head.Filename;
+                    
                     if (Head.SingleConnection)
                     {
                         Info.SingleConnection = true;
@@ -65,8 +66,6 @@ public static class URLAnalyzer
                     }
                     else
                     {
-                        Info.Filename = Head.Filename;
-                        
                         Head.Close();
                         Head.Dispose();
                     }

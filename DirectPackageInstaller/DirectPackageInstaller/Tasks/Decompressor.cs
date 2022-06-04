@@ -223,7 +223,7 @@ namespace DirectPackageInstaller.Tasks
             for (int i = 0; i < AllEntries.Length; i++)
             {
                 var CurrentName = ListNames[i];
-                if (CurrentName.Contains(".part", StringComparison.InvariantCultureIgnoreCase))
+                if (CurrentName == null || CurrentName.Contains(".part", StringComparison.InvariantCultureIgnoreCase))
                     continue;
                 
                 if (CurrentName.EndsWith(".r00", StringComparison.InvariantCultureIgnoreCase))
@@ -243,6 +243,9 @@ namespace DirectPackageInstaller.Tasks
 
             bool Verify(string Name)
             {
+                if (Name == null)
+                    return true;
+                
                 var Ext = Path.GetExtension(Name);
                 if (Ext.Equals(".rar", StringComparison.InvariantCultureIgnoreCase))
                     return true;
@@ -271,6 +274,9 @@ namespace DirectPackageInstaller.Tasks
             
             bool Verify(string Name)
             {
+                if (Name == null)
+                    return true;
+                
                 var Ext = Path.GetExtension(Name);
                 if (Ext.Equals(".7z", StringComparison.InvariantCultureIgnoreCase))
                     return true;

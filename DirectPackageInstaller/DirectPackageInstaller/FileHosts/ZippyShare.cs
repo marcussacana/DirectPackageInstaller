@@ -8,6 +8,7 @@ namespace DirectPackageInstaller.FileHosts
     class ZippyShare : FileHostBase
     {
         public override string HostName => "Zippyshare";
+        public override bool Limited => false;
 
         public override DownloadInfo GetDownloadInfo(string URL)
         {

@@ -25,6 +25,8 @@ namespace DirectPackageInstaller.Desktop
                 TempHelper.Clear();
                 BuildAvaloniaApp().StartWithClassicDesktopLifetime(args); 
                 TempHelper.Clear();
+
+                Environment.Exit(0);
                 return;
             }
 
@@ -198,7 +200,6 @@ namespace DirectPackageInstaller.Desktop
 
                 if (HostStream.SingleConnection)
                 {
-                    HostStream.TryBypassProxy = true;
                     HostStream.KeepAlive = true;
                     
                     Console.WriteLine("WARNING: Limited File Hosting - The given url is supported but not recommended.");
