@@ -186,7 +186,7 @@ namespace DirectPackageInstaller.Views
                     PKGStream = SplitHelper.OpenRemoteJSON(SourcePackage);
                     InputType = Source.URL | Source.JSON;
                 }
-                else if (SourcePackage.Length > 2 && (SourcePackage[1] == ':' || SourcePackage[0] == '/'))
+                else if (SourcePackage.Length > 2 && (SourcePackage[1] == ':' || SourcePackage[0] == '/' || SourcePackage.StartsWith("\\\\")))
                 {
                     PKGStream = File.Open(SourcePackage, FileMode.Open, FileAccess.Read, FileShare.Read);
                     InputType = Source.File;
@@ -219,7 +219,7 @@ namespace DirectPackageInstaller.Views
 
                         var FName = UrlInfo.Urls.First().Filename.ToLowerInvariant();
 
-                        bool ValidExt = FName.EndsWith(".rar") || FName.EndsWith(".7z") || FName.EndsWith(".pkg");
+                        bool ValidExt = FName.EndsWith(".rar") || FName.EndsWith(".7z") || FName.EndsWith(".pkg") || string.IsNullOrWhiteSpace(FName);
 
                         if (!ValidExt)
                         {
