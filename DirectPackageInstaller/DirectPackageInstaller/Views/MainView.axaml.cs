@@ -217,9 +217,9 @@ namespace DirectPackageInstaller.Views
                     else
                     {
 
-                        var FName = UrlInfo.Urls.First().Filename.ToLowerInvariant();
+                        var FName = UrlInfo.Urls.First().Filename?.ToLowerInvariant();
 
-                        bool ValidExt = FName.EndsWith(".rar") || FName.EndsWith(".7z") || FName.EndsWith(".pkg") || string.IsNullOrWhiteSpace(FName);
+                        bool ValidExt = string.IsNullOrWhiteSpace(FName) || FName.EndsWith(".rar") || FName.EndsWith(".7z") || FName.EndsWith(".pkg");
 
                         if (!ValidExt)
                         {
