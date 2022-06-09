@@ -35,8 +35,8 @@ public partial class MessageBoxView : UserControl
         ButtonD.Click += BtnClicked;
     }
 
-    private Window Window;
-    public void Initialize(Window Window)
+    private Window? Window;
+    public void Initialize(Window? Window)
     {
         ButtonA.IsVisible = false;
         ButtonB.IsVisible = false;
@@ -154,8 +154,15 @@ public partial class MessageBoxView : UserControl
         
         App.Callback(() =>
         {
-            Window.Hide();
-            App.Callback(Window.Close);
+            if (Window == null)
+            {
+                SingleView.ReturnView(this);
+            }
+            else
+            {
+                Window.Hide();
+                App.Callback(Window.Close);
+            }
         });
     }
 }

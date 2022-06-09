@@ -12,23 +12,33 @@ namespace DirectPackageInstaller
 {
     public class SelfUpdate
     {
-        public static string MainExecutable
+        public static string? MainExecutable
         {
             get
             {
-                var MainAssembly = System.Reflection.Assembly.GetEntryAssembly().Location;
-                
-                if (File.Exists(Path.ChangeExtension(MainAssembly, "exe")))
-                    return Path.ChangeExtension(MainAssembly, "exe");
-                
-                if (File.Exists(Path.ChangeExtension(MainAssembly, "").TrimEnd('.')))
-                    return Path.ChangeExtension(MainAssembly, "").TrimEnd('.');
-                
-                return MainAssembly;
+                try
+                {
+                    var MainAssembly = System.Reflection.Assembly.GetEntryAssembly()?.Location;
+
+                    if (MainAssembly == null)
+                        return null;
+
+                    if (File.Exists(Path.ChangeExtension(MainAssembly, "exe")))
+                        return Path.ChangeExtension(MainAssembly, "exe");
+
+                    if (File.Exists(Path.ChangeExtension(MainAssembly, "").TrimEnd('.')))
+                        return Path.ChangeExtension(MainAssembly, "").TrimEnd('.');
+
+                    return MainAssembly;
+                }
+                catch
+                {
+                    return null; // android
+                }
             }
         }
 
-        private static readonly string TempUpdateDir = Path.Combine(Path.GetDirectoryName(MainExecutable), "LastVersion");
+        private static string TempUpdateDir => Path.Combine(Path.GetDirectoryName(MainExecutable), "LastVersion");
 
         const string Repo = "https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/";
         //const string Repo = "http://localhost:8000/";

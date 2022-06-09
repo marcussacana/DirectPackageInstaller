@@ -23,7 +23,6 @@ namespace DirectPackageInstaller.Views
             Closing += MainWindowClosing;
         }
 
-
         private async void MainWindowOpened(object? sender, EventArgs e)
         {
 #if DEBUG

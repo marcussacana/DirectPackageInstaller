@@ -55,23 +55,47 @@ namespace DirectPackageInstaller.Views
         
         public static async Task<DialogResult> ShowAsync(Window? Parent, string Message, string Title, MessageBoxButtons Buttons, MessageBoxIcon Icon)
         {
-            MessageBox MB = new MessageBox() {
-                DataContext = new DialogModel()
+            if (App.IsAndroid)
+            {
+                MessageBoxView MB = new MessageBoxView()
                 {
-                    Icon = Icon,
-                    Buttons = Buttons,
-                    Message = Message,
-                    Title = Title,
-                    Result = DialogResult.Cancel
-                }
-            };
-            
-            MB.View.DataContext = MB.DataContext;
-            MB.View.Initialize(MB);
-            
-            await MB.ShowDialogAsync(Parent);
-            
-            return MB.Model?.Result ?? DialogResult.Cancel;
+                    DataContext = new DialogModel()
+                    {
+                        Icon = Icon,
+                        Buttons = Buttons,
+                        Message = Message,
+                        Title = Title,
+                        Result = DialogResult.Cancel
+                    }
+                };
+                
+                MB.Initialize(null);
+
+                await SingleView.CallView(MB);
+                
+                return ((DialogModel)MB.DataContext).Result;
+            }
+            else
+            {
+                MessageBox MB = new MessageBox()
+                {
+                    DataContext = new DialogModel()
+                    {
+                        Icon = Icon,
+                        Buttons = Buttons,
+                        Message = Message,
+                        Title = Title,
+                        Result = DialogResult.Cancel
+                    }
+                };
+
+                MB.View.DataContext = MB.DataContext;
+                MB.View.Initialize(MB);
+
+                await MB.ShowDialogAsync(Parent);
+
+                return MB.Model?.Result ?? DialogResult.Cancel;
+            }
         }
     }
 }

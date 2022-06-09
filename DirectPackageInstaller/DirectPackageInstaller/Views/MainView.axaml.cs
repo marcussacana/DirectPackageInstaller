@@ -9,6 +9,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using DirectPackageInstaller.Compression;
 using DirectPackageInstaller.Host;
 using DirectPackageInstaller.IO;
@@ -356,16 +357,19 @@ namespace DirectPackageInstaller.Views
 
             PKGStream?.Close();
         }
-        public async Task OnShown(MainWindow Parent)
+        public async Task OnShown(MainWindow? Parent)
         {
             if (Model == null)
                 return;
 
-            this.Parent = Parent;
+            if (Parent != null)
+            {
+                this.Parent = Parent;
 
-            Parent.Title += $" - v{SelfUpdate.CurrentVersion}";
-            
-             if (File.Exists(App.SettingsPath))
+                this.Parent.Title += $" - v{SelfUpdate.CurrentVersion}";
+            }
+
+            if (File.Exists(App.SettingsPath))
             {
                 App.Config = new Settings();
                 var IniReader = new Ini(App.SettingsPath, "Settings");

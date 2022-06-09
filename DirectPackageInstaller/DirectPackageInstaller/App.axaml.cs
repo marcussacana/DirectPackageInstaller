@@ -11,11 +11,9 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using Avalonia.Platform;
 using Avalonia.Threading;
 using DirectPackageInstaller.ViewModels;
 using DirectPackageInstaller.Views;
-using Microsoft.CodeAnalysis;
 
 namespace DirectPackageInstaller
 {
@@ -42,14 +40,20 @@ namespace DirectPackageInstaller
         public static readonly SelfUpdate Updater = new SelfUpdate();
         public override void OnFrameworkInitializationCompleted()
         {
-            if (Updater.FinishUpdatePending())
+            if (!IsAndroid)
             {
-                Process.Start(Updater.FinishUpdate());
-                Environment.Exit(0);
-                return;
+                if (Updater.FinishUpdatePending())
+                {
+                    Process.Start(Updater.FinishUpdate());
+                    Environment.Exit(0);
+                    return;
+                }
             }
-            
+
             UnlockHeaders();
+
+            if (!Directory.Exists(WorkingDirectory))
+                Directory.CreateDirectory(WorkingDirectory);
             
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
@@ -60,10 +64,7 @@ namespace DirectPackageInstaller
             }
             else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
             {
-                singleViewPlatform.MainView = new MainView
-                {
-                    DataContext = new MainViewModel()
-                };
+                singleViewPlatform.MainView = new SingleView();
             }
 
             base.OnFrameworkInitializationCompleted();
@@ -162,6 +163,8 @@ namespace DirectPackageInstaller
         internal static bool IsRunningOnMono => Type.GetType("Mono.Runtime") != null;
         internal static bool IsUnix => (int)Environment.OSVersion.Platform == 4 || (int)Environment.OSVersion.Platform == 6 || (int)Environment.OSVersion.Platform == 128;
 
+        private static bool? _IsAndroid;
+        internal static bool IsAndroid => _IsAndroid ??= SelfUpdate.MainExecutable == null;
         internal static bool IsOSX => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
 
         internal static OS CurrentPlatform 
@@ -176,6 +179,8 @@ namespace DirectPackageInstaller
                     return OS.Windows;
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD))
                     return OS.FreeBSD;
+                if (IsAndroid)
+                    return OS.Android;
                 
                 throw new PlatformNotSupportedException();
             }
@@ -183,10 +188,13 @@ namespace DirectPackageInstaller
         
         public enum OS
         {
-            OSX, Linux, Windows, FreeBSD
+            OSX, Linux, Windows, FreeBSD, Android
         }
 
-        internal static string WorkingDirectory => Environment.GetEnvironmentVariable("CD") ?? Directory.GetCurrentDirectory();
-        internal static string SettingsPath => System.IO.Path.Combine(App.WorkingDirectory, "Settings.ini");
+        private static string? _WorkingDir;
+        internal static string WorkingDirectory => _WorkingDir ??= IsAndroid ? 
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "DirectPackageInstaller") :
+            Environment.GetEnvironmentVariable("CD") ?? Directory.GetCurrentDirectory();
+        internal static string SettingsPath => Path.Combine(WorkingDirectory, "Settings.ini");
     }
 }
