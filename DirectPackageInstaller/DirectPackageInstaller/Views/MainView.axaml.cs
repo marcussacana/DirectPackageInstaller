@@ -5,8 +5,11 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Android.Content;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -70,8 +73,10 @@ namespace DirectPackageInstaller.Views
             btnAllDebirdEnabled.Click += BtnAllDebirdEnabledOnClick;
             btnSegmentedDownload.Click += BtnSegmentedDownloadOnClick;
             btnCNLService.Click += BtnCNLServiceOnClick;
-            
+
             btnLoad.Click += BtnLoadOnClick;
+
+            tbURL.GotFocus += tbURLOnGotFocus;
             
             CNL.OnLinksReceived = OnLinksReceived;
         }
@@ -207,7 +212,10 @@ namespace DirectPackageInstaller.Views
                     }
 
                     if (UrlInfo.Failed)
+                    {
+                        URLAnalyzer.URLInfos.Remove(UrlInfo.MainURL);
                         throw new Exception();
+                    }
 
                     FileHostStream FHStream;
                     
@@ -330,10 +338,13 @@ namespace DirectPackageInstaller.Views
                 Model.PKGParams = Info.Params;
 
                 IconBox.Source = Info.Icon;
-                
-                Parent.BringIntoView();
-                Parent.Focus();
-                Parent.Activate();
+
+                if (!App.IsSingleView)
+                {
+                    Parent.BringIntoView();
+                    Parent.Focus();
+                    Parent.Activate();
+                }
 
                 btnLoad.Content = "Install";
             }
@@ -826,6 +837,24 @@ namespace DirectPackageInstaller.Views
             PS4Server pS4Server = new PS4Server(Model.PCIP);
             Installer.Server = pS4Server;
             Installer.Server.Start();
+        }
+
+        private void tbURLOnGotFocus(object? sender, GotFocusEventArgs e)
+        {
+            if (!App.IsAndroid)
+                return;
+            
+            App.Callback(() =>
+            {
+                var PrimaryClip = App.ClipboardManager?.PrimaryClip;
+                if (PrimaryClip.ItemCount != 1)
+                    return;
+
+                var ClipItem = PrimaryClip.GetItemAt(0);
+                var Text =  ClipItem.CoerceToText(null);
+                
+                tbURL.Text = Text;
+            });
         }
     }
 }

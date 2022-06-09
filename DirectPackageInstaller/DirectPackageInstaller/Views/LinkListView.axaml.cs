@@ -10,6 +10,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
+using Avalonia.Threading;
 using DirectPackageInstaller.ViewModels;
 using DynamicData;
 using DynamicData.Binding;
@@ -20,6 +21,18 @@ public partial class LinkListView : UserControl
 {
     private Window Window;
     public LinkListViewModel? Model => (LinkListViewModel?)DataContext;
+    public string[]? Links
+    {
+        get
+        {
+            if (!CheckAccess())
+                return Dispatcher.UIThread.InvokeAsync(() => Links).ConfigureAwait(false).GetAwaiter().GetResult();
+                
+            return Model?.Links.Distinct()
+                .Where(x => !string.IsNullOrWhiteSpace(x.Content))
+                .Select(x => x.Content).ToArray();
+        }
+    }
     public LinkListView()
     {
         InitializeComponent();
@@ -82,7 +95,20 @@ public partial class LinkListView : UserControl
         if (Model.Links.Count == 0 || Model.Links.Last().Content != "")
             Model.Links.Add(new LinkListViewModel.LinkEntry(string.Empty));
     }
+    
+    public void SetInitialInfo(string[]? Links, string? Password)
+    {
+        if (Links != null)
+        {
+            Model.Links.Clear();
+            Model.Links.AddRange(Links.Select(x=>new LinkListViewModel.LinkEntry(x)));
+        }
 
+        if (Password != null)
+        {
+            Model.Password = Password;
+        }
+    }
     private async void Button_OnClick(object? sender, RoutedEventArgs e)
     {
         if (Model.IsMultipart ?? false) {
@@ -113,10 +139,17 @@ public partial class LinkListView : UserControl
         
         ((DialogModel)Window.DataContext).Result = DialogResult.OK;
 
-        App.Callback(() =>
+        if (App.IsSingleView)
         {
-            Window.Hide();
-            App.Callback(Window.Close);
-        });
+            SingleView.ReturnView(this);
+        }
+        else
+        {
+            App.Callback(() =>
+            {
+                Window.Hide();
+                App.Callback(Window.Close);
+            });
+        }
     }
 }

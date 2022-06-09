@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Avalonia.Controls;
+using Avalonia.Threading;
 using DirectPackageInstaller.ViewModels;
 
 namespace DirectPackageInstaller.Views
@@ -32,6 +33,12 @@ namespace DirectPackageInstaller.Views
 
         public void Initialize(Select Parent, string[] Options, Action<string> OnSelectionChanged)
         {
+            if (!Dispatcher.UIThread.CheckAccess())
+            {
+                Dispatcher.UIThread.InvokeAsync(() => Initialize(Parent, Options, this.OnSelectionChanged)).ConfigureAwait(false).GetAwaiter().GetResult();
+                return;
+            }
+            
             this.Parent = Parent;
             this.OnSelectionChanged = OnSelectionChanged;
             

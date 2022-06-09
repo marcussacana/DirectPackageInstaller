@@ -25,6 +25,7 @@ public abstract class DialogWindow : Window
         
         return ((DialogModel)DataContext).Result;
     }
+    
     public async Task<DialogResult> ShowDialogAsync(Window? Parent = null)
     {
         if (!Dispatcher.UIThread.CheckAccess())

@@ -54,16 +54,34 @@ namespace DirectPackageInstaller.FileHosts
 
             if (Pass == null && HasPassword)
             {
-                var List = DialogWindow.CreateInstance<LinkList>();
+                if (App.IsSingleView)
+                {
+                    var List = Extensions.CreateInstance<LinkListView>(new ViewModels.LinkListViewModel()
+                    {
+                        IsMultipart = false,
+                        HasPassword = true,
+                    });
+                    
+                    List.Initialized(null);
 
-                List.IsMultipart = false;
-                List.HasPassword = true;
-                List.Initialize();
+                    SingleView.CallView(List, true).Wait();
+                    
+                    Pass = List.Model?.Password;
+                }
+                else
+                {
 
-                if (List.ShowDialogSync() != DialogResult.OK)
-                    throw new Exception();
+                    var List = DialogWindow.CreateInstance<LinkList>();
 
-                Pass = List.Password;
+                    List.IsMultipart = false;
+                    List.HasPassword = true;
+                    List.Initialize();
+
+                    if (List.ShowDialogSync() != DialogResult.OK)
+                        throw new Exception();
+
+                    Pass = List.Password;
+                }
             }
 
 

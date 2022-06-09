@@ -4,9 +4,11 @@ using SharpCompress.Archives.Rar;
 using SharpCompress.Archives.SevenZip;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using DirectPackageInstaller.ViewModels;
 using DirectPackageInstaller.Views;
 using SharpCompress.Common;
 using ReaderOptions = SharpCompress.Readers.ReaderOptions;
@@ -152,15 +154,39 @@ namespace DirectPackageInstaller.Tasks
 
                 if (MissingData)
                 {
-                    var List = new LinkList(Multipart && (Info == null || Info?.Urls.Length == 1), Encrypted, FirstUrl);
-                    List.SetInitialInfo(Info?.Links, Password);
+                    var IsMultipart = Multipart && (Info == null || Info?.Urls.Length == 1);
+                    
+                    if (App.IsSingleView)
+                    {
+                        var List = Extensions.CreateInstance<LinkListView>(new LinkListViewModel()
+                        {
+                            IsMultipart = IsMultipart,
+                            HasPassword = Encrypted,
+                            MainUrl = FirstUrl
+                        });
+                        
+                        List.SetInitialInfo(Info?.Links, Password);
+                        
+                        
+                        Passwords[FirstUrl] = List.Model!.Password;
 
-                    if (await List.ShowDialogAsync() != DialogResult.OK)
-                        throw new Exception();
+                        Info = await URLAnalyzer.Analyze(List.Links!, false);
+                        Password = List.Model!.Password;
+                    }
+                    else
+                    {
+                        var List = new LinkList(IsMultipart, Encrypted, FirstUrl);
+                        List.SetInitialInfo(Info?.Links, Password);
 
-                    Passwords[FirstUrl] = List.Password;
+                        if (await List.ShowDialogAsync() != DialogResult.OK)
+                            throw new Exception();
+                    
 
-                    Info = await URLAnalyzer.Analyze(List.Links!, false);
+                        Passwords[FirstUrl] = List.Password;
+
+                        Info = await URLAnalyzer.Analyze(List.Links!, false);
+                        Password = List.Password;
+                    }
 
                     while (!Info.Value.Ready && !Info.Value.Failed)
                     {
@@ -168,7 +194,6 @@ namespace DirectPackageInstaller.Tasks
                         await Task.Delay(100);
                     }
 
-                    Password = List.Password;
                     MustReload = true;
                 }
 
@@ -332,10 +357,25 @@ namespace DirectPackageInstaller.Tasks
 
             if (!Silent)
             {
-                var ChoiceBox = new Select(Files);
-                if (await ChoiceBox.ShowDialogAsync() != DialogResult.OK)
-                    return null;
-                EntryName = ChoiceBox.Choice;
+                if (App.IsSingleView)
+                {
+                    var ChoiceBox = Extensions.CreateInstance<SelectView>(new SelectViewModel());
+                    ChoiceBox.Initialize(null, Files, (n) =>
+                    {
+                        EntryName = n;
+                        SingleView.ReturnView(ChoiceBox);
+                    });
+
+                    await SingleView.CallView(ChoiceBox, true);
+                }
+                else
+                {
+                    var ChoiceBox = new Select(Files);
+                    if (await ChoiceBox.ShowDialogAsync() != DialogResult.OK)
+                        return null;
+                    EntryName = ChoiceBox.Choice;
+                }
+
             }
             else if (string.IsNullOrEmpty(EntryName))
                 return null;

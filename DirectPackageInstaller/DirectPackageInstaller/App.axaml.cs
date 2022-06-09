@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Android.Content;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -64,6 +65,7 @@ namespace DirectPackageInstaller
             }
             else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
             {
+                IsSingleView = true;
                 singleViewPlatform.MainView = new SingleView();
             }
 
@@ -166,6 +168,10 @@ namespace DirectPackageInstaller
         private static bool? _IsAndroid;
         internal static bool IsAndroid => _IsAndroid ??= SelfUpdate.MainExecutable == null;
         internal static bool IsOSX => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+
+        public static ClipboardManager? ClipboardManager = null;
+
+        internal static bool IsSingleView { get; private set; }
 
         internal static OS CurrentPlatform 
         {

@@ -35,7 +35,7 @@ namespace DirectPackageInstaller.FileHosts
             if (Headers == null)
             {
                 var OldCount = Cookies.Count;
-                UserCookies = CookieManager.GetUserCookies("google.com");
+                UserCookies = CookieManagerView.GetUserCookies("google.com");
 
                 bool CookiesWaited = false;
                 while (WaitingCookies)
@@ -48,9 +48,17 @@ namespace DirectPackageInstaller.FileHosts
                 {
                     CookieAsked = true;
                     WaitingCookies = true;
-                    
-                    var CManager = DialogWindow.CreateInstance<CookieManager>();
-                    CManager.ShowDialogSync(MainWindow.Instance);
+
+                    if (App.IsSingleView)
+                    {
+                        var CManager = Extensions.CreateInstance<CookieManagerView>(null);
+                        SingleView.CallView(CManager, true).Wait();
+                    }
+                    else
+                    {
+                        var CManager = DialogWindow.CreateInstance<CookieManager>();
+                        CManager.ShowDialogSync(MainWindow.Instance);
+                    }
 
                     WaitingCookies = false;
                     return GetDownloadInfo(URL);

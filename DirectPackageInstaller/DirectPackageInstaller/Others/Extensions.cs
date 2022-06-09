@@ -81,6 +81,17 @@ public static class Extensions
                 return result;
             }
         }
+        
+        public static T CreateInstance<T>(object DataContext) where T : UserControl, new()
+        {
+            if (!Dispatcher.UIThread.CheckAccess())
+                return Dispatcher.UIThread.InvokeAsync(() => CreateInstance<T>(DataContext)).ConfigureAwait(false).GetAwaiter().GetResult();
+
+            return new T()
+            {
+                DataContext = DataContext
+            };
+        }
         public static bool HasName(this ParamSfo This, string name)
         {
             foreach (var v in This.Values)

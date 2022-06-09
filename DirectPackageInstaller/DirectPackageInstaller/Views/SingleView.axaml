@@ -3,9 +3,37 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:views="clr-namespace:DirectPackageInstaller.Views"
+             xmlns:uiBase="clr-namespace:DirectPackageInstaller.UIBase"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="DirectPackageInstaller.Views.SingleView"
              Foreground="White"
-             Background="#171C2C">
-    <Panel Name="Content"></Panel>
+             Background="#171C2C" Name="This">
+    <Grid>
+        <DockPanel Name="Content"/>
+        <Border Classes="Overlay" Name="Popup">
+            <DockPanel Classes="Overlay" Name="PopupContent"/>
+        </Border>   
+    </Grid>
+    <UserControl.Resources>
+        <uiBase:PercentageConverter x:Key="Percentage"/>
+    </UserControl.Resources>
+    <UserControl.Styles>
+        <Style Selector="DockPanel.Overlay">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="MaxHeight" Value="{Binding 
+                       Converter={StaticResource Percentage}, 
+                       ElementName=This, 
+                       Path=Bounds.Height, 
+                       ConverterParameter=0.85}"/>
+            <Setter Property="MaxWidth" Value="{Binding 
+                       Converter={StaticResource Percentage}, 
+                       ElementName=This, 
+                       Path=Bounds.Width, 
+                       ConverterParameter=0.85}"/>
+        </Style>
+        <Style Selector="Border.Overlay">
+           <Setter Property="Background" Value="#50000000"/>
+        </Style>
+    </UserControl.Styles>
 </UserControl>

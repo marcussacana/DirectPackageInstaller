@@ -117,7 +117,7 @@ public partial class MessageBoxView : UserControl
                 break;
         }
     }
-
+    
     private void BtnClicked(object? sender, RoutedEventArgs e)
     {
         if (sender == null || Model == null)
@@ -152,17 +152,17 @@ public partial class MessageBoxView : UserControl
                 return;
         }
         
-        App.Callback(() =>
-        {
-            if (Window == null)
+            App.Callback(() =>
             {
-                SingleView.ReturnView(this);
-            }
-            else
-            {
-                Window.Hide();
-                App.Callback(Window.Close);
-            }
-        });
+                if (Window == null)
+                {
+                    SingleView.ReturnView(this);
+                }
+                else
+                {
+                    Window.Hide();
+                    App.Callback(Window.Close);
+                }
+            });
     }
 }

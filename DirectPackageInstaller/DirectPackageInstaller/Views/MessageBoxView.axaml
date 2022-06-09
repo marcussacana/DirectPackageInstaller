@@ -3,9 +3,9 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:viewModels="clr-namespace:DirectPackageInstaller.ViewModels"
-             mc:Ignorable="d" d:DesignWidth="480" d:DesignHeight="180"
+             mc:Ignorable="d" d:DesignWidth="380" d:DesignHeight="180"
              x:Class="DirectPackageInstaller.Views.MessageBoxView"
-             MinWidth="480"
+             MinWidth="380"
              MinHeight="180"
              Background="#171C2C">
     <UserControl.DataContext>
@@ -24,8 +24,10 @@
             <Image.Source>
             </Image.Source>
         </Image>
-        <TextBlock Name="Message" Grid.Row="0" Grid.Column="1" Text="{Binding Message}"/>
-        <Grid Grid.Row="1" Grid.ColumnSpan="2">
+        <ScrollViewer Grid.Row="0" Grid.Column="1" MaxHeight="400">
+            <TextBlock Name="Message" Text="{Binding Message}"/>
+        </ScrollViewer>
+         <Grid Grid.Row="1" Grid.ColumnSpan="2" Background="#30000000">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
@@ -33,7 +35,7 @@
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <Button Grid.Column="4" Name="ButtonA" />
+             <Button Grid.Column="4" Name="ButtonA" />
             <Button Grid.Column="3" Name="ButtonB" />
             <Button Grid.Column="2" Name="ButtonC" />
             <Button Grid.Column="1" Name="ButtonD" />
@@ -45,7 +47,10 @@
             <Setter Property="TextWrapping" Value="Wrap"/>
             <Setter Property="MaxWidth" Value="800"/>
             <Setter Property="FontSize" Value="18"/>
-            <Setter Property="Margin" Value="20,5,5,5"></Setter>
+            <Setter Property="Margin" Value="20,5,5,5"/>
+        </Style>
+        <Style Selector="ScrollViewer">
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
         </Style>
         <Style Selector="Image">
             <Setter Property="MaxHeight" Value="80"/>

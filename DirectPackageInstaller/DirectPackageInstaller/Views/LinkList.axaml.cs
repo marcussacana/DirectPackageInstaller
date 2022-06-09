@@ -14,20 +14,9 @@ namespace DirectPackageInstaller.Views
     {
         LinkListViewModel? Model => (LinkListViewModel?)View.DataContext;
 
-        public string[]? Links
-        {
-            get
-            {
-                if (!CheckAccess())
-                    return Dispatcher.UIThread.InvokeAsync(() => Links).ConfigureAwait(false).GetAwaiter().GetResult();
-                
-                return Model?.Links.Distinct()
-                    .Where(x => !string.IsNullOrWhiteSpace(x.Content))
-                    .Select(x => x.Content).ToArray();
-            }
-        }
         private bool ViewInitialized;
 
+        public string[]? Links => View.Links;
         public string? Password
         {
             get
@@ -95,18 +84,6 @@ namespace DirectPackageInstaller.Views
             App.Callback(() => View.Initialized(this));
         }
 
-        public void SetInitialInfo(string[]? Links, string? Password)
-        {
-            if (Links != null)
-            {
-                Model.Links.Clear();
-                Model.Links.AddRange(Links.Select(x=>new LinkListViewModel.LinkEntry(x)));
-            }
-
-            if (Password != null)
-            {
-                Model.Password = Password;
-            }
-        }
+        public void SetInitialInfo(string[]? Links, string? Password) => View.SetInitialInfo(Links, Password);
     }
 }

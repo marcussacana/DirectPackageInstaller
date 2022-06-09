@@ -30,6 +30,27 @@ namespace DirectPackageInstaller.Views
                 return Dispatcher.UIThread.InvokeAsync(() => ShowSync(Parent, Message, Title, Buttons, Icon)).GetAwaiter().GetResult();
             }
             
+            if (App.IsSingleView)
+            {
+                MessageBoxView MBView = new MessageBoxView()
+                {
+                    DataContext = new DialogModel()
+                    {
+                        Icon = Icon,
+                        Buttons = Buttons,
+                        Message = Message,
+                        Title = Title,
+                        Result = DialogResult.Cancel
+                    }
+                };
+
+                MBView.Initialize(null);
+
+                SingleView.CallView(MBView, true).Wait();
+
+                return ((DialogModel) MBView.DataContext).Result;
+            }
+            
             MessageBox MB = new MessageBox() {
                 DataContext = new DialogModel()
                 {
@@ -52,32 +73,12 @@ namespace DirectPackageInstaller.Views
             await ShowAsync(Message, string.Empty, MessageBoxButtons.OK, MessageBoxIcon.None);
         public static async Task<DialogResult> ShowAsync(string Message, string Title, MessageBoxButtons Buttons, MessageBoxIcon Icon) => 
             await ShowAsync(null, Message, Title, Buttons, Icon);
-        
+
         public static async Task<DialogResult> ShowAsync(Window? Parent, string Message, string Title, MessageBoxButtons Buttons, MessageBoxIcon Icon)
         {
-            if (App.IsAndroid)
+            if (App.IsSingleView)
             {
-                MessageBoxView MB = new MessageBoxView()
-                {
-                    DataContext = new DialogModel()
-                    {
-                        Icon = Icon,
-                        Buttons = Buttons,
-                        Message = Message,
-                        Title = Title,
-                        Result = DialogResult.Cancel
-                    }
-                };
-                
-                MB.Initialize(null);
-
-                await SingleView.CallView(MB);
-                
-                return ((DialogModel)MB.DataContext).Result;
-            }
-            else
-            {
-                MessageBox MB = new MessageBox()
+                MessageBoxView MBView = new MessageBoxView()
                 {
                     DataContext = new DialogModel()
                     {
@@ -89,13 +90,32 @@ namespace DirectPackageInstaller.Views
                     }
                 };
 
-                MB.View.DataContext = MB.DataContext;
-                MB.View.Initialize(MB);
+                MBView.Initialize(null);
 
-                await MB.ShowDialogAsync(Parent);
+                await SingleView.CallView(MBView, true);
 
-                return MB.Model?.Result ?? DialogResult.Cancel;
+                return ((DialogModel) MBView.DataContext).Result;
             }
+
+            MessageBox MB = new MessageBox()
+            {
+                DataContext = new DialogModel()
+                {
+                    Icon = Icon,
+                    Buttons = Buttons,
+                    Message = Message,
+                    Title = Title,
+                    Result = DialogResult.Cancel
+                }
+            };
+
+            MB.View.DataContext = MB.DataContext;
+            MB.View.Initialize(MB);
+
+            await MB.ShowDialogAsync(Parent);
+
+            return MB.Model?.Result ?? DialogResult.Cancel;
+
         }
     }
 }
