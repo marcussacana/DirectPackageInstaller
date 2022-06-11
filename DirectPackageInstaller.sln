@@ -1,5 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirectPackageInstaller.Android", "DirectPackageInstaller\DirectPackageInstaller.Android\DirectPackageInstaller.Android.csproj", "{0959340D-0DC7-4D1F-9413-0F8FE1F3F402}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirectPackageInstaller.Desktop", "DirectPackageInstaller\DirectPackageInstaller.Desktop\DirectPackageInstaller.Desktop.csproj", "{A12ADF0D-F760-43EF-81CB-3DF785A77AC1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirectPackageInstaller", "DirectPackageInstaller\DirectPackageInstaller\DirectPackageInstaller.csproj", "{921CC84D-9B3F-454A-852C-433CD6585311}"
@@ -7,8 +9,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LibOrbisPkg.Core", "LibOrbisPkg\LibOrbisPkg.Core\LibOrbisPkg.Core.csproj", "{8A5EB900-7726-4D50-87C2-BE3BD202F6A2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HttpServerLite", "HttpServerLite\HttpServerLite\HttpServerLite.csproj", "{E970BB82-F0AA-4D8D-B201-288C2BC2CDD3}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirectPackageInstaller.Android", "DirectPackageInstaller\DirectPackageInstaller.Android\DirectPackageInstaller.Android.csproj", "{0959340D-0DC7-4D1F-9413-0F8FE1F3F402}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

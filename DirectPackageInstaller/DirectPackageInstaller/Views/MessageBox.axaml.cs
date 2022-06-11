@@ -25,48 +25,13 @@ namespace DirectPackageInstaller.Views
         
         public static DialogResult ShowSync(Window? Parent, string Message, string Title, MessageBoxButtons Buttons, MessageBoxIcon Icon)
         {
-            if (!Dispatcher.UIThread.CheckAccess())
+            if (Dispatcher.UIThread.CheckAccess())
             {
-                return Dispatcher.UIThread.InvokeAsync(() => ShowSync(Parent, Message, Title, Buttons, Icon)).GetAwaiter().GetResult();
+                _ = ShowAsync("Sync MessageBox Called from main thread", "DirectPackageInstaller - ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return DialogResult.Cancel;
             }
             
-            if (App.IsSingleView)
-            {
-                MessageBoxView MBView = new MessageBoxView()
-                {
-                    DataContext = new DialogModel()
-                    {
-                        Icon = Icon,
-                        Buttons = Buttons,
-                        Message = Message,
-                        Title = Title,
-                        Result = DialogResult.Cancel
-                    }
-                };
-
-                MBView.Initialize(null);
-
-                SingleView.CallView(MBView, true).Wait();
-
-                return ((DialogModel) MBView.DataContext).Result;
-            }
-            
-            MessageBox MB = new MessageBox() {
-                DataContext = new DialogModel()
-                {
-                    Icon = Icon,
-                    Buttons = Buttons,
-                    Message = Message,
-                    Title = Title
-                }
-            };
-            
-            MB.View.DataContext = MB.DataContext;
-            MB.View.Initialize(MB);
-            
-            MB.ShowDialogSync(Parent ?? MainWindow.Instance);
-            
-            return MB.Model?.Result ?? DialogResult.Cancel;
+            return Dispatcher.UIThread.InvokeAsync(async() => await ShowAsync(Parent, Message, Title, Buttons, Icon)).GetAwaiter().GetResult();
         }
 
         public static async Task ShowAsync(string Message) =>

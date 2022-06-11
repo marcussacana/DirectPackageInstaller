@@ -39,14 +39,7 @@ public partial class CookieManagerView : UserControl
             
         App.Callback(() =>
         {
-            var PrimaryClip = App.ClipboardManager?.PrimaryClip;
-            if (PrimaryClip.ItemCount != 1)
-                return;
-
-            var ClipItem = PrimaryClip.GetItemAt(0);
-            var Text =  ClipItem.CoerceToText(null);
-                
-            tbCookie.Text = Text;
+            tbCookie.Text = App.GetClipboardText();
         });
     }
 
@@ -57,7 +50,7 @@ public partial class CookieManagerView : UserControl
         if (Model != null)
             Model.Result = DialogResult.OK;
 
-        if (Window == null)
+        if (App.IsSingleView)
             SingleView.ReturnView(this);
         else
             Window.Close();

@@ -45,7 +45,7 @@ namespace DirectPackageInstaller.Tasks
                 return false;
             }
 
-            StartServer(Config.PCIP);
+            await StartServer(Config.PCIP);
 
             if (PKGStream is FileHostStream)
             {
@@ -381,7 +381,7 @@ namespace DirectPackageInstaller.Tasks
             return true;
         }
         
-        public static void StartServer(string LocalIP)
+        public static async Task StartServer(string LocalIP)
         {
             if (string.IsNullOrEmpty(LocalIP))
                 LocalIP = "0.0.0.0";
@@ -403,7 +403,7 @@ namespace DirectPackageInstaller.Tasks
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.ShowSync($"Failed to Open the Http Server\n{ex.Message}", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    await MessageBox.ShowAsync($"Failed to Open the Http Server\n{ex}", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }

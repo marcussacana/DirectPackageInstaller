@@ -1,37 +1,49 @@
 ﻿using Android.App;
 using Android.Content;
-using Java.Security;
 using Application = Android.App.Application;
-using Permission = Android.Content.PM.Permission;
 
 namespace DirectPackageInstaller.Android
 {
     [Activity(Theme = "@style/MyTheme.Splash", MainLauncher = true, NoHistory = true)]
     public class SplashActivity : Activity
     {
-        protected override void OnResume()
+        ClipboardManager? ClipboardManager;
+
+        protected override void OnStart()
         {
-            base.OnResume();
-            
             RequestPermissions(new string[]
             {
                 "READ_EXTERNAL_STORAGE",
-                "WRITE_EXTERNAL_STORAGE",
-                "INTERNET"
-            }, 1);
+                "WRITE_EXTERNAL_STORAGE"
+            }, 0);
 
-            App.ClipboardManager = (ClipboardManager)GetSystemService(ClipboardService);
+            ClipboardManager = (ClipboardManager) GetSystemService(ClipboardService);
 
-            StartActivity(new Intent(Application.Context, typeof(MainActivity)));
+            App.GetClipboardText = () =>
+            {
+                var PrimaryClip = ClipboardManager.PrimaryClip;
+                if (PrimaryClip.ItemCount != 1)
+                    return null;
+
+                var ClipItem = PrimaryClip.GetItemAt(0);
+                return ClipItem.CoerceToText(null);
+            };
+
+            var BaseDir = Application.GetExternalFilesDir(null);
+            
+            App._WorkingDir = BaseDir.Parent;
+            App.GetFreeStorageSpace = () => BaseDir.UsableSpace;
+            
+            TempHelper.Clear();
+
+            base.OnStart();
         }
 
-        public override void OnRequestPermissionsResult(int requestCode, string[] permissions, Permission[] grantResults)
+        protected override void OnResume()
         {
-            /*EnforceCallingOrSelfPermission("READ_EXTERNAL_STORAGE", "Permission required to read your PKG files");
-            EnforceCallingOrSelfPermission("WRITE_EXTERNAL_STORAGE", "Permission required to cache the PKG on your phone");
-            EnforceCallingOrSelfPermission("INTERNET", "Permission required to contact your PS4 and open URLs");*/
-            
-            base.OnRequestPermissionsResult(requestCode, permissions, grantResults);
+            base.OnResume();
+
+            StartActivity(new Intent(Application.Context, typeof(MainActivity)));
         }
     }
 }

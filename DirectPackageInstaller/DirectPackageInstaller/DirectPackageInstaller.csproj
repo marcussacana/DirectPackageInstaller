@@ -10,21 +10,11 @@
         <AvaloniaResource Include="Assets\**" />
     </ItemGroup>
     <ItemGroup>
-      <AvaloniaXaml Remove="FakesAssemblies\**" />
-      <AvaloniaXaml Remove="Fakes\**" />
-      <Compile Remove="FakesAssemblies\**" />
-      <Compile Remove="Fakes\**" />
-      <EmbeddedResource Remove="FakesAssemblies\**" />
-      <EmbeddedResource Remove="Fakes\**" />
-      <None Remove="FakesAssemblies\**" />
-      <None Remove="Fakes\**" />
-    </ItemGroup>
-    <ItemGroup>
-        <PackageReference Include="Avalonia" Version="0.10.14" />
-        <PackageReference Include="Avalonia.Controls.DataGrid" Version="0.10.14" />
+        <PackageReference Include="Avalonia" Version="0.10.15" />
+        <PackageReference Include="Avalonia.Controls.DataGrid" Version="0.10.15" />
         <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
         <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="0.10.14" />
-        <PackageReference Include="Avalonia.ReactiveUI" Version="0.10.14" />
+        <PackageReference Include="Avalonia.ReactiveUI" Version="0.10.15" />
         <PackageReference Include="CoreCLR-NCalc" Version="2.2.101" />
         <PackageReference Include="SharpCompress" Version="0.31.0" />
         <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="6.0.1" />
@@ -47,8 +37,5 @@
         <AutoGen>True</AutoGen>
         <DependentUpon>Resources.resx</DependentUpon>
       </Compile>
-    </ItemGroup>
-    <ItemGroup>
-      <AdditionalDesignTimeBuildInput Remove="FakesAssemblies\**" />
     </ItemGroup>
 </Project>

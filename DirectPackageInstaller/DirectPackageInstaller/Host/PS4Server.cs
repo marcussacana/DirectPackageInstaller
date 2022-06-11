@@ -25,7 +25,7 @@ namespace DirectPackageInstaller.Host
         Dictionary<string, int> Instances = new Dictionary<string, int>();
 
 #if DEBUG
-        static TextWriter LOGWRITER = System.IO.File.CreateText("DPIServer.log");
+        static TextWriter LOGWRITER = System.IO.File.CreateText(Path.Combine(App.WorkingDirectory, "DPIServer.log"));
 #endif
         public int Connections { get; private set; } = 0;
 

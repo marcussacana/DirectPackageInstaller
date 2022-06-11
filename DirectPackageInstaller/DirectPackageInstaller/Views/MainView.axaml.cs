@@ -5,14 +5,11 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Android.Content;
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
-using Avalonia.VisualTree;
 using DirectPackageInstaller.Compression;
 using DirectPackageInstaller.Host;
 using DirectPackageInstaller.IO;
@@ -449,9 +446,9 @@ namespace DirectPackageInstaller.Views
                     });
                 });
             }
-            
-             if (!string.IsNullOrEmpty(App.Config.PS4IP))
-                 new Thread(() => Installer.StartServer(App.Config.PCIP)).Start();
+
+            if (!string.IsNullOrEmpty(App.Config.PS4IP))
+                await Installer.StartServer(App.Config.PCIP);
 
              if (App.Config.EnableCNL)
              {
@@ -846,14 +843,7 @@ namespace DirectPackageInstaller.Views
             
             App.Callback(() =>
             {
-                var PrimaryClip = App.ClipboardManager?.PrimaryClip;
-                if (PrimaryClip.ItemCount != 1)
-                    return;
-
-                var ClipItem = PrimaryClip.GetItemAt(0);
-                var Text =  ClipItem.CoerceToText(null);
-                
-                tbURL.Text = Text;
+                tbURL.Text = App.GetClipboardText();
             });
         }
     }

@@ -8,7 +8,6 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Android.Content;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -169,7 +168,7 @@ namespace DirectPackageInstaller
         internal static bool IsAndroid => _IsAndroid ??= SelfUpdate.MainExecutable == null;
         internal static bool IsOSX => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
 
-        public static ClipboardManager? ClipboardManager = null;
+        public static Func<string?> GetClipboardText = null;
 
         internal static bool IsSingleView { get; private set; }
 
@@ -197,10 +196,17 @@ namespace DirectPackageInstaller
             OSX, Linux, Windows, FreeBSD, Android
         }
 
-        private static string? _WorkingDir;
-        internal static string WorkingDirectory => _WorkingDir ??= IsAndroid ? 
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "DirectPackageInstaller") :
-            Environment.GetEnvironmentVariable("CD") ?? Directory.GetCurrentDirectory();
+        public static string? _WorkingDir;
+        public static string WorkingDirectory => _WorkingDir ??= Environment.GetEnvironmentVariable("CD") ?? Directory.GetCurrentDirectory();
+
+        public static Func<long> GetFreeStorageSpace = () =>
+        {
+            if (CurrentPlatform == OS.Windows)
+                return new DriveInfo(WorkingDirectory.Substring(0, 1)).AvailableFreeSpace;
+            
+            return new DriveInfo(WorkingDirectory).AvailableFreeSpace;
+        };
+
         internal static string SettingsPath => Path.Combine(WorkingDirectory, "Settings.ini");
     }
 }

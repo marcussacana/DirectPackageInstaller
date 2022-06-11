@@ -61,6 +61,7 @@ namespace DirectPackageInstaller.FileHosts
                     }
 
                     WaitingCookies = false;
+                    UserCookies = CookieManagerView.GetUserCookies("google.com");
                     return GetDownloadInfo(URL);
                 }
                 

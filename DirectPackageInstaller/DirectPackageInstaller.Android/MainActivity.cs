@@ -14,5 +14,11 @@ namespace DirectPackageInstaller.Android
         {
             return base.CustomizeAppBuilder(builder);
         }
+
+        protected override void OnDestroy()
+        {
+            TempHelper.Clear();
+            base.OnDestroy();
+        }
     }
 }
