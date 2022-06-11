@@ -1,4 +1,5 @@
-﻿using Android.App;
+﻿using System.Linq;
+using Android.App;
 using Android.Content;
 using Application = Android.App.Application;
 
@@ -29,9 +30,11 @@ namespace DirectPackageInstaller.Android
                 return ClipItem.CoerceToText(null);
             };
 
+            var ExtCacheDir = Application.GetExternalCacheDirs().First();
             var BaseDir = Application.GetExternalFilesDir(null);
             
-            App._WorkingDir = BaseDir.Parent;
+            App._WorkingDir = BaseDir.AbsolutePath;
+            App.AndroidCacheDir = ExtCacheDir.AbsolutePath;
             App.GetFreeStorageSpace = () => BaseDir.UsableSpace;
             
             TempHelper.Clear();

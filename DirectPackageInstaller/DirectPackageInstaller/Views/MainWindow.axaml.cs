@@ -53,20 +53,7 @@ namespace DirectPackageInstaller.Views
             } 
             catch {}
 
-            try
-            {
-                var IniWriter = new Ini(App.SettingsPath, "Settings");
-
-                IniWriter.SetValue("PS4IP", App.Config.PS4IP);
-                IniWriter.SetValue("PCIP", App.Config.PCIP);
-                IniWriter.SetValue("SearchPS4", App.Config.SearchPS4.ToString());
-                IniWriter.SetValue("ProxyDownload", App.Config.ProxyDownload.ToString());
-                IniWriter.SetValue("SegmentedDownload", App.Config.SegmentedDownload.ToString());
-                IniWriter.SetValue("UseAllDebrid", App.Config.UseAllDebrid.ToString());
-                IniWriter.SetValue("EnableCNL", App.Config.EnableCNL.ToString());
-                IniWriter.SetValue("AllDebridApiKey", App.Config.AllDebridApiKey);
-                IniWriter.Save();
-            } catch {}
+           App.SaveSettings();
         }
     }
 }

@@ -70,6 +70,24 @@ namespace DirectPackageInstaller
 
             base.OnFrameworkInitializationCompleted();
         }
+
+        public static void SaveSettings()
+        {
+            try
+            {
+                var IniWriter = new Ini(App.SettingsPath, "Settings");
+
+                IniWriter.SetValue("PS4IP", Config.PS4IP);
+                IniWriter.SetValue("PCIP", Config.PCIP);
+                IniWriter.SetValue("SearchPS4", Config.SearchPS4.ToString());
+                IniWriter.SetValue("ProxyDownload", Config.ProxyDownload.ToString());
+                IniWriter.SetValue("SegmentedDownload", Config.SegmentedDownload.ToString());
+                IniWriter.SetValue("UseAllDebrid", Config.UseAllDebrid.ToString());
+                IniWriter.SetValue("EnableCNL", Config.EnableCNL.ToString());
+                IniWriter.SetValue("AllDebridApiKey", Config.AllDebridApiKey);
+                IniWriter.Save();
+            } catch {}
+        }
         
         /// <summary>
         /// We aren't kids microsoft, we shouldn't need this
@@ -197,6 +215,8 @@ namespace DirectPackageInstaller
         }
 
         public static string? _WorkingDir;
+        
+        public static string? AndroidCacheDir;
         public static string WorkingDirectory => _WorkingDir ??= Environment.GetEnvironmentVariable("CD") ?? Directory.GetCurrentDirectory();
 
         public static Func<long> GetFreeStorageSpace = () =>
