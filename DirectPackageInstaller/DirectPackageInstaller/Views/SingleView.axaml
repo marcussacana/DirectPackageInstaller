@@ -11,7 +11,9 @@
     <Grid>
         <DockPanel Name="Content"/>
         <Border Classes="Overlay" Name="Popup">
-            <DockPanel Classes="Overlay" Name="PopupContent"/>
+            <Border Classes="Shadow">
+                <DockPanel Classes="Overlay" Name="PopupContent"/>
+            </Border>
         </Border>   
     </Grid>
     <UserControl.Resources>
@@ -33,7 +35,12 @@
                        ConverterParameter=0.85}"/>
         </Style>
         <Style Selector="Border.Overlay">
-           <Setter Property="Background" Value="#50000000"/>
+            <Setter Property="Background" Value="#50000000"/>
+        </Style>
+        <Style Selector="Border.Shadow">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="BoxShadow" Value="1 1 10 2 #70000000"/>
         </Style>
     </UserControl.Styles>
 </UserControl>

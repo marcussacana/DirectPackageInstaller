@@ -37,5 +37,9 @@
         <AutoGen>True</AutoGen>
         <DependentUpon>Resources.resx</DependentUpon>
       </Compile>
+      <Compile Update="Views\DebugSingleView.axaml.cs">
+        <DependentUpon>DebugSingleView.axaml</DependentUpon>
+        <SubType>Code</SubType>
+      </Compile>
     </ItemGroup>
 </Project>

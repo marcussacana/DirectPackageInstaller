@@ -1,3 +1,5 @@
+//#define DEBUG_SINGLEVIEW
+
 using System;
 using System.Collections;
 using System.Diagnostics;
@@ -57,10 +59,18 @@ namespace DirectPackageInstaller
             
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
+#if DEBUG && DEBUG_SINGLEVIEW
+                IsSingleView = true;
+                desktop.MainWindow = new DebugSingleView
+                {
+                    DataContext = new MainViewModel()
+                };
+#else
                 desktop.MainWindow = new MainWindow
                 {
                     DataContext = new MainViewModel()
                 };
+#endif
             }
             else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
             {
