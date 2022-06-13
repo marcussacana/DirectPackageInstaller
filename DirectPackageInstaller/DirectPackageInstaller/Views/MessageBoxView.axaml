@@ -20,10 +20,7 @@
             <ColumnDefinition Width="Auto" />
             <ColumnDefinition />
         </Grid.ColumnDefinitions>
-        <Image Classes="Stop" Name="Icon">
-            <Image.Source>
-            </Image.Source>
-        </Image>
+        <Image Classes="Stop" Name="Icon"/>
         <ScrollViewer Grid.Row="0" Grid.Column="1" MaxHeight="400">
             <TextBlock Name="Message" Text="{Binding Message}"/>
         </ScrollViewer>

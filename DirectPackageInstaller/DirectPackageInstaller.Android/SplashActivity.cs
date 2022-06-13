@@ -1,7 +1,9 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using Android.App;
 using Android.Content;
 using Application = Android.App.Application;
+using Uri = Android.Net.Uri;
 
 namespace DirectPackageInstaller.Android
 {
@@ -12,11 +14,6 @@ namespace DirectPackageInstaller.Android
 
         protected override void OnStart()
         {
-            RequestPermissions(new[] {
-                "READ_EXTERNAL_STORAGE",
-                "WRITE_EXTERNAL_STORAGE"
-            }, 0);
-
             ClipboardManager = (ClipboardManager) GetSystemService(ClipboardService);
 
             App.GetClipboardText = () =>
@@ -39,11 +36,35 @@ namespace DirectPackageInstaller.Android
             App._WorkingDir = BaseDir?.AbsolutePath;
             App.AndroidCacheDir = ExtCacheDir?.AbsolutePath;
             App.AndroidSDCacheDir = SDCardDir?.AbsolutePath;
+            App.GetRootDirPermission = GetStorageAccess;
             //App.GetFreeStorageSpace = () => BaseDir.UsableSpace;
             
             TempHelper.Clear();
 
             base.OnStart();
+        }
+
+        public void GetStorageAccess()
+        {
+            if (global::Android.OS.Build.VERSION.SdkInt >= global::Android.OS.BuildVersionCodes.R)
+            {
+                if (!global::Android.OS.Environment.IsExternalStorageManager)
+                {
+                    try
+                    {
+               
+                        Uri uri = Uri.Parse("package:" + PackageName);
+                        Intent intent = new Intent(global::Android.Provider.Settings.ActionManageAppAllFilesAccessPermission, uri);
+                        StartActivity(intent);
+                    }
+                    catch (Exception ex)
+                    {
+                        Intent intent = new Intent();
+                        intent.SetAction(global::Android.Provider.Settings.ActionManageAppAllFilesAccessPermission);
+                        StartActivity(intent);
+                    }
+                }
+            }
         }
 
         protected override void OnResume()

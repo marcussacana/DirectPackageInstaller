@@ -114,26 +114,41 @@ namespace DirectPackageInstaller.Views
                 return;
             }
 
-            if (string.IsNullOrEmpty(SourcePackage)) {
-                var FD = new OpenFileDialog();
-                
-                FD.Filters = new List<FileDialogFilter>()
-                {
-                    new FileDialogFilter()
-                    {
-                        Name = "ALL PKG Files",
-                        Extensions = new List<string>() { "pkg", "PKG" },
-                    },
-                    new FileDialogFilter()
-                    {
-                        Name = "ALL Files",
-                        Extensions = new List<string>() { "*" }
-                    }
-                };
+            if (string.IsNullOrEmpty(SourcePackage))
+            {
 
-                FD.AllowMultiple = true;
-                
-                var Result = await FD.ShowAsync(Parent);
+                string[]? Result = null;
+
+                if (!App.IsSingleView)
+                {
+                    var FD = new OpenFileDialog();
+
+                    FD.Filters = new List<FileDialogFilter>()
+                    {
+                        new FileDialogFilter()
+                        {
+                            Name = "ALL PKG Files",
+                            Extensions = new List<string>() {"pkg", "PKG"},
+                        },
+                        new FileDialogFilter()
+                        {
+                            Name = "ALL Files",
+                            Extensions = new List<string>() {"*"}
+                        }
+                    };
+
+                    FD.AllowMultiple = true;
+                    Result = await FD.ShowAsync(Parent);
+                }
+                else
+                {
+                    var Picker = new FilePicker();
+                    Picker.OpenDir(App.RootDir);
+                    
+                    await SingleView.CallView(Picker, false);
+                    Result = Picker.SelectedFiles.ToArray();
+                }
+
                 
                 BatchList.Clear();
                 

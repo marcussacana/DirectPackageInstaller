@@ -1,11 +1,14 @@
-﻿using Android.App;
+﻿using Android;
+using Android.App;
 using Android.Content;
 using Android.Content.PM;
 using Android.OS;
+using AndroidX.Core.App;
 using AndroidX.Core.Content;
 using Avalonia.Android;
 using Avalonia;
 using Java.IO;
+
 using Application = Android.App.Application;
 
 namespace DirectPackageInstaller.Android
@@ -21,7 +24,16 @@ namespace DirectPackageInstaller.Android
         {
             if (Instances == 0)
             {
-
+                ActivityCompat.RequestPermissions(
+                    this,
+                    new []{
+                        Manifest.Permission.ReadExternalStorage,
+                        Manifest.Permission.WriteExternalStorage,
+                        Manifest.Permission.ManageExternalStorage
+                    },
+                    1
+                );
+                
                 App.InstallApk = (Path) =>
                 {
                     var Install = new Intent(Intent.ActionView);

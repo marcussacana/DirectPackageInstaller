@@ -1,4 +1,4 @@
-//#define DEBUG_SINGLEVIEW
+#define DEBUG_SINGLEVIEW
 
 using System;
 using System.Collections;
@@ -239,8 +239,30 @@ namespace DirectPackageInstaller
             return new DriveInfo(CacheBaseDirectory ?? WorkingDirectory).AvailableFreeSpace;
         };
 
+        public static Action GetRootDirPermission;
+        public static string RootDir
+        {
+            get
+            {
+                if (WorkingDirectory.Length > 2 && WorkingDirectory[1] == ':')
+                    return WorkingDirectory.Substring(0, 3);
+
+                if (IsAndroid)
+                {
+                    GetRootDirPermission?.Invoke();
+                    
+                    var Parent = Path.GetDirectoryName(WorkingDirectory);
+                    Parent = Path.GetDirectoryName(Parent);
+                    Parent = Path.GetDirectoryName(Parent);
+                    return Path.GetDirectoryName(Parent);
+                }
+
+                return Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            }
+        }
+
         internal static string SettingsPath => Path.Combine(WorkingDirectory, "Settings.ini");
-        
+
         public static Action<string>? InstallApk;
     }
 }

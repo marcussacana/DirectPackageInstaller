@@ -4,7 +4,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:viewModels="clr-namespace:DirectPackageInstaller.ViewModels"
              mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="200"
-             x:Class="DirectPackageInstaller.Views.LinkListView">
+             x:Class="DirectPackageInstaller.Views.LinkListView"
+             Background="#171C2C">
     <Design.DataContext>
         <viewModels:LinkListViewModel/>
     </Design.DataContext>

@@ -1,0 +1,143 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewModels="clr-namespace:DirectPackageInstaller.ViewModels"
+             xmlns:others="clr-namespace:DirectPackageInstaller.Others"
+             xmlns:controls="clr-namespace:DirectPackageInstaller.Controls"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="400"
+             x:Class="DirectPackageInstaller.Views.FilePicker"
+             Background="#171C2C">
+    <Design.DataContext>
+        <viewModels:FilePickerModel/>
+    </Design.DataContext>
+    <Grid Classes="gridMain">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <Button Name="btnBack" Classes="btnBack">
+            <Image/>
+        </Button>
+        <Button Grid.Row="0" Grid.Column="1" Name="btnNext" Classes="btnNext">
+            <Image/>
+        </Button>
+        <AutoCompleteBox Name="tbFolder" Grid.Row="0" Grid.Column="2" Text="{Binding CurrentDir, Mode=TwoWay}" Items="{Binding CurrentSubDirs}"/>
+        <ScrollViewer Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Classes="lbEntriesScroll" AllowAutoHide="False">
+            <ItemsControl Name="lbEntries" Items="{Binding CurrentDirEntries}"/>
+        </ScrollViewer>
+        <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Classes="btnOK" IsVisible="{Binding InMultiselect}" Click="Open_OnClick"/>
+    </Grid>
+    <UserControl.DataTemplates>
+        <DataTemplate DataType="others:FileEntry">
+            <controls:HoldToToggleButton Classes="btnFileEntry" Click="FileEntry_OnClicked" Checked="FileEntry_OnChecked" Unchecked="FileEntry_OnUnchecked">
+                <Grid Classes="EntryGrid">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="48"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Image
+                        Classes.Directory="{Binding IsDirectory}" 
+                        Classes.File="{Binding !IsDirectory}"
+                        Classes.Pkg="{Binding IsPKG}"/>
+                    <Label Grid.Column="1" Content="{Binding Name}"/>
+                </Grid>
+            </controls:HoldToToggleButton>
+        </DataTemplate>
+    </UserControl.DataTemplates>
+    <UserControl.Styles>
+        <Style Selector="Button.btnBack">
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Margin" Value="5,0,5,0"></Setter>
+        </Style>
+        <Style Selector="Button.btnNext">
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="Margin" Value="0,0,5,0"></Setter>
+            <Setter Property="Height" Value="40"></Setter>
+        </Style>
+        <Style Selector="AutoCompleteBox">
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
+            <Setter Property="FontSize" Value="20"/>
+            <Setter Property="Margin" Value="0,0,5,0"/>
+        </Style>
+        <Style Selector="Button.btnNext>Image">
+            <Setter Property="Source">
+                <DrawingImage Drawing="{DynamicResource Next}" />
+            </Setter>
+        </Style>
+        <Style Selector="Button.btnBack>Image">
+            <Setter Property="Source">
+                <DrawingImage Drawing="{DynamicResource Back}" />
+            </Setter>
+        </Style>
+        <Style Selector="Button.btnOK">
+            <Setter Property="Content" Value="Open Selected Files"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="Height" Value="40"></Setter>
+            <Setter Property="FontSize" Value="20"/>
+            <Setter Property="Margin" Value="5,5,5,5"/>
+        </Style>
+        <Style Selector="ScrollViewer.lbEntriesScroll">
+            <Setter Property="VerticalScrollBarVisibility" Value="Visible"/>
+            <Setter Property="Margin" Value="0,5,0,0"/>
+        </Style>
+        <Style Selector="Grid.gridMain">
+            <Setter Property="Margin" Value="5,5,5,5"></Setter>
+        </Style>
+        <Style Selector=".btnFileEntry:is(ToggleButton):unchecked">
+            <Setter Property="Background" Value="#00000000"/>
+        </Style>
+        <Style Selector=".btnFileEntry:is(ToggleButton)">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="Grid.EntryGrid > Image.Directory">
+            <Setter Property="Source">
+                <DrawingImage Drawing="{DynamicResource Folder}" />
+            </Setter>
+        </Style>
+        <Style Selector="Grid.EntryGrid > Image.File">
+            <Setter Property="Source">
+                <DrawingImage Drawing="{DynamicResource File}" />
+            </Setter>
+        </Style>
+        <Style Selector="Grid.EntryGrid > Image.Pkg">
+            <Setter Property="Source">
+                <DrawingImage Drawing="{DynamicResource Playstation}" />
+            </Setter>
+        </Style>
+        <Style Selector="Grid.EntryGrid > Label">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="FontSize" Value="20"/>
+        </Style>
+    </UserControl.Styles>
+    <UserControl.Resources>
+        <DrawingGroup x:Key="Back">
+            <GeometryDrawing Brush="#FFF" Geometry="M6.671,16 A1.143,-1.143 0 0 1 5.779,15.58 L0.26,8.721 A1.143,-1.143 0 0 1 0.26,7.269 L5.974,0.4128 A1.143,-1.143 0 0 1 7.734,1.876 L2.625,8.001 L7.562,14.13 A1.143,-1.143 0 0 1 6.671,16 z"/>
+        </DrawingGroup>
+        <DrawingGroup x:Key="Next">
+            <GeometryDrawing Brush="#FFF" Geometry="M 0.329 16 A 1.143 1.143 90 0 0 1.221 15.58 L 6.74 8.721 A 1.143 1.143 90 0 0 6.74 7.269 L 1.026 0.4128 A 1.143 1.143 90 0 0 -0.734 1.876 L 4.375 8.001 L -0.562 14.13 A 1.143 1.143 90 0 0 0.329 16 z"/>
+        </DrawingGroup>
+        <DrawingGroup x:Key="Folder">
+            <GeometryDrawing Brush="#00FFFFFF" Geometry="F1M0,0L16,0 16,16 0,16z" />
+            <GeometryDrawing Brush="#FFF6F6F6" Geometry="F1M1.5,1L9.61,1 10.61,3 13.496,3C14.323,3,14.996,3.673,14.996,4.5L14.996,12.5C14.996,13.327,14.323,14,13.496,14L1.5,14C0.673,14,0,13.327,0,12.5L0,2.5C0,1.673,0.673,1,1.5,1" />
+            <GeometryDrawing Brush="#FFEFEFF0" Geometry="F1M1.9998,3.0004L1.9998,4.0004 8.8738,4.0004 8.3738,3.0004z" /><GeometryDrawing Brush="#FFDBB679" Geometry="F1M2,3L8.374,3 8.874,4 2,4z M13.496,4L10,4 9.992,4 8.992,2 1.5,2C1.225,2,1,2.224,1,2.5L1,12.5C1,12.776,1.225,13,1.5,13L13.496,13C13.773,13,13.996,12.776,13.996,12.5L13.996,4.5C13.996,4.224,13.773,4,13.496,4" />
+        </DrawingGroup>
+        <DrawingGroup x:Key="File">
+            <GeometryDrawing Brush="#00FFFFFF" Geometry="F1M16,16L0,16 0,0 16,0z" />
+            <GeometryDrawing Brush="#FFF6F6F6" Geometry="F1M4,15C3.03,15,2,14.299,2,13L2,3C2,1.701,3.03,1,4,1L10.061,1 14,4.556 14,13C14,13.97,13.299,15,12,15z" />
+            <GeometryDrawing Brush="#FF424242" Geometry="F1M12,13L4,13 4,3 9,3 9,6 12,6z M9.641,2L3.964,2C3.964,2,3,2,3,3L3,13C3,14,3.964,14,3.964,14L11.965,14C12.965,14,13,13,13,13L13,5z" />
+            <GeometryDrawing Brush="#FFF0EFF1" Geometry="F1M4,3L9,3 9,6 12,6 12,13 4,13z" />
+        </DrawingGroup>
+        <DrawingGroup x:Key="Playstation">
+            <GeometryDrawing Brush="#FFF" Geometry="M5.99,2.925E-008 L5.99,11.7 L8.6,12.54 L8.6,2.728 C8.6,2.268 8.802,1.961 9.129,2.067 C9.553,2.187 9.636,2.61 9.636,3.071 L9.636,6.987 C11.26,7.783 12.54,6.986 12.54,4.886 C12.54,2.728 11.79,1.769 9.585,1.001 C8.714,0.7027 7.1,0.2107 5.992,2.925E-008 z M9.094,10.83 L13.29,9.311 C13.77,9.139 13.84,8.894 13.45,8.765 C13.06,8.637 12.36,8.673 11.88,8.847 L9.08,9.847 L9.08,8.256 L9.24,8.199 C6.117,7.726 10.04,7.919 11.18,7.789 C12.31,7.669 13.71,7.809 14.81,8.23 C16.04,8.631 16.17,9.211 15.86,9.611 C15.55,10.01 14.78,10.3 14.78,10.3 L9.08,12.37 L9.08,10.84 z M1.205,10.67 C-0.06172,10.31 -0.2711,9.557 0.3036,9.123 C0.8376,8.732 1.744,8.421 1.744,8.421 L5.487,7.079 L5.487,8.621 L2.804,9.603 C2.334,9.783 2.254,10.02 2.644,10.15 C3.035,10.28 3.736,10.25 4.206,10.07 L5.498,9.603 L5.498,10.99 C5.418,11.01 5.328,11.01 5.238,11.03 C3.946,11.25 2.574,11.16 1.213,10.71 z" />
+        </DrawingGroup>
+    </UserControl.Resources>
+</UserControl>
