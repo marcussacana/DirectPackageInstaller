@@ -30,6 +30,8 @@ public static class PKGHelper
             
             Result.FriendlyName = Encoding.UTF8.GetString(PKG.ParamSfo.ParamSfo.HasName("TITLE") ? PKG.ParamSfo.ParamSfo["TITLE"].ToByteArray() : new byte[0]).Trim('\x0');
 
+            Result.FriendlyName = Result.FriendlyName.RemoveInvalidChars();
+            
             Result.FakePackage = PKG.CheckPasscode("00000000000000000000000000000000");
             Result.Description = $"[{SystemVer[3]:X2}.{SystemVer[2]:X2} - {(Result.FakePackage ? "Fake" : "Retail")}] {Result.FriendlyName}";
 
@@ -65,7 +67,7 @@ public static class PKGHelper
                     if (Name == "TITLE_ID")
                         Result.TitleID = Value;
 
-                    Result.Params.Add(new PkgParamInfo() {Name = Name, Value = Value});
+                    Result.Params.Add(new PkgParamInfo() {Name = Name, Value = Value.RemoveInvalidChars() });
                 }
             }
             catch
@@ -94,6 +96,17 @@ public static class PKGHelper
             return null;
         }
     }
+
+    //https://github.com/AvaloniaUI/Avalonia/issues/8336
+    public static string RemoveInvalidChars(this string Text)
+    {
+        if (!App.IsAndroid)
+            return Text;
+
+        var Data = Encoding.ASCII.GetBytes(Text);
+        return Encoding.ASCII.GetString(Data);
+    }
+    
     public struct PKGInfo
     {
         public string FriendlyName;
