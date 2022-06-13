@@ -1,18 +1,16 @@
-﻿using DirectPackageInstaller.Host;
-using DirectPackageInstaller.IO;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.IO;
-using System.Linq;
 using System.Net;
-using System.Net.Sockets;
-using System.Reflection;
-using System.Resources;
+using System.Web;
+using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Net.Sockets;
 using System.Threading.Tasks;
-using System.Web;
+using System.Collections.Generic;
 using DirectPackageInstaller.Views;
+using DirectPackageInstaller.Host;
+using DirectPackageInstaller.IO;
 using SharpCompress.Archives;
 
 namespace DirectPackageInstaller.Tasks
@@ -25,11 +23,10 @@ namespace DirectPackageInstaller.Tasks
         public static PKGHelper.PKGInfo CurrentPKG;
         public static string[]? CurrentFileList = null;
 
-        public static string? EntryName = null;
-        public static long EntrySize = -1;
+        public static string? EntryName;
 
         private static Socket? PayloadSocket;
-        private static bool ForceProxy = false;
+        private static bool ForceProxy;
 
         public static async Task<bool> PushPackage(Settings Config, Source InputType, Stream PKGStream, string URL, IArchive? Decompressor, DecompressorHelperStream[]? DecompressorStreams, Func<string, Task> SetStatus, Func<string> GetStatus, bool Silent)
         {
@@ -81,7 +78,7 @@ namespace DirectPackageInstaller.Tasks
 
             //Just to reduce the switch cases
             if (InputType.HasFlag(Source.SevenZip) || InputType.HasFlag(Source.RAR))
-                InputType &= ~(Source.Proxy | Source.Segmented);
+                InputType &= ~(Source.Proxy | Source.Segmented | Source.DiskCache);
 
             if (InputType.HasFlag(Source.JSON))
                 InputType &= ~(Source.Proxy | Source.Segmented);
@@ -91,24 +88,17 @@ namespace DirectPackageInstaller.Tasks
 
             if (InputType.HasFlag(Source.DiskCache) || InputType.HasFlag(Source.Segmented))
                 InputType &= ~Source.Proxy;
-
+            
+            
+            if (!await EnsureFreeSpace(PKGStream, DecompressorStreams, InputType))
+                return false;
 
             uint LastResource = CurrentPKG.PreloadLength;
 
             switch (InputType)
             {
-                case Source.URL | Source.SevenZip | Source.DiskCache:
                 case Source.URL | Source.SevenZip:
-                case Source.URL | Source.RAR | Source.DiskCache:
                 case Source.URL | Source.RAR:
-                    var FreeSpace = GetCurrentDiskAvailableFreeSpace();
-                    if (EntrySize > FreeSpace && !App.IsUnix)
-                    {
-                        long Missing = EntrySize - FreeSpace;
-                        await MessageBox.ShowAsync("Compressed files are cached to your disk, you need more " + ToFileSize(Missing) + " of free space to install this package.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return false;
-                    }
-
                     bool Retry = false;
 
                     var ID = DecompressService.TaskCache.Count.ToString();
@@ -433,66 +423,61 @@ namespace DirectPackageInstaller.Tasks
             return PayloadSocket.Connected;
         }
 
-        private static int IndexOf(this IEnumerable<byte> Buffer, byte[] Content)
+        private static async Task<bool> EnsureFreeSpace(Stream PKGStream, DecompressorHelperStream[]? DecompressorStreams, Source InputType)
         {
-            int Offset = 0;
-            int Count = Buffer.Count() - Content.Length;
-            for (int i = 0, x = 0; i < Count; i++)
+            bool AllocationRequired = InputType.HasFlag(Source.DiskCache) || InputType.HasFlag(Source.RAR)       ||
+                                      InputType.HasFlag(Source.SevenZip)  || InputType.HasFlag(Source.Segmented);
+
+            if (!AllocationRequired)
+                return true;
+            
+            long MaxAllocationSize = PKGStream.Length;
+            if (DecompressorStreams != null)
+                MaxAllocationSize += DecompressorStreams.First().Length;
+
+            long FreeSpace = 0;
+            while (MaxAllocationSize > (FreeSpace = App.GetFreeStorageSpace()))
             {
-                if (Buffer.ElementAt(i) != Content[x])
+                long Missing = MaxAllocationSize - FreeSpace;
+                    
+                var Message = $"{MaxAllocationSize.ToFileSize()} in your {(App.UseSDCard ? "SD card" : "internal storage")} is required, missing {Missing.ToFileSize()} currently.";
+                
+                if (App.IsAndroid)
                 {
-                    x = 0;
+                    var CurrentStorage = App.UseSDCard;
+                    App.UseSDCard = !CurrentStorage;
+                    
+                    var AltFreeSpace = App.GetFreeStorageSpace();
+                    var AltMissingSpace = MaxAllocationSize - AltFreeSpace;
+                    var AltStorageName = App.UseSDCard ? "SD card" : "internal storage";
+                    
+                    App.UseSDCard = CurrentStorage;
+                    
+                    if (AltFreeSpace > MaxAllocationSize)
+                    {
+                        App.UseSDCard = !CurrentStorage;
+                        continue;
+                    }
+                    
+                    Message += $"\nOr clean more {AltMissingSpace.ToFileSize()} in your {AltStorageName}.";
+                }
+                
+                if (InputType == (Source.URL | Source.Segmented))
+                    Message += "\nAlternatively, you can disable Segmented Download feature.";
+
+                if (!TempHelper.CacheIsEmpty() && Server is {Connections: 0})
+                {
+                    TempHelper.Clear();
                     continue;
                 }
-
-                if (x == 0)
-                    Offset = i;
-                
-                x++;
-                if (x >= Content.Length)
-                    return Offset;
+                    
+                var Result = await MessageBox.ShowAsync(Message, "DirectPackageInstaller", MessageBoxButtons.RetryCancel, MessageBoxIcon.Warning);
+                if (Result != DialogResult.Retry)
+                    return false;
             }
 
-            return -1;
-        }
-        
-
-        static string ToFileSize(double value)
-        {
-            string[] suffixes = { "bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB" };
-            for (int i = 0; i < suffixes.Length; i++)
-            {
-                if (value <= (Math.Pow(1024, i + 1)))
-                {
-                    return ThreeNonZeroDigits(value / Math.Pow(1024, i)) + " " + suffixes[i];
-                }
-            }
-
-            return ThreeNonZeroDigits(value / Math.Pow(1024, suffixes.Length - 1)) + " " + suffixes[suffixes.Length - 1];
+            return true;
         }
 
-        static string ThreeNonZeroDigits(double value)
-        {
-            if (value >= 100)
-                return value.ToString("0,0");
-
-            else if (value >= 10)
-                return value.ToString("0.0");
-            else
-                return value.ToString("0.00");
-        }
-
-        static long GetCurrentDiskAvailableFreeSpace() => GetAvailableFreeSpace(AppDomain.CurrentDomain.BaseDirectory.Substring(0, 3));
-        static long GetAvailableFreeSpace(string driveName)
-        {
-            foreach (DriveInfo drive in DriveInfo.GetDrives())
-            {
-                if (drive.IsReady && drive.Name.ToLowerInvariant() == driveName.ToLowerInvariant())
-                {
-                    return drive.AvailableFreeSpace;
-                }
-            }
-            return -1;
-        }
     }
 }

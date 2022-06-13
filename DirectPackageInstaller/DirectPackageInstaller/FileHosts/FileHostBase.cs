@@ -15,7 +15,7 @@ namespace DirectPackageInstaller.FileHosts
 
         public const string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.93 Safari/537.36 Edg/96.0.1054.53";
 
-        protected string DownloadString(string URL, Cookie[] Cookies = null)
+        protected string DownloadString(string URL, Cookie[]? Cookies = null)
         {
             lock (App.HttpClient)
             {
@@ -33,7 +33,7 @@ namespace DirectPackageInstaller.FileHosts
                 return App.HttpClient.DownloadString(URL);
             }
         }
-        protected WebHeaderCollection Head(string URL, Cookie[] Cookies = null)
+        protected WebHeaderCollection? Head(string URL, Cookie[]? Cookies = null)
         {
             lock (App.HttpClient)
             {
@@ -42,6 +42,7 @@ namespace DirectPackageInstaller.FileHosts
                 App.HttpClient.Headers["referer"] = HttpUtility.UrlEncode(URL);
 
                 App.HttpClient.Container = new CookieContainer();
+                
                 if (Cookies != null)
                 {
                     foreach (var Cookie in Cookies)
@@ -60,7 +61,7 @@ namespace DirectPackageInstaller.FileHosts
                 }
             }
         }
-        protected string PostString(string URL, string ContentType, string Data, Cookie[] Cookies = null)
+        protected string PostString(string URL, string ContentType, string Data, Cookie[]? Cookies = null)
         {
             lock (App.HttpClient)
             {
@@ -80,7 +81,7 @@ namespace DirectPackageInstaller.FileHosts
             }
         }
 
-        protected (byte[] Data, WebHeaderCollection Headers) DownloadRequest(string URL, Cookie[] Cookies = null)
+        protected (byte[] Data, WebHeaderCollection? Headers) DownloadRequest(string URL, Cookie[]? Cookies = null)
         {
             lock (App.HttpClient)
             {

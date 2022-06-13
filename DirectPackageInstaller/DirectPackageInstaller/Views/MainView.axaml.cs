@@ -319,7 +319,6 @@ namespace DirectPackageInstaller.Views
                 {
                     PKGStream = DataInfo?.Buffer ?? throw new Exception();
                     Installer.EntryName = DataInfo?.Filename;
-                    Installer.EntrySize = DataInfo?.Length ?? throw new Exception();
                     CurrentDecompressor = DataInfo?.Archive;
                     CurrentDecompressorVolumes = DataInfo?.Volumes;
                     ListEntries(Installer.CurrentFileList = DataInfo?.PKGList ?? throw new Exception());
@@ -409,8 +408,8 @@ namespace DirectPackageInstaller.Views
                     PCIP = "0.0.0.0",
                     PS4IP = "",
                     SearchPS4 = true,
-                    ProxyDownload = false,
-                    SegmentedDownload = true,
+                    ProxyDownload = true,
+                    SegmentedDownload = !App.IsAndroid,
                     UseAllDebrid = false,
                     EnableCNL = true,
                     AllDebridApiKey = null

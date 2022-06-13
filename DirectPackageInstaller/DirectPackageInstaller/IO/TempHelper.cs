@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
@@ -15,7 +16,7 @@ namespace DirectPackageInstaller
         }
 
         static Random random = new Random();
-        public static string TempDir => Path.Combine(App.AndroidCacheDir ?? App.WorkingDirectory, "Temp");
+        public static string TempDir => Path.Combine(App.CacheBaseDirectory ?? App.WorkingDirectory, "Temp");
         public static string GetTempFile(string? ID)
         {
             if (ID == null)
@@ -29,10 +30,7 @@ namespace DirectPackageInstaller
 
         public static void Clear()
         {
-            if (!Directory.Exists(TempDir))
-                return;
-
-            foreach (var Filepath in Directory.GetFiles(TempDir, "*.*", SearchOption.AllDirectories))
+            foreach (var Filepath in GetAllCachedFiles())
             {
                 try
                 {
@@ -40,6 +38,32 @@ namespace DirectPackageInstaller
                 }
                 catch { }
             }
+        }
+
+        public static bool CacheIsEmpty() => GetAllCachedFiles().Length == 0;
+
+        private static string[] GetAllCachedFiles()
+        {
+            List<string> Files = new List<string>();
+            
+            if (Directory.Exists(TempDir))
+                Files.AddRange(Directory.GetFiles(TempDir, "*.*", SearchOption.AllDirectories));
+
+            if (App.AndroidCacheDir != null)
+            {
+                var InternalCache = Path.Combine(App.AndroidCacheDir, "Temp");
+                if (Directory.Exists(InternalCache))
+                    Files.AddRange(Directory.GetFiles(InternalCache, "*.*", SearchOption.AllDirectories));
+            }
+
+            if (App.AndroidSDCacheDir != null)
+            {
+                var SDCache = Path.Combine(App.AndroidSDCacheDir, "Temp");
+                if (Directory.Exists(SDCache))
+                    Files.AddRange(Directory.GetFiles(SDCache, "*.*", SearchOption.AllDirectories));
+            }
+
+            return Files.Distinct().ToArray();
         }
     }
 }

@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -38,10 +39,10 @@ namespace DirectPackageInstaller
             }
         }
 
-        private static string TempUpdateDir => Path.Combine(Path.GetDirectoryName(MainExecutable), "LastVersion");
+        private static string TempUpdateDir => Path.Combine(Path.GetDirectoryName(MainExecutable) ?? App.WorkingDirectory, "LastVersion");
 
         const string Repo = "https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/";
-        //const string Repo = "http://localhost:8000/";
+        //const string Repo = "http://192.168.2.101:8000/";
 
         const string UpdateList = "Update.ini";
 
@@ -57,6 +58,8 @@ namespace DirectPackageInstaller
 
             if (OS.ToLowerInvariant().Contains("windows"))
                 OS = "Windows";
+            else if (App.IsAndroid)
+                OS = "Android";
             else if (OS.ToLowerInvariant().Contains("linux"))
                 OS = "Linux";
             else if (OS.ToLowerInvariant().Contains("darwin"))
@@ -104,7 +107,7 @@ namespace DirectPackageInstaller
                     var BrokenVer = new Version(Values["brokenupdater"]);
                     if (CurrentVersion <= BrokenVer)
                     {
-                        Console.WriteLine("Auto Updater Broken - Please, Download the last update manually");
+                        await Console.Error.WriteAsync("Auto Updater Broken - Please, Download the last update manually");
                         Environment.Exit(134);
                     }
                 }
@@ -136,14 +139,34 @@ namespace DirectPackageInstaller
             Directory.CreateDirectory(TempUpdateDir);
             
             Zip.ExtractToDirectory(TempUpdateDir, true);
-            
-            Process.Start(Path.Combine(TempUpdateDir, Path.GetFileName(MainExecutable)));
 
-            Environment.Exit(0);
+            if (App.IsAndroid)
+            {
+                var Files = Directory.GetFiles(TempUpdateDir, "*.apk");
+                Files = Files.Concat(Directory.GetFiles(TempUpdateDir, "*.abb")).ToArray();
+                
+                App.InstallApk?.Invoke(Files.First());
+            }
+            else
+            {
+                Process.Start(Path.Combine(TempUpdateDir, Path.GetFileName(MainExecutable)));
+                Environment.Exit(0);
+            }
         }
 
         public bool FinishUpdatePending()
         {
+            if (!App.IsAndroid)
+            {
+                try
+                {
+                    if (Directory.Exists(TempUpdateDir))
+                        Directory.Delete(TempUpdateDir, true);
+                }
+                catch { }
+                return false;
+            }
+            
             if (MainExecutable == null)
                 return false;
 

@@ -12,8 +12,7 @@ namespace DirectPackageInstaller.Android
 
         protected override void OnStart()
         {
-            RequestPermissions(new string[]
-            {
+            RequestPermissions(new[] {
                 "READ_EXTERNAL_STORAGE",
                 "WRITE_EXTERNAL_STORAGE"
             }, 0);
@@ -30,12 +29,17 @@ namespace DirectPackageInstaller.Android
                 return ClipItem.CoerceToText(null);
             };
 
-            var ExtCacheDir = Application.GetExternalCacheDirs().First();
+            var CacheDirs = Application.GetExternalCacheDirs();
+            
+            var ExtCacheDir = CacheDirs?.First();
+            var SDCardDir = CacheDirs?.Length > 1 ? CacheDirs.Skip(1).MaxBy(x => x.FreeSpace) : null;
+            
             var BaseDir = Application.GetExternalFilesDir(null);
             
-            App._WorkingDir = BaseDir.AbsolutePath;
-            App.AndroidCacheDir = ExtCacheDir.AbsolutePath;
-            App.GetFreeStorageSpace = () => BaseDir.UsableSpace;
+            App._WorkingDir = BaseDir?.AbsolutePath;
+            App.AndroidCacheDir = ExtCacheDir?.AbsolutePath;
+            App.AndroidSDCacheDir = SDCardDir?.AbsolutePath;
+            //App.GetFreeStorageSpace = () => BaseDir.UsableSpace;
             
             TempHelper.Clear();
 

@@ -1,6 +1,15 @@
-#!/bin/sh
+#!/bin/bash
 goto BATCH
 clear
+
+# The correct SDK directory, contains a build-tools directory
+export AndroidSdkDirectory=~/Android/Sdk/
+
+# The correct NDK directory, contains a ndk-build executable
+export AndroidNdkDirectory=~/Android/Sdk/ndk/24.0.8215888/ 
+
+dotnet publish -c Release -r android-arm64
+
 
 echo "DirectPackageInstaller Build Script - Unix";
 
@@ -57,6 +66,25 @@ OSXPublish (){
    cd ..
 }
 
+AndroidPublish (){
+   if ! [ -d "${AndroidSdkDirectory}build-tools" ]; then
+   	printf "\x1b[31mINVALID ANDROID SDK PATH\x1b[0m\n";
+   	return;
+   fi
+   if ! [ -f "${AndroidNdkDirectory}ndk-build" ]; then
+   	printf "\x1b[31mINVALID ANDROID NDK PATH\x1b[0m\n";
+   	return;
+   fi
+   
+   dotnet workload install android
+   
+   Publish $1
+   
+   rm Release/$1.zip
+   rm DirectPackageInstaller/DirectPackageInstaller.Android/bin/Release/net6.0-android/$1/publish/com.marcussacana.DirectPackageInstaller.apk
+   zip -j -9 -r Release/$1.zip DirectPackageInstaller/DirectPackageInstaller.Android/bin/Release/net6.0-android/$1/publish/*
+}
+
 WINPublish win-x64
 WINPublish win-x86
 WINPublish win-arm
@@ -70,6 +98,12 @@ Publish linux-arm64
 
 OSXPublish osx-x64
 OSXPublish osx-arm64
+
+
+AndroidPublish android-x64
+AndroidPublish android-x86
+AndroidPublish android-arm
+AndroidPublish android-arm64
 
 cd Release
 
@@ -87,6 +121,12 @@ mv osx-arm64.zip OSX-ARM64.zip
 
 mv osx-x64-app.zip OSX-X64-APP.zip
 mv osx-arm64-app.zip OSX-ARM64-APP.zip
+
+
+mv android-x64.zip Android-X64.zip
+mv android-x86.zip Android-X86.zip
+mv android-arm.zip Android-ARM.zip
+mv android-arm64.zip Android-ARM64.zip
 
 cd ..
 
@@ -106,6 +146,13 @@ if errorlevel 1 (
    echo .NET 6 SDK NOT FOUND.
    goto :eof
 )
+
+
+REM The correct SDK directory, contains a build-tools directory
+set AndroidSdkDirectory=C:\Program Files (x86)\Android\android-sdk\
+
+REM The correct NDK directory, contains a ndk-build.cmd
+set AndroidNdkDirectory=C:\Program Files (x86)\Android\android-sdk\ndk\24.0.8215888\
 
 cls
 echo DirectPackageInstaller Build Script - Windows
@@ -127,6 +174,10 @@ call :Build linux-arm64
 call :OSXBuild osx-x64
 call :OSXBuild osx-arm64
 
+call :AndroidBuild android-x64
+call :AndroidBuild android-x86
+call :AndroidBuild android-arm
+call :AndroidBuild android-arm64
 
 cd Release
 
@@ -144,6 +195,11 @@ move osx-arm64.zip OSX-ARM64.zip
 
 move osx-x64-app.zip OSX-X64-app.zip
 move osx-arm64-app.zip OSX-ARM64-app.zip
+
+move android-x64.zip Android-X64.zip
+move android-x86.zip Android-X86.zip
+move android-arm.zip Android-ARM.zip
+move android-arm64.zip Android-ARM64.zip
 
 cd ..
 
@@ -168,4 +224,19 @@ powershell Expand-Archive -LiteralPath ".\Files\OSXAppBase.zip" -DestinationPath
 powershell Expand-Archive -LiteralPath ".\Release\%1.zip" -DestinationPath ".\Release\tmp\DirectPackageInstaller.app\Contents\MacOS" -Force
 powershell Compress-Archive .\Release\tmp\* .\Release\%1-app.zip
 rmdir /s /q .\Release\tmp
+goto :eof
+:AndroidBuild
+IF NOT EXIST "%AndroidSdkDirectory%build-tools" (
+	echo ANDROID SDK NOT FOUND
+	goto :eof
+)
+IF NOT EXIST "%AndroidNdkDirectory%ndk-build.cmd" (
+	echo ANDROID NDK NOT FOUND
+	goto :eof
+)
+dotnet workload install android
+call :Build %1
+del /s /q .\Release\%1.zip
+del /s /q .\DirectPackageInstaller\DirectPackageInstaller.Android\bin\Release\net6.0-android\%1\publish\com.marcussacana.DirectPackageInstaller.apk
+powershell Compress-Archive .\DirectPackageInstaller\DirectPackageInstaller.Android\bin\Release\net6.0-android\%1\publish\* .\Release\%1.zip
 goto :eof

@@ -42,14 +42,11 @@ namespace DirectPackageInstaller
         public static readonly SelfUpdate Updater = new SelfUpdate();
         public override void OnFrameworkInitializationCompleted()
         {
-            if (!IsAndroid)
+            if (Updater.FinishUpdatePending())
             {
-                if (Updater.FinishUpdatePending())
-                {
-                    Process.Start(Updater.FinishUpdate());
-                    Environment.Exit(0);
-                    return;
-                }
+                Process.Start(Updater.FinishUpdate());
+                Environment.Exit(0);
+                return;
             }
 
             UnlockHeaders();
@@ -227,16 +224,23 @@ namespace DirectPackageInstaller
         public static string? _WorkingDir;
         
         public static string? AndroidCacheDir;
-        public static string WorkingDirectory => _WorkingDir ??= Environment.GetEnvironmentVariable("CD") ?? Directory.GetCurrentDirectory();
+        public static string? AndroidSDCacheDir;
 
+        public static bool UseSDCard = false;
+        public static string? CacheBaseDirectory => UseSDCard ? AndroidSDCacheDir : AndroidCacheDir;
+        
+        public static string WorkingDirectory => _WorkingDir ??= Environment.GetEnvironmentVariable("CD") ?? Directory.GetCurrentDirectory();
+        
         public static Func<long> GetFreeStorageSpace = () =>
         {
             if (CurrentPlatform == OS.Windows)
                 return new DriveInfo(WorkingDirectory.Substring(0, 1)).AvailableFreeSpace;
             
-            return new DriveInfo(WorkingDirectory).AvailableFreeSpace;
+            return new DriveInfo(CacheBaseDirectory ?? WorkingDirectory).AvailableFreeSpace;
         };
 
         internal static string SettingsPath => Path.Combine(WorkingDirectory, "Settings.ini");
+        
+        public static Action<string>? InstallApk;
     }
 }
