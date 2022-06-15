@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using DirectPackageInstaller.Views;
 using DirectPackageInstaller.Host;
 using DirectPackageInstaller.IO;
+using DirectPackageInstaller.Others;
 using SharpCompress.Archives;
 
 namespace DirectPackageInstaller.Tasks
@@ -23,12 +24,12 @@ namespace DirectPackageInstaller.Tasks
         public static PKGHelper.PKGInfo CurrentPKG;
         public static string[]? CurrentFileList = null;
 
-        public static string? EntryName;
+        public static string? EntryFileName;
 
         private static Socket? PayloadSocket;
         private static bool ForceProxy;
 
-        public static async Task<bool> PushPackage(Settings Config, Source InputType, Stream PKGStream, string URL, IArchive? Decompressor, DecompressorHelperStream[]? DecompressorStreams, Func<string, Task> SetStatus, Func<string> GetStatus, bool Silent)
+        public static async Task<bool> PushPackage(Settings Config, Source InputType, Stream? PKGStream, string URL, IArchive? Decompressor, DecompressorHelperStream[]? DecompressorStreams, Func<string, Task> SetStatus, Func<string> GetStatus, bool Silent)
         {
             if (string.IsNullOrEmpty(Config.PS4IP) || Config.PS4IP == "0.0.0.0")
             {
@@ -104,7 +105,7 @@ namespace DirectPackageInstaller.Tasks
                     var ID = DecompressService.TaskCache.Count.ToString();
                     foreach (var Task in DecompressService.TaskCache)
                     {
-                        if (Task.Value.Entry == EntryName && Task.Value.Url == URL)
+                        if (Task.Value.Entry == EntryFileName && Task.Value.Url == URL)
                         {
                             if (DecompressService.EntryMap.ContainsKey(URL) && Server.Decompress.Tasks.ContainsKey(DecompressService.EntryMap[URL]))
                             {
@@ -123,24 +124,22 @@ namespace DirectPackageInstaller.Tasks
 
                     if (!Retry)
                     {
-                        DecompressService.TaskCache[ID] = (EntryName, URL);
+                        DecompressService.TaskCache[ID] = (EntryFileName, URL);
                         
                         string Entry = null;
 
-                        await App.RunInNewThread(() =>
-                        { 
-                            Entry = Server.Decompress.Decompressor.CreateDecompressor(Decompressor, DecompressorStreams, EntryName);
-                        });
+                        if (await App.RunInNewThread(() => Entry = Server!.Decompress.Decompressor.CreateDecompressor(Decompressor, DecompressorStreams, EntryFileName)))
+                            return false;
                         
-                        EntryName = Entry;
+                        EntryFileName = Entry;
 
                         if (Entry == null)
-                            throw new Exception("Failed to decompress");
+                            throw new AbortException("Failed to decompress");
 
                         DecompressService.EntryMap[URL] = Entry;
                     }
 
-                    var DecompressTask = Server.Decompress.Tasks[EntryName];
+                    var DecompressTask = Server.Decompress.Tasks[EntryFileName!];
 
                     while (DecompressTask.SafeTotalDecompressed < LastResource)
                     {
@@ -209,12 +208,12 @@ namespace DirectPackageInstaller.Tasks
                 var Data = Encoding.UTF8.GetBytes(JSON);
                 Request.ContentLength = Data.Length;
 
-                using (Stream Stream = await Request.GetRequestStreamAsync())
+                await using (Stream Stream = await Request.GetRequestStreamAsync())
                 {
-                    Stream.Write(Data, 0, Data.Length);
+                    await Stream.WriteAsync(Data);
                     using (var Resp = await Request.GetResponseAsync())
                     {
-                        using (var RespStream = Resp.GetResponseStream())
+                        await using (var RespStream = Resp.GetResponseStream())
                         {
                             var Buffer = new MemoryStream();
                             await RespStream.CopyToAsync(Buffer);
@@ -423,12 +422,12 @@ namespace DirectPackageInstaller.Tasks
             return PayloadSocket.Connected;
         }
 
-        private static async Task<bool> EnsureFreeSpace(Stream PKGStream, DecompressorHelperStream[]? DecompressorStreams, Source InputType)
+        private static async Task<bool> EnsureFreeSpace(Stream? PKGStream, DecompressorHelperStream[]? DecompressorStreams, Source InputType)
         {
             bool AllocationRequired = InputType.HasFlag(Source.DiskCache) || InputType.HasFlag(Source.RAR)       ||
                                       InputType.HasFlag(Source.SevenZip)  || InputType.HasFlag(Source.Segmented);
 
-            if (!AllocationRequired)
+            if (!AllocationRequired || PKGStream == null)
                 return true;
             
             long MaxAllocationSize = PKGStream.Length;

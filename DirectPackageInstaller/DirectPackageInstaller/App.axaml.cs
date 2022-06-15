@@ -14,6 +14,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
+using DirectPackageInstaller.IO;
 using DirectPackageInstaller.ViewModels;
 using DirectPackageInstaller.Views;
 
@@ -92,6 +93,9 @@ namespace DirectPackageInstaller
                 IniWriter.SetValue("UseAllDebrid", Config.UseAllDebrid.ToString());
                 IniWriter.SetValue("EnableCNL", Config.EnableCNL.ToString());
                 IniWriter.SetValue("AllDebridApiKey", Config.AllDebridApiKey);
+                IniWriter.SetValue("Concurrency", SegmentedStream.DefaultConcurrency.ToString());
+                IniWriter.SetValue("ShowError", Config.ShowError.ToString());
+                
                 IniWriter.Save();
             } catch {}
         }
@@ -189,7 +193,7 @@ namespace DirectPackageInstaller
         internal static bool IsRunningOnMono => Type.GetType("Mono.Runtime") != null;
         internal static bool IsUnix => (int)Environment.OSVersion.Platform == 4 || (int)Environment.OSVersion.Platform == 6 || (int)Environment.OSVersion.Platform == 128;
 
-        private static bool? _IsAndroid;
+        public static bool? _IsAndroid;
         internal static bool IsAndroid => _IsAndroid ??= SelfUpdate.MainExecutable == null;
         internal static bool IsOSX => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
 
@@ -227,7 +231,7 @@ namespace DirectPackageInstaller
         public static string? AndroidSDCacheDir;
 
         public static bool UseSDCard = false;
-        public static string? CacheBaseDirectory => UseSDCard ? AndroidSDCacheDir : AndroidCacheDir;
+        public static string? CacheBaseDirectory => (UseSDCard ? AndroidSDCacheDir : AndroidCacheDir) ?? AndroidCacheDir;
         
         public static string WorkingDirectory => _WorkingDir ??= Environment.GetEnvironmentVariable("CD") ?? Directory.GetCurrentDirectory();
         

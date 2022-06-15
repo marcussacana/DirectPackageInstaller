@@ -29,7 +29,7 @@ namespace DirectPackageInstaller.Compression
             if (PKGs.Count() == 1)
                 PKG = PKGs.Single();
             else
-                PKG = PKGs.Single(x => Path.GetFileName(x.Key) == EntryName);
+                PKG = PKGs.Single(x => x.Key.EndsWith(EntryName, StringComparison.InvariantCultureIgnoreCase));
 
             for (int i = 0; i < Volumes.Length; i++)
                 Volumes[i].OnRead = CompCommon.MultipartHelper;

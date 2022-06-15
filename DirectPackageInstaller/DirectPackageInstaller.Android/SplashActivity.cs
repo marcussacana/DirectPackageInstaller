@@ -2,6 +2,8 @@
 using System.Linq;
 using Android.App;
 using Android.Content;
+using Android.OS;
+using Java.IO;
 using Application = Android.App.Application;
 using Uri = Android.Net.Uri;
 
@@ -32,12 +34,16 @@ namespace DirectPackageInstaller.Android
             var SDCardDir = CacheDirs?.Length > 1 ? CacheDirs.Skip(1).MaxBy(x => x.FreeSpace) : null;
             
             var BaseDir = Application.GetExternalFilesDir(null);
-            
+
+            App._IsAndroid = true;
             App._WorkingDir = BaseDir?.AbsolutePath;
             App.AndroidCacheDir = ExtCacheDir?.AbsolutePath;
             App.AndroidSDCacheDir = SDCardDir?.AbsolutePath;
             App.GetRootDirPermission = GetStorageAccess;
             //App.GetFreeStorageSpace = () => BaseDir.UsableSpace;
+
+            if (string.IsNullOrWhiteSpace(App.AndroidCacheDir))
+                throw new FileNotFoundException("Failed to find the cache directory");
             
             TempHelper.Clear();
 
@@ -46,14 +52,14 @@ namespace DirectPackageInstaller.Android
 
         public void GetStorageAccess()
         {
-            if (global::Android.OS.Build.VERSION.SdkInt >= global::Android.OS.BuildVersionCodes.R)
+            if (Build.VERSION.SdkInt >= BuildVersionCodes.R)
             {
                 if (!global::Android.OS.Environment.IsExternalStorageManager)
                 {
                     try
                     {
                
-                        Uri uri = Uri.Parse("package:" + PackageName);
+                        Uri? uri = Uri.Parse("package:" + PackageName);
                         Intent intent = new Intent(global::Android.Provider.Settings.ActionManageAppAllFilesAccessPermission, uri);
                         StartActivity(intent);
                     }

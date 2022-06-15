@@ -59,13 +59,13 @@ namespace DirectPackageInstaller
             return null;
         }
 
-        public bool GetBooleanValue(string Name, string Group = null)
+        public bool GetBooleanValue(string Name, string? Group = null)
         {
             var Value = GetValue(Name, Group)?.ToLowerInvariant();
             return Value is "true" or "1" or "yes";
         }
 
-        public Dictionary<string, string> GetValues(string Group)
+        public Dictionary<string, string> GetValues(string? Group)
         {
             var Result = new Dictionary<string, string>();
             string CurrentGroup = null;

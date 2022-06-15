@@ -26,7 +26,11 @@
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
         <Optimize>False</Optimize>
-        <DebugType>full</DebugType>
+        <DebugSymbols>True</DebugSymbols>
+        <DebugType>portable</DebugType>
+        <AndroidLinkMode>none</AndroidLinkMode>
+        <EnableLLVM>False</EnableLLVM>
+        <DebugType>pdbonly</DebugType>
         <RunAOTCompilation>False</RunAOTCompilation>
         <EmbedAssembliesIntoApk>True</EmbedAssembliesIntoApk>
     </PropertyGroup>

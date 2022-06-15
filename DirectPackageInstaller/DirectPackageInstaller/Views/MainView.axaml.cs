@@ -13,6 +13,7 @@ using Avalonia.Threading;
 using DirectPackageInstaller.Compression;
 using DirectPackageInstaller.Host;
 using DirectPackageInstaller.IO;
+using DirectPackageInstaller.Others;
 using DirectPackageInstaller.Tasks;
 using DirectPackageInstaller.ViewModels;
 using LibOrbisPkg.PKG;
@@ -26,7 +27,7 @@ namespace DirectPackageInstaller.Views
 
         public CNLServer CNL = new CNLServer();
 
-        private Stream PKGStream;
+        private Stream? PKGStream;
         
         private PkgReader PKGParser;
         private Pkg PKG;
@@ -77,308 +78,6 @@ namespace DirectPackageInstaller.Views
             
             CNL.OnLinksReceived = OnLinksReceived;
         }
-
-        private async void BtnLoadOnClick(object? sender, RoutedEventArgs e)
-        {
-            if (e != null)
-            {
-                App.Callback(() => BtnLoadOnClick(sender, null));
-                return;
-            }
-            
-            PKGStream?.Close();
-            PKGStream?.Dispose();
-
-            string ForcedSource = sender is string ? (string)sender : null;
-
-            string SourcePackage = Model.CurrentURL;
-
-            //Check if the BtnLoadOnClicked has manually called with an file path as source
-            if (ForcedSource != null && ForcedSource.Length > 2 && (ForcedSource[1] == ':' || ForcedSource[0] == '/'))
-                SourcePackage = LastForcedSource = ForcedSource;
-            
-            //To hide the Packages menu if a different source is loaded
-            if (BatchList.All(x => x.Source != SourcePackage))
-                BatchList.Clear();
-
-            if (string.IsNullOrWhiteSpace(SourcePackage) && !string.IsNullOrWhiteSpace(LastForcedSource))
-                SourcePackage = LastForcedSource;
-
-            //Already Loaded, then Let's Install it!
-            if (InputType != Source.NONE) {
-                var Success = await Install(SourcePackage, false);
-
-                if (InputType.HasFlag(Source.File) && Success)
-                    App.Callback(() => Model.CurrentURL = string.Empty);
-                
-                return;
-            }
-
-            if (string.IsNullOrEmpty(SourcePackage))
-            {
-
-                string[]? Result = null;
-
-                if (!App.IsSingleView)
-                {
-                    var FD = new OpenFileDialog();
-
-                    FD.Filters = new List<FileDialogFilter>()
-                    {
-                        new FileDialogFilter()
-                        {
-                            Name = "ALL PKG Files",
-                            Extensions = new List<string>() {"pkg", "PKG"},
-                        },
-                        new FileDialogFilter()
-                        {
-                            Name = "ALL Files",
-                            Extensions = new List<string>() {"*"}
-                        }
-                    };
-
-                    FD.AllowMultiple = true;
-                    Result = await FD.ShowAsync(Parent);
-                }
-                else
-                {
-                    var Picker = new FilePicker();
-                    Picker.OpenDir(App.RootDir);
-                    
-                    await SingleView.CallView(Picker, false);
-                    Result = Picker.SelectedFiles.ToArray();
-                }
-
-                
-                BatchList.Clear();
-                
-                if (Result is {Length: > 0})
-                {
-                    
-                    if (Result.Length > 1)
-                        BatchList.AddRange(Result.Select(x => (x, Path.GetFileName(x))));
-                    
-                    ListEntries(Result);
-                    
-                    App.Callback(() => Model.CurrentURL = Result.First());
-                }
-
-                return;
-            }
-
-            PKGStream?.Close();
-
-            bool LimitedFHost = false;
-
-            PKG = null;
-            PKGParser = null;
-            PKGStream = null;
-
-            Installer.EntryName = null;
-
-            GC.Collect();
-
-            if (ForcedSource == null)
-            {
-                PackagesMenu.IsVisible = BatchList.Any();
-                Installer.CurrentFileList = null;
-            }
-
-            InputType = Source.NONE;
-
-            if (!Uri.IsWellFormedUriString(SourcePackage, UriKind.Absolute) && !File.Exists(SourcePackage)) {
-                await MessageBox.ShowAsync(Parent, "Invalid URL or File Path", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            try
-            {
-                tbURL.IsEnabled = false;
-                btnLoad.IsEnabled = false;
-                await App.DoEvents();
-
-                PKGStream = null;
-
-                if (SourcePackage.EndsWith(".json", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    PKGStream = SplitHelper.OpenRemoteJSON(SourcePackage);
-                    InputType = Source.URL | Source.JSON;
-                }
-                else if (SourcePackage.Length > 2 && (SourcePackage[1] == ':' || SourcePackage[0] == '/' || SourcePackage.StartsWith("\\\\")))
-                {
-                    PKGStream = File.Open(SourcePackage, FileMode.Open, FileAccess.Read, FileShare.Read);
-                    InputType = Source.File;
-                }
-                else
-                {
-                    InputType = Source.URL;
-
-                    await SetStatus("Analyzing Urls...");
-                    
-                    var UrlInfo = await URLAnalyzer.Analyze(SourcePackage, false);
-
-                    while (!UrlInfo.Ready && !UrlInfo.Failed)
-                    {
-                        await SetStatus($"Analyzing Urls... {UrlInfo.Progress}");
-                        await Task.Delay(100);
-                    }
-
-                    if (UrlInfo.Failed)
-                    {
-                        URLAnalyzer.URLInfos.Remove(UrlInfo.MainURL);
-                        throw new Exception();
-                    }
-
-                    FileHostStream FHStream;
-                    
-                    if (UrlInfo.Urls.Any(x => x.SingleConnection))
-                    {
-                        FHStream = UrlInfo.Urls.First().Stream();
-                    }
-                    else
-                    {
-
-                        var FName = UrlInfo.Urls.First().Filename?.ToLowerInvariant();
-
-                        bool ValidExt = string.IsNullOrWhiteSpace(FName) || FName.EndsWith(".rar") || FName.EndsWith(".7z") || FName.EndsWith(".pkg");
-
-                        if (!ValidExt)
-                        {
-                            if (UrlInfo.Urls.Length == 1)
-                            {
-                                await MessageBox.ShowAsync(
-                                    $"This url contains a {Path.GetExtension(FName)} file but isn't supported,\nSupported Files: .rar .7z .pkg",
-                                    "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                return;
-                            }
-
-                            var Rar = UrlInfo.Urls.SortRarFiles().ToArray();
-                            var SevenZip = UrlInfo.Urls.Sort7zFiles().ToArray();
-
-                            if (Rar.Length > 0)
-                            {
-                                SourcePackage = Rar.First().URL;
-                                UrlInfo.Urls = Rar;
-                            }
-
-                            if (SevenZip.Length > 0)
-                            {
-                                SourcePackage = SevenZip.First().URL;
-                                UrlInfo.Urls = SevenZip;
-                            }
-
-                            if (UrlInfo.Urls.Any(x =>
-                                    x.Filename.EndsWith(".pkg", StringComparison.InvariantCultureIgnoreCase)))
-                            {
-                                SourcePackage = UrlInfo.Urls.First().URL;
-                            }
-
-                            URLAnalyzer.URLInfos[SourcePackage] = UrlInfo;
-                        }
-
-                        FHStream = new FileHostStream(SourcePackage);
-                    }
-                    
-                    LimitedFHost = FHStream.SingleConnection;
-                    PKGStream = FHStream;
-
-                }
-
-                if (LimitedFHost)
-                {
-                    if (PKGStream is FileHostStream)
-                        ((FileHostStream) PKGStream).KeepAlive = true;
-                    
-                    var DownTask = Downloader.CreateTask(SourcePackage, PKGStream);
-
-                    while (DownTask.SafeLength == 0 && DownTask.Running)
-                        await Task.Delay(100);
-
-                    InputType |= Source.DiskCache;
-                    PKGStream = new VirtualStream(DownTask.OpenRead(), 0, DownTask.SafeLength) {ForceAmount = true};
-                }
-
-                if (LimitedFHost && !BadHostAlert)
-                {
-                    await MessageBox.ShowAsync(
-                        "This Filehosting is limited, Even though it is compatible with DirectPackageInstaller it is not recommended for use, prefer services like alldebrid to download from this server, otherwise you may have connection and/or speed problems.\nDon't expect to compressed files works as expected as well, the DirectPackageInstaller will need download the entire file before can do anything",
-                        "Bad File Hosting Service", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    BadHostAlert = true;
-                }
-
-                byte[] Magic = new byte[4];
-                await PKGStream.ReadAsync(Magic, 0, Magic.Length);
-                PKGStream.Position = 0;
-
-                if (LimitedFHost && Common.DetectCompressionFormat(Magic) != CompressionFormat.None)
-                    await MessageBox.ShowAsync(
-                        "You're trying open a compressed file from a limited file hosting,\nMaybe the compressed file must be fully downloaded to open it.",
-                        "Bad File Hosting Service", MessageBoxButtons.OK, MessageBoxIcon.Stop);
-
-                ArchiveDataInfo? DataInfo = null;
-                switch (Common.DetectCompressionFormat(Magic))
-                {
-                    case CompressionFormat.RAR:
-                        InputType |= Source.RAR;
-                        await SetStatus(LimitedFHost ? "Downloading... (It may take a while)" : "Decompressing...");
-                        DataInfo = await Decompressor.UnrarPKG(PKGStream, SourcePackage, async (s) => await SetStatus(s),ForcedSource);
-                        break;
-                    case CompressionFormat.SevenZip:
-                        InputType |= Source.SevenZip;
-                        await SetStatus(LimitedFHost ? "Downloading... (It may take a while)" : "Decompressing...");
-                        DataInfo = await Decompressor.Un7zPKG(PKGStream, SourcePackage,async (s) => await SetStatus(s), ForcedSource);
-                        break;
-                }
-
-                if (DataInfo != null)
-                {
-                    PKGStream = DataInfo?.Buffer ?? throw new Exception();
-                    Installer.EntryName = DataInfo?.Filename;
-                    CurrentDecompressor = DataInfo?.Archive;
-                    CurrentDecompressorVolumes = DataInfo?.Volumes;
-                    ListEntries(Installer.CurrentFileList = DataInfo?.PKGList ?? throw new Exception());
-                }
-
-                await SetStatus("Reading PKG...");
-
-                var Info = Installer.CurrentPKG = PKGStream.GetPKGInfo() ?? throw new Exception();
-
-                await SetStatus(Info.Description);
-
-                Model.PKGParams.Clear();
-                Model.PKGParams = Info.Params;
-
-                IconBox.Source = Info.Icon;
-
-                if (!App.IsSingleView)
-                {
-                    Parent.BringIntoView();
-                    Parent.Focus();
-                    Parent.Activate();
-                }
-
-                btnLoad.Content = "Install";
-            }
-            catch (Exception ex)
-            {
-                IconBox.Source = null;
-                Model.PKGParams?.Clear();
-
-                InputType = Source.NONE;
-                btnLoad.Content = "Load";
-
-                PackagesMenu.IsVisible = false;
-
-                await SetStatus("Failed to Open the PKG");
-            }
-            finally
-            {
-                tbURL.IsEnabled = true;
-                btnLoad.IsEnabled = true;
-            }
-
-            PKGStream?.Close();
-        }
         public async Task OnShown(MainWindow? Parent)
         {
             if (Model == null)
@@ -404,6 +103,7 @@ namespace DirectPackageInstaller.Views
                 App.Config.UseAllDebrid = IniReader.GetBooleanValue("UseAllDebrid");
                 App.Config.AllDebridApiKey = IniReader.GetValue("AllDebridApiKey");
                 App.Config.EnableCNL = IniReader.GetBooleanValue("EnableCNL");
+                App.Config.ShowError = IniReader.GetBooleanValue("ShowError");
 
                 ConnectionHelper.AllowReconnect = IniReader.GetBooleanValue("AllowReconnect");
 
@@ -427,6 +127,7 @@ namespace DirectPackageInstaller.Views
                     SegmentedDownload = !App.IsAndroid,
                     UseAllDebrid = false,
                     EnableCNL = true,
+                    ShowError = false,
                     AllDebridApiKey = null
                 };
 
@@ -492,6 +193,325 @@ namespace DirectPackageInstaller.Views
                      await App.Updater.DownloadUpdate();
                  }
              });
+        }
+
+        
+        private async void BtnLoadOnClick(object? sender, RoutedEventArgs e)
+        {
+            if (e != null)
+            {
+                App.Callback(() => BtnLoadOnClick(sender, null));
+                return;
+            }
+            
+            PKGStream?.Close();
+            PKGStream?.Dispose();
+
+            var ForcedSource = sender as string;
+
+            var SourcePackage = Model?.CurrentURL;
+
+            //Check if the BtnLoadOnClicked has manually called with an file path as source
+            if (ForcedSource is {Length: > 2} && (ForcedSource[1] == ':' || ForcedSource[0] == '/'))
+                SourcePackage = LastForcedSource = ForcedSource;
+            
+            //To hide the Packages menu if a different source is loaded
+            if (BatchList.All(x => x.Source != SourcePackage))
+                BatchList.Clear();
+
+            if (string.IsNullOrWhiteSpace(SourcePackage) && !string.IsNullOrWhiteSpace(LastForcedSource))
+                SourcePackage = LastForcedSource;
+
+            //Already Loaded, then Let's Install it!
+            if (InputType != Source.NONE) {
+                var Success = await Install(SourcePackage, false);
+
+                if (InputType.HasFlag(Source.File) && Success)
+                    App.Callback(() => Model.CurrentURL = string.Empty);
+                
+                return;
+            }
+
+            if (string.IsNullOrEmpty(SourcePackage))
+            {
+
+                string[]? Result;
+
+                if (!App.IsSingleView)
+                {
+                    var FD = new OpenFileDialog
+                    {
+                        Filters = new List<FileDialogFilter>()
+                        {
+                            new()
+                            {
+                                Name = "ALL PKG Files",
+                                Extensions = new List<string>() {"pkg", "PKG"},
+                            },
+                            new()
+                            {
+                                Name = "ALL Files",
+                                Extensions = new List<string>() {"*"}
+                            }
+                        },
+                        AllowMultiple = true
+                    };
+
+                    Result = await FD.ShowAsync(Parent);
+                }
+                else
+                {
+                    var Picker = new FilePicker();
+                    Picker.OpenDir(App.RootDir);
+                    
+                    await SingleView.CallView(Picker, false);
+                    Result = Picker.SelectedFiles.ToArray();
+                }
+
+                
+                BatchList.Clear();
+                
+                if (Result is {Length: > 0})
+                {
+                    
+                    if (Result.Length > 1)
+                        BatchList.AddRange(Result.Select(x => (x, Path.GetFileName(x))));
+                    
+                    ListEntries(Result);
+                    
+                    App.Callback(() => Model.CurrentURL = Result.First());
+                }
+
+                return;
+            }
+
+            PKGStream?.Close();
+
+            bool LimitedFHost = false;
+
+            PKG = null;
+            PKGParser = null;
+            PKGStream = null;
+
+            Installer.EntryFileName = null;
+
+            GC.Collect();
+            
+            //Sender is a stream during compressed file selection
+            if (ForcedSource == null && sender is not Stream)
+            {
+                PackagesMenu.IsVisible = BatchList.Any();
+                Installer.CurrentFileList = null;
+            }
+
+            InputType = Source.NONE;
+
+            if (!Uri.IsWellFormedUriString(SourcePackage, UriKind.Absolute) && !File.Exists(SourcePackage)) {
+                await MessageBox.ShowAsync(Parent, "Invalid URL or File Path", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            try
+            {
+                tbURL.IsEnabled = false;
+                btnLoad.IsEnabled = false;
+                await App.DoEvents();
+
+                PKGStream = sender as Stream;
+
+                if (PKGStream is null)
+                {
+                    if (SourcePackage.EndsWith(".json", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        PKGStream = SplitHelper.OpenRemoteJSON(SourcePackage);
+                        InputType = Source.URL | Source.JSON;
+                    }
+                    else if (SourcePackage.Length > 2 && (SourcePackage[1] == ':' || SourcePackage[0] == '/' ||
+                                                          SourcePackage.StartsWith("\\\\")))
+                    {
+                        PKGStream = File.Open(SourcePackage, FileMode.Open, FileAccess.Read, FileShare.Read);
+                        InputType = Source.File;
+                    }
+                    else
+                    {
+                        InputType = Source.URL;
+
+                        var FHStream = await LoadUrl(SourcePackage);
+
+                        if (FHStream == null)
+                            throw new AbortException("Failed to Load the URL");
+
+                        LimitedFHost = FHStream.SingleConnection;
+                        PKGStream = FHStream;
+
+                    }
+                }
+
+                if (LimitedFHost)
+                {
+                    if (PKGStream is FileHostStream)
+                        ((FileHostStream) PKGStream).KeepAlive = true;
+                    
+                    var DownTask = Downloader.CreateTask(SourcePackage, PKGStream);
+
+                    while (DownTask.SafeLength == 0 && DownTask.Running)
+                        await Task.Delay(100);
+
+                    InputType |= Source.DiskCache;
+                    PKGStream = new VirtualStream(DownTask.OpenRead(), 0, DownTask.SafeLength) {ForceAmount = true};
+                }
+
+                if (LimitedFHost && !BadHostAlert)
+                {
+                    await MessageBox.ShowAsync("This Filehosting is limited, Even though it is compatible with DirectPackageInstaller it is not recommended for use, prefer services like alldebrid to download from this server, otherwise you may have connection and/or speed problems.\nDon't expect to compressed files works as expected as well, the DirectPackageInstaller will need download the entire file before can do anything", "Bad File Hosting Service", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    BadHostAlert = true;
+                }
+
+                byte[] Magic = new byte[4];
+                await PKGStream.ReadAsync(Magic, 0, Magic.Length);
+                PKGStream.Position = 0;
+
+                if (LimitedFHost && Common.DetectCompressionFormat(Magic) != CompressionFormat.None)
+                    await MessageBox.ShowAsync("You're trying open a compressed file from a limited file hosting,\nMaybe the compressed file must be fully downloaded to open it.", "Bad File Hosting Service", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+
+                ArchiveDataInfo? DataInfo = null;
+                switch (Common.DetectCompressionFormat(Magic))
+                {
+                    case CompressionFormat.RAR:
+                        InputType |= Source.RAR;
+                        await SetStatus(LimitedFHost ? "Downloading... (It may take a while)" : "Decompressing...");
+                        DataInfo = await Decompressor.UnrarPKG(PKGStream, SourcePackage, async (s) => await SetStatus(s),ForcedSource);
+                        break;
+                    case CompressionFormat.SevenZip:
+                        InputType |= Source.SevenZip;
+                        await SetStatus(LimitedFHost ? "Downloading... (It may take a while)" : "Decompressing...");
+                        DataInfo = await Decompressor.Un7zPKG(PKGStream, SourcePackage,async (s) => await SetStatus(s), ForcedSource);
+                        break;
+                }
+
+                if (DataInfo != null)
+                {
+                    PKGStream = DataInfo?.Buffer ?? throw new Exception();
+                    Installer.EntryFileName = Path.GetFileName(DataInfo?.Filename);
+                    CurrentDecompressor = DataInfo?.Archive;
+                    CurrentDecompressorVolumes = DataInfo?.Volumes;
+                    ListEntries(Installer.CurrentFileList = DataInfo?.PKGList ?? throw new AbortException("Failed to list compressed files"));
+                }
+
+                await SetStatus("Reading PKG...");
+
+                var Info = Installer.CurrentPKG = PKGStream.GetPKGInfo() ?? throw new AbortException("Failed to read the PKG information");
+
+                await SetStatus(Info.Description);
+
+                Model.PKGParams.Clear();
+                Model.PKGParams = Info.Params;
+
+                IconBox.Source = Info.Icon;
+
+                if (!App.IsSingleView)
+                {
+                    Parent.BringIntoView();
+                    Parent.Focus();
+                    Parent.Activate();
+                }
+
+                btnLoad.Content = "Install";
+            }
+            catch (Exception ex)
+            {
+                if (ex is not AbortException)
+                    await MessageBox.ShowAsync(ex.ToString(), "DirectPackageInstaller - Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                else if (App.Config.ShowError)
+                    await MessageBox.ShowAsync(ex.Message, "DirectPackageInstaller - Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                
+                IconBox.Source = null;
+                Model.PKGParams?.Clear();
+
+                InputType = Source.NONE;
+                btnLoad.Content = "Load";
+
+                PackagesMenu.IsVisible = false;
+
+                await SetStatus("Failed to Open the PKG");
+            }
+            finally
+            {
+                tbURL.IsEnabled = true;
+                btnLoad.IsEnabled = true;
+            }
+
+            PKGStream?.Close();
+        }
+
+        private async Task<FileHostStream?> LoadUrl(string SourcePackage)
+        {
+            await SetStatus("Analyzing Urls...");
+
+            var UrlInfo = await URLAnalyzer.Analyze(SourcePackage, false);
+
+            while (!UrlInfo.Ready && !UrlInfo.Failed)
+            {
+                await SetStatus($"Analyzing Urls... {UrlInfo.Progress}");
+                await Task.Delay(100);
+            }
+
+            if (UrlInfo.Failed)
+            {
+                URLAnalyzer.URLInfos.Remove(UrlInfo.MainURL);
+                throw new AbortException("Failed to load URL info");
+            }
+
+            FileHostStream FHStream;
+
+            if (UrlInfo.Urls.Any(x => x.SingleConnection))
+            {
+                FHStream = UrlInfo.Urls.First().Stream();
+            }
+            else
+            {
+
+                var FName = UrlInfo.Urls.First().Filename?.ToLowerInvariant();
+
+                bool ValidExt = string.IsNullOrWhiteSpace(FName) || FName.EndsWith(".rar") || FName.EndsWith(".7z") ||
+                                FName.EndsWith(".pkg");
+
+                if (!ValidExt)
+                {
+                    if (UrlInfo.Urls.Length == 1)
+                    {
+                        await MessageBox.ShowAsync($"This url contains a {Path.GetExtension(FName)} file but isn't supported,\nSupported Files: .rar .7z .pkg", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return null;
+                    }
+
+                    var Rar = UrlInfo.Urls.SortRarFiles().ToArray();
+                    var SevenZip = UrlInfo.Urls.Sort7zFiles().ToArray();
+
+                    if (Rar.Length > 0)
+                    {
+                        SourcePackage = Rar.First().URL;
+                        UrlInfo.Urls = Rar;
+                    }
+
+                    if (SevenZip.Length > 0)
+                    {
+                        SourcePackage = SevenZip.First().URL;
+                        UrlInfo.Urls = SevenZip;
+                    }
+
+                    if (UrlInfo.Urls.Any(x =>
+                            x.Filename.EndsWith(".pkg", StringComparison.InvariantCultureIgnoreCase)))
+                    {
+                        SourcePackage = UrlInfo.Urls.First().URL;
+                    }
+
+                    URLAnalyzer.URLInfos[SourcePackage] = UrlInfo;
+                }
+
+                FHStream = new FileHostStream(SourcePackage);
+            }
+            
+            return FHStream;
         }
 
         private void ModelOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -585,7 +605,8 @@ namespace DirectPackageInstaller.Views
                 await MessageBox.ShowAsync(Parent, "Failed to detect your PS4 IP.\nPlease, Type your PS4/PC IP in the options menu", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
-            
+
+            var OriStatus = Status.Text;
             btnLoad.Content = "Pushing...";
             PackagesMenu.IsEnabled = false;
             btnLoad.IsEnabled = false;
@@ -598,13 +619,15 @@ namespace DirectPackageInstaller.Views
                     return false;
                 }
 
-                return await Installer.PushPackage(App.Config, InputType, PKGStream, URL, CurrentDecompressor, CurrentDecompressorVolumes, SetStatus, () => Status.Text, Silent);
+                return await Installer.PushPackage(App.Config, InputType, PKGStream!, URL, CurrentDecompressor, CurrentDecompressorVolumes, SetStatus, () => Status.Text, Silent);
             }
             catch
             {
                 return false;
             }
-            finally {
+            finally
+            {
+                await SetStatus(OriStatus);
                 PackagesMenu.IsEnabled = true;
                 btnLoad.IsEnabled = true;
                 tbURL.IsEnabled = true;
@@ -630,7 +653,7 @@ namespace DirectPackageInstaller.Views
                 if (string.IsNullOrWhiteSpace(ContentSource))
                     ContentSource = File;
                 else
-                    Installer.EntryName = File;
+                    Installer.EntryFileName = File;
 
                 if (InputType.HasFlag(Source.SevenZip) || InputType.HasFlag(Source.RAR))
                 {
@@ -638,8 +661,7 @@ namespace DirectPackageInstaller.Views
                     
                     try
                     {
-                        var Entry = CurrentDecompressor.Entries.Single(x =>
-                            x.Key.EndsWith(File, StringComparison.InvariantCultureIgnoreCase));
+                        var Entry = CurrentDecompressor!.Entries.Single(x => x.Key.EndsWith(File, StringComparison.InvariantCultureIgnoreCase));
                         Stream = Entry.OpenEntryStream();
 
                         if (!Stream.CanSeek)
@@ -718,8 +740,21 @@ namespace DirectPackageInstaller.Views
                     
                     Item.Click += (sender, e) =>
                     {
+                        var OriSource = InputType;
                         InputType = Source.NONE;
-                        App.Callback(() => BtnLoadOnClick(Entry, null));
+                        
+                        var FileEntry = CurrentDecompressor!.Entries.First(x => x.Key.EndsWith(Entry, StringComparison.InvariantCultureIgnoreCase));
+                        Installer.EntryFileName = Path.GetFileName(FileEntry.Key);
+                        var Stream = new ReadSeekableStream(FileEntry.OpenEntryStream());
+                        
+                        App.Callback(() =>
+                        {
+                            BtnLoadOnClick(Stream, null);
+                            
+                            //Restore variables that is modified by the BtnLoadOnClick event
+                            InputType = OriSource;
+                            Installer.EntryFileName = Path.GetFileName(FileEntry.Key);
+                        });
                     };
 
                     Items.Insert(0, Item);

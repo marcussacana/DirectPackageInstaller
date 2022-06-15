@@ -72,7 +72,7 @@ namespace DirectPackageInstaller.Compression
                 {
                     Func<Stream> Buffer = null;
 
-                    if (MemoryInfo.GetAvaiablePhysicalMemory() > (ulong)FileStream.Length + (1024ul * 1024 * 500))
+                    if (!App.IsAndroid && MemoryInfo.GetAvaiablePhysicalMemory() > (ulong)FileStream.Length + (1024ul * 1024 * 500))
                     {
                         try
                         {

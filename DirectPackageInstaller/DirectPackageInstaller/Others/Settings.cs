@@ -18,5 +18,7 @@ namespace DirectPackageInstaller
         public bool SegmentedDownload;
 
         public bool EnableCNL;
+
+        public bool ShowError;
     }
 }
