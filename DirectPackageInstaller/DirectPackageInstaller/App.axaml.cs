@@ -273,16 +273,54 @@ namespace DirectPackageInstaller
                     return WorkingDirectory.Substring(0, 3);
 
                 if (IsAndroid)
+                    return (UseSDCard ? AndroidRootSDDir : AndroidRootInternalDir) ?? throw new Exception();
+                
+                return Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            }
+        }
+        
+        public static string? AndroidRootSDDir
+        {
+            get
+            {
+                if (IsAndroid)
                 {
                     GetRootDirPermission?.Invoke();
                     
-                    var Parent = Path.GetDirectoryName(WorkingDirectory);
+                    var Parent = Path.GetDirectoryName(AndroidSDCacheDir);
                     Parent = Path.GetDirectoryName(Parent);
                     Parent = Path.GetDirectoryName(Parent);
-                    return Path.GetDirectoryName(Parent);
+                    Parent = Path.GetDirectoryName(Parent);
+                    
+                    if (Parent != null && !Parent.EndsWith("/") && !Parent.EndsWith("\\"))
+                        Parent += Path.DirectorySeparatorChar;
+                    
+                    return Parent;
                 }
 
-                return Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                return null;
+            }
+        }
+        public static string? AndroidRootInternalDir
+        {
+            get
+            {
+                if (IsAndroid)
+                {
+                    GetRootDirPermission?.Invoke();
+                    
+                    var Parent = Path.GetDirectoryName(AndroidCacheDir);
+                    Parent = Path.GetDirectoryName(Parent);
+                    Parent = Path.GetDirectoryName(Parent);
+                    Parent = Path.GetDirectoryName(Parent);
+                    
+                    if (Parent != null && !Parent.EndsWith("/") && !Parent.EndsWith("\\"))
+                        Parent += Path.DirectorySeparatorChar;
+                    
+                    return Parent;
+                }
+
+                return null;
             }
         }
 

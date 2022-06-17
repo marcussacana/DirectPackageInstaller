@@ -76,7 +76,7 @@ AndroidPublish (){
    	return;
    fi
    
-   dotnet workload install android
+   dotnet workload restore
    
    Publish $1
    
@@ -234,7 +234,7 @@ IF NOT EXIST "%AndroidNdkDirectory%ndk-build.cmd" (
 	echo ANDROID NDK NOT FOUND
 	goto :eof
 )
-dotnet workload install android
+dotnet workload restore
 call :Build %1
 del /s /q .\Release\%1.zip
 del /s /q .\DirectPackageInstaller\DirectPackageInstaller.Android\bin\Release\net6.0-android\%1\publish\com.marcussacana.DirectPackageInstaller.apk

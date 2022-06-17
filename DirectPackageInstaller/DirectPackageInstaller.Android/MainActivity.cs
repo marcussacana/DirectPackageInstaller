@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
 using Android;
 using Android.App;
@@ -16,6 +17,8 @@ using Avalonia;
 using Java.Lang;
 using Application = Android.App.Application;
 using File = Java.IO.File;
+
+[assembly: Application(UsesCleartextTraffic = true)]
 
 namespace DirectPackageInstaller.Android
 {

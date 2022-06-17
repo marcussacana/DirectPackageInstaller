@@ -16,8 +16,23 @@ public class FileEntry
         this.FullPath = FullPath;
     }
 
+    public bool IsPhone { get; set; }
+    public bool IsSDCard { get; set; }
     public bool IsPKG => !IsDirectory && Name.EndsWith(".pkg", StringComparison.InvariantCultureIgnoreCase);
     public bool IsDirectory => FullPath.EndsWith("\\") || FullPath.EndsWith("/");
-    public string Name => Path.GetFileName(FullPath.TrimEnd('/', '\\'));
+
+    public string Name
+    {
+        get
+        {
+            if (IsPhone)
+                return "Internal Memory";
+            if (IsSDCard)
+                return "SD Card";
+            
+            return Path.GetFileName(FullPath.TrimEnd('/', '\\'));
+        }
+    }
+
     public string FullPath { get; }
 }

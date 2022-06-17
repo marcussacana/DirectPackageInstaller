@@ -61,24 +61,28 @@ namespace DirectPackageInstaller
             Timeout = TimeSpan.FromMilliseconds(1000)
         };
 
-        public static bool IsRPIOnline(string IP)
+        public static async Task<bool> IsRPIOnline(string IP)
         {
             if (!IPAddress.TryParse(IP, out _))
                 return false;
-#if DEBUG
-            //if (System.Diagnostics.Debugger.IsAttached)
-            //    return true;
-#endif
             
             var APIUrl = $"http://{IP}:12800/api";
             try
             {
-                using var Response = Client.GetAsync(APIUrl).GetAwaiter().GetResult();
-                var Resp = Response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                using var Response = await Client.GetAsync(APIUrl);
+                var Resp = await Response.Content.ReadAsStringAsync();
                 if (Resp.Contains("Unsupported method") && Resp.Contains("fail"))
                     return true;
+#if DEBUG
+                await MessageBox.ShowAsync("RPI RESP: " + Resp, "DPI", MessageBoxButtons.OK, MessageBoxIcon.Error);
+#endif
             }
-            catch { }
+            catch (Exception ex)
+            {
+#if DEBUG
+                await MessageBox.ShowAsync("RPI ERROR: " + ex.ToString(), "DPI", MessageBoxButtons.OK, MessageBoxIcon.Error);
+#endif
+            }
             return false;
         }
     }

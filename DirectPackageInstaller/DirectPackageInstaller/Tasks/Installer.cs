@@ -186,7 +186,7 @@ namespace DirectPackageInstaller.Tasks
             }
 
             bool OK = false;
-            if (IPHelper.IsRPIOnline(Config.PS4IP))
+            if (await IPHelper.IsRPIOnline(Config.PS4IP))
                 OK = await PushRPI(URL, Config, Silent);
             else
                 OK = await SendPKGPayload(Config.PS4IP, Config.PCIP, URL, Silent);

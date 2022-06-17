@@ -213,6 +213,11 @@ namespace DirectPackageInstaller.Views
                      await MessageBox.ShowAsync("Failed find the Working Directory Path of the DirectPackageInstaller.\nPlease, Restart the Program.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                      Environment.Exit(0);
                  }
+
+                 if (App.IsAndroid)
+                 {
+                     await MessageBox.ShowAsync("DirectPackageInstaller was developed based on the AvaloniaUI Framework, which is in beta for android devices.\nBe warned that the application may behave poorly and unstable until AvaloniaUI becomes stable.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                 }
              });
         }
 
@@ -283,7 +288,7 @@ namespace DirectPackageInstaller.Views
                 else
                 {
                     var Picker = new FilePicker();
-                    Picker.OpenDir(App.RootDir);
+                    await Picker.OpenDir(App.RootDir);
                     
                     await SingleView.CallView(Picker, false);
                     Result = Picker.SelectedFiles.ToArray();
@@ -639,7 +644,7 @@ namespace DirectPackageInstaller.Views
             tbURL.IsEnabled = false;
             try
             {
-                if (!IPHelper.IsRPIOnline(App.Config.PS4IP) && !await Installer.TryConnectSocket(App.Config.PS4IP))
+                if (!await IPHelper.IsRPIOnline(App.Config.PS4IP) && !await Installer.TryConnectSocket(App.Config.PS4IP))
                 {
                     await MessageBox.ShowAsync($"Remote Package Installer Not Found at {App.Config.PS4IP}, Ensure if he is open.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return false;
