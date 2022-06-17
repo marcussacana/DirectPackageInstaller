@@ -26,7 +26,7 @@ namespace DirectPackageInstaller.Compression
 
             bool Buffering = Args.This.Base is SegmentedStream;
 
-            bool CantBuffer = !Buffering && Args.This.Base is FileHostStream && (Args.This.Base as FileHostStream).SingleConnection;
+            bool CantBuffer = !Buffering && Args.This.Base is FileHostStream && ((FileHostStream)Args.This.Base).SingleConnection;
             
             if (CantBuffer || !App.Config.SegmentedDownload)
                 return;
@@ -38,12 +38,12 @@ namespace DirectPackageInstaller.Compression
 
                 DecompressInfo.SafeInSegmentTranstion = true;
 
-                foreach (var Part in DecompressInfo.PartsStream)
+                foreach (var Part in DecompressInfo.PartsStream!)
                 {
                     if (!(Part.Base is SegmentedStream) || Part.Base == Args.This.Base)
                         continue;
 
-                    SegmentedStream Strm = Part.Base as SegmentedStream;
+                    SegmentedStream Strm = (SegmentedStream)Part.Base;
 
                     if (Strm.InProgess)
                     {
@@ -61,7 +61,11 @@ namespace DirectPackageInstaller.Compression
                     Strm.Close();
                 }
 
-                var FileStream = Args.This.Base as FileHostStream;
+                if (Args.This.Base is not FileHostStream FileStream)
+                {
+                    DecompressInfo.SafeInSegmentTranstion = false;
+                    return;
+                }
 
                 var Position = FileStream.Position;
                 var Url = FileStream.PageUrl;

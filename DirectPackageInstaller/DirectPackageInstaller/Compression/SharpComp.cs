@@ -117,12 +117,15 @@ namespace DirectPackageInstaller.Compression
                     TaskInfo.Running = false;
                     Tasks[TaskKey] = TaskInfo;
 
-                    foreach (var InBuffer in Inputs.Cast<DecompressorHelperStream>())
+                    for (int i = 0; i < Inputs.Length; i++)
                     {
-                        if (InBuffer.Base is SegmentedStream)
-                            InBuffer.Base.Close();
-                        
-                        InBuffer.Dispose();
+                        ref var InBuffer = ref Inputs[i];
+                        if (InBuffer.Base is SegmentedStream SegStream)
+                        {
+                            InBuffer.Base = SegStream.OpenSegment();
+                            SegStream?.Close();
+                            SegStream?.Dispose();
+                        }
                     }
                 }
                 
