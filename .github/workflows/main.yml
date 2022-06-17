@@ -33,6 +33,7 @@ jobs:
         run: |
             git submodule init
             git submodule update
+            dotnet workload install android
             sh  Build.cmd
 
       - name: Archive production artifacts
