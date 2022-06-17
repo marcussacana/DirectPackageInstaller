@@ -25,9 +25,6 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
       
-      - name: Set Android SDK Path
-        run: export ANDROID_SDK_ROOT=~/Android/Sdk/
-      
       - name: Setup Android SDK
         uses:  android-actions/setup-android@v2.0.2
         
