@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using Android;
 using Android.App;
@@ -12,9 +13,9 @@ using AndroidX.Core.App;
 using AndroidX.Core.Content;
 using Avalonia.Android;
 using Avalonia;
-using Java.IO;
-using Java.Util;
+using Java.Lang;
 using Application = Android.App.Application;
+using File = Java.IO.File;
 
 namespace DirectPackageInstaller.Android
 {
@@ -47,6 +48,8 @@ namespace DirectPackageInstaller.Android
                     Install = Install.SetDataAndType(ApkFile,"application/vnd.android.package-archive");
                     StartActivity(Install);
                 };
+
+                ForegroundService.StartService(this, null);
 
                 await IgnoreBatteryOptimizations();
             }
@@ -111,6 +114,29 @@ namespace DirectPackageInstaller.Android
 
 
             //Window?.AddFlags(WindowManagerFlags.KeepScreenOn);
+        }
+
+        protected override void OnResume()
+        {
+            try
+            {
+                base.OnResume();
+            }
+            catch (Exception ex)
+            {
+                LogFatalError(ex);
+            }
+        }
+
+        public static void LogFatalError(Exception ex)
+        {
+            try
+            {
+                System.IO.File.WriteAllText(Path.Combine(App.WorkingDirectory, "DPI-AndroidCrash.log"), ex.ToString());
+            }
+            catch
+            {
+            }
         }
 
         protected override AppBuilder CustomizeAppBuilder(AppBuilder builder)

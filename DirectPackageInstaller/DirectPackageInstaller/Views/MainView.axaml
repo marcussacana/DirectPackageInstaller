@@ -12,18 +12,17 @@
   </Design.DataContext>
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="40"></RowDefinition>
-            <RowDefinition Height="40"></RowDefinition>
-            <RowDefinition></RowDefinition>
-            <RowDefinition Height="40"></RowDefinition>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="40"/>
+            <RowDefinition/>
+            <RowDefinition Height="40"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="330"></ColumnDefinition>
-            <ColumnDefinition Width="5"></ColumnDefinition>
-            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition Width="330"/>
+            <ColumnDefinition/>
         </Grid.ColumnDefinitions>
         
-        <Menu Grid.ColumnSpan="3">
+        <Menu Grid.ColumnSpan="2">
             <MenuItem Header="_Options">
                 <MenuItem Header="_Proxy Downloads" Name="btnProxyDownload">
                     <MenuItem.Icon>
@@ -43,8 +42,8 @@
                 <MenuItem Header="_IP Address">
                     <Grid Margin="10">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition></ColumnDefinition>
-                            <ColumnDefinition></ColumnDefinition>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
                         </Grid.ColumnDefinitions>
                         <Label Grid.Column="0">PS4 IP:</Label>
                         <TextBox Grid.Column="1" Text="{Binding PS4IP, Mode=TwoWay}"></TextBox>
@@ -61,8 +60,8 @@
                 <MenuItem Header="_AllDebrid">
                     <Grid Margin="10">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition></ColumnDefinition>
-                            <ColumnDefinition></ColumnDefinition>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
                         </Grid.ColumnDefinitions>
                         <Label Grid.Column="0">API Key:</Label>
                         <TextBox Grid.Column="1" Text="{Binding AllDebirdApiKey, Mode=TwoWay}"></TextBox>
@@ -74,6 +73,7 @@
                     </MenuItem>
                 </MenuItem>
                 <MenuItem Header="_Restart Server" Name="btnRestartServer"/>
+                <MenuItem Header="_Exit" Name="btnExit"/>
             </MenuItem>
             <MenuItem Header="Packages" IsVisible="False" Name="PackagesMenu">
                 <Separator></Separator>
@@ -81,7 +81,7 @@
             </MenuItem>
         </Menu>
         
-        <Grid Grid.Row="1" Grid.ColumnSpan="3">
+        <Grid Grid.Row="1" Grid.ColumnSpan="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="auto"></ColumnDefinition>
                 <ColumnDefinition Width="*"></ColumnDefinition>
@@ -92,17 +92,25 @@
             <Button Grid.Row="0" Grid.Column="2" HorizontalAlignment="Right" Margin="5,0,5,0" Name="btnLoad">Open</Button>
         </Grid>
         
-        <Image Grid.Row="2" Name="IconBox" ></Image>
-        <GridSplitter Grid.Column="1" Grid.Row="2"></GridSplitter>
         
-        <DataGrid Grid.Row="2" Grid.Column="2" Items="{Binding PKGParams}">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="Param" Binding="{Binding Name}"/>
-                <DataGridTextColumn Header="Value" Binding="{Binding Value}"/>
-            </DataGrid.Columns>
-        </DataGrid>
+        <Grid Grid.Row="2" Grid.ColumnSpan="2" Name="PreviewGrid">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="330"/>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <Image Name="IconBox"></Image>
+            <GridSplitter Name="MainGridSplitter" Grid.Column="1"></GridSplitter>
+            
+            <DataGrid Grid.Column="2" Items="{Binding PKGParams}" Name="PkgInfoGrid">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Param" Binding="{Binding Name}"/>
+                    <DataGridTextColumn Header="Value" Binding="{Binding Value}"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
         
-        <TextBlock Grid.Row="3" Grid.ColumnSpan="3" Grid.Column="0" Name="Status"/>
+        <TextBlock Grid.Row="3" Grid.ColumnSpan="2" Grid.Column="0" Name="Status"/>
     </Grid>
     <UserControl.Styles>
         <Style Selector="CheckBox">

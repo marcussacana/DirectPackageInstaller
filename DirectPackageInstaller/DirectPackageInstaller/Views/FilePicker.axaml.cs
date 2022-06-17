@@ -23,16 +23,25 @@ public partial class FilePicker : UserControl
 
         btnBack = this.Find<Button>("btnBack");
         btnNext = this.Find<Button>("btnNext");
+        btnCancel = this.Find<Button>("btnCancel");
         
         tbFolder = this.Find<AutoCompleteBox>("tbFolder");
         lbEntries = this.Find<ItemsControl>("lbEntries");
         
         btnBack.Click += BtnBackOnClick;
         btnNext.Click += BtnNextOnClick;
+        btnCancel.Click += BtnCancelOnClick;
         
         tbFolder.TextChanged += TbFolderOnTextChanged;
         
         Model.Result = DialogResult.Cancel;
+    }
+
+    private void BtnCancelOnClick(object? sender, RoutedEventArgs e)
+    {
+        Model.Result = DialogResult.Cancel;
+        SelectedFiles.Clear();
+        SingleView.ReturnView(this);
     }
 
     private void TbFolderOnTextChanged(object? sender, EventArgs e)

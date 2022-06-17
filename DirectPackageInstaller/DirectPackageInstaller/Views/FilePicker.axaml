@@ -21,6 +21,7 @@
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition/>
+            <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
         <Button Name="btnBack" Classes="btnBack">
             <Image/>
@@ -28,15 +29,18 @@
         <Button Grid.Row="0" Grid.Column="1" Name="btnNext" Classes="btnNext">
             <Image/>
         </Button>
+        <Button Grid.Row="0" Grid.Column="3" Name="btnCancel" Classes="btnCancel">
+            <Image/>
+        </Button>
         <AutoCompleteBox Name="tbFolder" Grid.Row="0" Grid.Column="2" Text="{Binding CurrentDir, Mode=TwoWay}" Items="{Binding CurrentSubDirs}"/>
-        <ScrollViewer Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Classes="lbEntriesScroll" AllowAutoHide="False">
+        <ScrollViewer Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4" Classes="lbEntriesScroll" AllowAutoHide="False">
             <ItemsControl Name="lbEntries" Items="{Binding CurrentDirEntries}"/>
         </ScrollViewer>
         <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Classes="btnOK" IsVisible="{Binding InMultiselect}" Click="Open_OnClick"/>
     </Grid>
     <UserControl.DataTemplates>
         <DataTemplate DataType="others:FileEntry">
-            <controls:HoldToToggleButton Classes="btnFileEntry" Click="FileEntry_OnClicked" Checked="FileEntry_OnChecked" Unchecked="FileEntry_OnUnchecked">
+            <controls:HoldToToggleButton Classes="btnFileEntry" Click="FileEntry_OnClicked" Checked="FileEntry_OnChecked" Unchecked="FileEntry_OnUnchecked" Parent="{Binding $parent[ScrollViewer]}">
                 <Grid Classes="EntryGrid">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="48"/>
@@ -62,6 +66,11 @@
             <Setter Property="Margin" Value="0,0,5,0"></Setter>
             <Setter Property="Height" Value="40"></Setter>
         </Style>
+        <Style Selector="Button.btnCancel">
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0"></Setter>
+            <Setter Property="Height" Value="40"></Setter>
+        </Style>
         <Style Selector="AutoCompleteBox">
             <Setter Property="VerticalAlignment" Value="Stretch"/>
             <Setter Property="FontSize" Value="20"/>
@@ -75,6 +84,11 @@
         <Style Selector="Button.btnBack>Image">
             <Setter Property="Source">
                 <DrawingImage Drawing="{DynamicResource Back}" />
+            </Setter>
+        </Style>
+        <Style Selector="Button.btnCancel>Image">
+            <Setter Property="Source">
+                <DrawingImage Drawing="{DynamicResource Cancel}" />
             </Setter>
         </Style>
         <Style Selector="Button.btnOK">
@@ -138,6 +152,9 @@
         </DrawingGroup>
         <DrawingGroup x:Key="Playstation">
             <GeometryDrawing Brush="#FFF" Geometry="M5.99,2.925E-008 L5.99,11.7 L8.6,12.54 L8.6,2.728 C8.6,2.268 8.802,1.961 9.129,2.067 C9.553,2.187 9.636,2.61 9.636,3.071 L9.636,6.987 C11.26,7.783 12.54,6.986 12.54,4.886 C12.54,2.728 11.79,1.769 9.585,1.001 C8.714,0.7027 7.1,0.2107 5.992,2.925E-008 z M9.094,10.83 L13.29,9.311 C13.77,9.139 13.84,8.894 13.45,8.765 C13.06,8.637 12.36,8.673 11.88,8.847 L9.08,9.847 L9.08,8.256 L9.24,8.199 C6.117,7.726 10.04,7.919 11.18,7.789 C12.31,7.669 13.71,7.809 14.81,8.23 C16.04,8.631 16.17,9.211 15.86,9.611 C15.55,10.01 14.78,10.3 14.78,10.3 L9.08,12.37 L9.08,10.84 z M1.205,10.67 C-0.06172,10.31 -0.2711,9.557 0.3036,9.123 C0.8376,8.732 1.744,8.421 1.744,8.421 L5.487,7.079 L5.487,8.621 L2.804,9.603 C2.334,9.783 2.254,10.02 2.644,10.15 C3.035,10.28 3.736,10.25 4.206,10.07 L5.498,9.603 L5.498,10.99 C5.418,11.01 5.328,11.01 5.238,11.03 C3.946,11.25 2.574,11.16 1.213,10.71 z" />
+        </DrawingGroup>
+        <DrawingGroup x:Key="Cancel">
+            <GeometryDrawing Brush="#FFF" Geometry="M0,14.44 L6.439,8 L0,1.561 L1.561,0 L8,6.439 L14.44,0 L16,1.561 L9.561,8 L16,14.44 L14.44,16 L8,9.561 L1.561,16 L0,14.44 z"   />
         </DrawingGroup>
     </UserControl.Resources>
 </UserControl>

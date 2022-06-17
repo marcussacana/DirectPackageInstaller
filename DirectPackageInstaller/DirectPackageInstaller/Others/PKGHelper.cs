@@ -30,10 +30,8 @@ public static class PKGHelper
             
             Result.FriendlyName = Encoding.UTF8.GetString(PKG.ParamSfo.ParamSfo.HasName("TITLE") ? PKG.ParamSfo.ParamSfo["TITLE"].ToByteArray() : new byte[0]).Trim('\x0');
 
-            Result.FriendlyName = Result.FriendlyName.RemoveInvalidChars();
-            
             Result.FakePackage = PKG.CheckPasscode("00000000000000000000000000000000");
-            Result.Description = $"[{SystemVer[3]:X2}.{SystemVer[2]:X2} - {(Result.FakePackage ? "Fake" : "Retail")}] {Result.FriendlyName}";
+            Result.Description = $"[{SystemVer[3]:X2}.{SystemVer[2]:X2} - {(Result.FakePackage ? "Fake" : "Retail")}] {Result.FriendlyName.RemoveInvalidChars()}";
 
             try
             {
@@ -58,8 +56,10 @@ public static class PKGHelper
                     if (string.IsNullOrWhiteSpace(Value))
                         continue;
                     
-                    if (Name == "CATEGORY")
+                    if (Name == "CATEGORY"){
                         Result.ContentType = Value;
+                        Value = Result.FirendlyContentType;
+                    }
 
                     if (Name == "CONTENT_ID")
                         Result.ContentID = Value;

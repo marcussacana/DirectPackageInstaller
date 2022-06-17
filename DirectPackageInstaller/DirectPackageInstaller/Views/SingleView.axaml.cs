@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Threading;
@@ -23,7 +24,7 @@ public partial class SingleView : UserControl
     }
 
     public MainView Main;
-
+    
     private async void OnInitialized(object? sender, EventArgs e)
     {
         Main = new MainView() {
@@ -33,6 +34,7 @@ public partial class SingleView : UserControl
         _ = CallView(Main, false);
         
         await Main.OnShown(null);
+        
     }
 
     static SingleView LifetimeView;

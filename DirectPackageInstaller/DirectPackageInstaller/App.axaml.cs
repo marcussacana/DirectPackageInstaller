@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -156,6 +157,26 @@ namespace DirectPackageInstaller
             });
         }
         
+
+        public static Func<Action, Task> StartService = async (Act) =>
+        {
+            TaskCompletionSource CompletionSource = new TaskCompletionSource();
+            var BGWorker = new BackgroundWorker();
+            BGWorker.DoWork += (sender, e) =>
+            {
+                try
+                {
+                    Act?.Invoke();
+                }
+                finally
+                {
+                    BGWorker.Dispose();
+                    CompletionSource.SetResult();
+                }
+            };
+            BGWorker.RunWorkerAsync();
+            await CompletionSource.Task;
+        };
         
         /// <summary>
         /// If the action thorws an exception returns true, otherwise returns false

@@ -1,10 +1,12 @@
 using System;
 using Avalonia;
+using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Styling;
 
 namespace DirectPackageInstaller.Controls;
@@ -12,6 +14,18 @@ namespace DirectPackageInstaller.Controls;
 public class HoldToToggleButton : Button, IStyleable
 {
     Type IStyleable.StyleKey => typeof(ToggleButton);
+
+    public ScrollViewer? Parent
+    {
+        get => GetValue(ParentProperty);
+        set => SetValue(ParentProperty, value);
+    }
+    
+    /// <summary>
+    /// Defines the <see cref="Parent"/> property.
+    /// </summary>
+    public static readonly StyledProperty<ScrollViewer> ParentProperty =
+        AvaloniaProperty.Register<HoldToToggleButton, ScrollViewer>(nameof(Parent));
 
     private DateTime? PressBegin;
     
@@ -114,21 +128,43 @@ public class HoldToToggleButton : Button, IStyleable
         set => SetValue(IsThreeStateProperty, value);
     }
 
+    private double InitialYOffset = 0;
+    private double InitialPressY = 0;
+    private bool PointerPressed = false;
+
     protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
+        if (Parent != null)
+        {
+            InitialYOffset = Parent.Offset.Y;
+            InitialPressY = e.GetPosition(null).Y;
+        }
+
+        PointerPressed = true;
         PressBegin = DateTime.Now;
         base.OnPointerPressed(e);
+    }
 
-        //Allow ScrollViewer handle touch scroll 
-        e.Handled = false;
+    protected override void OnPointerMoved(PointerEventArgs e)
+    {
+        base.OnPointerMoved(e);
+        if (PointerPressed && Parent != null)
+        {
+            var Diff = InitialPressY - e.GetPosition(null).Y;
+            Parent!.Offset = new Vector(Parent!.Offset.X, InitialYOffset + Diff);
+        }
     }
 
     protected override void OnPointerReleased(PointerReleasedEventArgs e)
     {
+        PointerPressed = false;
+        
         if (PressBegin is not null && (DateTime.Now - PressBegin!.Value).TotalMilliseconds >= 500)
             Toggle();
         else
             base.OnPointerReleased(e);
+        
+        Parent?.RaiseEvent(e);
     }
 
     /// <summary>

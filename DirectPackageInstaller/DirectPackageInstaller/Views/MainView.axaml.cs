@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
@@ -53,9 +54,14 @@ namespace DirectPackageInstaller.Views
             InitializeComponent();
 
             PackagesMenu = this.Find<MenuItem>("PackagesMenu");
-            IconBox = this.Find<Image>("IconBox");
 
             tbURL = this.Find<TextBox>("tbURL");
+
+            PreviewGrid = this.Find<Grid>("PreviewGrid");
+            
+            IconBox = this.Find<Image>("IconBox");
+            MainGridSplitter = this.Find<GridSplitter>("MainGridSplitter");
+            PkgInfoGrid = this.Find<DataGrid>("PkgInfoGrid");
             
             btnInstallAll = this.Find<MenuItem>("btnInstallAll");
             btnProxyDownload = this.Find<MenuItem>("btnProxyDownload");
@@ -63,8 +69,9 @@ namespace DirectPackageInstaller.Views
             btnAllDebirdEnabled = this.Find<MenuItem>("btnAllDebirdEnabled");
             btnSegmentedDownload = this.Find<MenuItem>("btnSegmentedDownload");
             btnCNLService = this.Find<MenuItem>("btnCNLService");
+            btnExit = this.Find<MenuItem>("btnExit");
             btnLoad = this.Find<Button>("btnLoad");
-
+            
             btnInstallAll.Click += BtnInstallAllOnClick;
             btnRestartServer.Click += RestartServer_OnClick;
             btnProxyDownload.Click += BtnProxyDownloadOnClick;
@@ -75,6 +82,9 @@ namespace DirectPackageInstaller.Views
             btnLoad.Click += BtnLoadOnClick;
 
             tbURL.GotFocus += tbURLOnGotFocus;
+
+            btnExit.Click += btnExitOnClick;
+            btnExit.IsVisible = App.IsAndroid;
             
             CNL.OnLinksReceived = OnLinksReceived;
         }
@@ -131,7 +141,12 @@ namespace DirectPackageInstaller.Views
                     AllDebridApiKey = null
                 };
 
-                await MessageBox.ShowAsync($"Hello User, The focus of this tool is download PKGs from direct links but we have others minor features as well.\n\nGood to know:\nWhen using the direct download mode, you can turn off the computer or close the DirectPakcageInstaller and your PS4 will continue the download alone.\n\nWhen using the \"Proxy Downloads\" feature, the PS4 can't download the game alone and the DirectPackageInstaller must keep open.\n\nDirect PKG urls, using the \"Proxy Download\" feature or not, can be resumed anytime by just selecting 'resume' in your PS4 download list.\n\nThe DirectPackageInstaller use the port {Installer.ServerPort} in the \"Proxy Downloads\" feature, maybe you will need to open the ports in your firewall.\n\nWhen downloading directly from compressed files, you can't resume the download after the DirectPackageInstaller is closed, but before close the DirectPackageInstaller you still can pause and resume the download in your PS4.\n\nIf your download speed is very slow, you can try enable the \"Proxy Downloads\" feature, since this feature has been created just to optimize the download speed.\n\nCreated by marcussacana", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                await MessageBox.ShowAsync($"Welcome. User, The focus of this tool is download PKGs from direct links but we have others minor features as well.\n\nGood to know:\nWhen using the direct download mode, you can turn off the computer or close the DirectPakcageInstaller and your PS4 will continue the download alone.\n\nWhen using the \"Proxy Downloads\" feature, the PS4 can't download the game alone and the DirectPackageInstaller must keep open.\n\nDirect PKG urls, using the \"Proxy Download\" feature or not, can be resumed anytime by just selecting 'resume' in your PS4 download list.\n\nThe DirectPackageInstaller use the port {Installer.ServerPort} in the \"Proxy Downloads\" feature, maybe you will need to open the ports in your firewall.\n\nWhen downloading directly from compressed files, you can't resume the download after the DirectPackageInstaller is closed, but before close the DirectPackageInstaller you still can pause and resume the download in your PS4.\n\nIf your download speed is very slow, you can try enable the \"Proxy Downloads\" feature, since this feature has been created just to optimize the download speed.\n\nCreated by marcussacana", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                if (App.IsAndroid)
+                {
+                    await MessageBox.ShowAsync("Is recommended to keep your phone in charger to prevent any battery optimization problems.\nIf you're using MIUI, disable the battery optimizations manually in the app properties.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
             }
 
              Model.CNLService = App.Config.EnableCNL;
@@ -191,6 +206,12 @@ namespace DirectPackageInstaller.Views
                          return;
                      
                      await App.Updater.DownloadUpdate();
+                 }
+
+                 if (string.IsNullOrWhiteSpace(App.WorkingDirectory))
+                 {
+                     await MessageBox.ShowAsync("Failed find the Working Directory Path of the DirectPackageInstaller.\nPlease, Restart the Program.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                     Environment.Exit(0);
                  }
              });
         }
@@ -391,6 +412,11 @@ namespace DirectPackageInstaller.Views
 
                 if (DataInfo != null)
                 {
+                    if (App.IsAndroid && Model.SegmentedMode)
+                    {
+                        await MessageBox.ShowAsync("Download of compressed files in android isn't stable, Segmented Download Will be disabled", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        Model.SegmentedMode = false;
+                    }
                     PKGStream = DataInfo?.Buffer ?? throw new Exception();
                     Installer.EntryFileName = Path.GetFileName(DataInfo?.Filename);
                     CurrentDecompressor = DataInfo?.Archive;
@@ -514,7 +540,7 @@ namespace DirectPackageInstaller.Views
             return FHStream;
         }
 
-        private void ModelOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        private async void ModelOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (Model == null)
                 return;
@@ -885,6 +911,12 @@ namespace DirectPackageInstaller.Views
             Installer.Server.Start();
         }
 
+        private void btnExitOnClick(object? sender, RoutedEventArgs? e)
+        {
+            App.SaveSettings();
+            Environment.Exit(0);
+        }
+        
         private void tbURLOnGotFocus(object? sender, GotFocusEventArgs e)
         {
             if (!App.IsAndroid)
@@ -894,6 +926,63 @@ namespace DirectPackageInstaller.Views
             {
                 tbURL.Text = App.GetClipboardText();
             });
+        }
+
+        bool InLandscape = true;
+        protected override Size MeasureCore(Size availableSize)
+        {
+            bool ChangeToLandscape = availableSize.Width > availableSize.Height; 
+            if (ChangeToLandscape != InLandscape)
+            {
+                if (ChangeToLandscape)
+                {
+                    InLandscape = true;
+                    PreviewGrid.RowDefinitions = new RowDefinitions()
+                    {
+                        new RowDefinition()
+                    };
+                    PreviewGrid.ColumnDefinitions = new ColumnDefinitions()
+                    {
+                        Width > 400 ? new ColumnDefinition(330f, GridUnitType.Pixel) : new ColumnDefinition(),
+                        new ColumnDefinition(5f, GridUnitType.Pixel),
+                        new ColumnDefinition()
+                    };
+
+                    IconBox[Grid.RowProperty] = 0;
+                    IconBox[Grid.ColumnProperty] = 0;
+                    
+                    MainGridSplitter[Grid.RowProperty] = 0;
+                    MainGridSplitter[Grid.ColumnProperty] = 1;
+                    
+                    PkgInfoGrid[Grid.ColumnProperty] = 2;
+                    PkgInfoGrid[Grid.RowProperty] = 0;
+                }
+                else
+                {
+                    InLandscape = false;
+                    PreviewGrid.RowDefinitions = new RowDefinitions()
+                    {
+                        Height > 400 ? new RowDefinition(330f, GridUnitType.Pixel) : new RowDefinition(),
+                        new RowDefinition(5f, GridUnitType.Pixel),
+                        new RowDefinition()
+                    };
+                    PreviewGrid.ColumnDefinitions = new ColumnDefinitions()
+                    {
+                        new ColumnDefinition()
+                    };
+
+                    IconBox[Grid.RowProperty] = 0;
+                    IconBox[Grid.ColumnProperty] = 0;
+                    
+                    MainGridSplitter[Grid.RowProperty] = 1;
+                    MainGridSplitter[Grid.ColumnProperty] = 0;
+                    
+                    PkgInfoGrid[Grid.ColumnProperty] = 0;
+                    PkgInfoGrid[Grid.RowProperty] = 2;
+                }
+            }
+
+            return base.MeasureCore(availableSize);
         }
     }
 }
