@@ -27,6 +27,10 @@ jobs:
       
       - name: Setup Android SDK
         uses:  android-actions/setup-android@v2.0.2
+        
+      - uses: actions/setup-dotnet@v2
+        with:
+            dotnet-version: '6.0.x'
 
       # Runs a single command using the runners shell
       - name: Building
