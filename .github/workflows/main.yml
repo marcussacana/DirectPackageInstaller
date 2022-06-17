@@ -41,6 +41,7 @@ jobs:
             git submodule init
             git submodule update
             dotnet workload install android
+            export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
             sh  Build.cmd
 
       - name: Archive production artifacts
