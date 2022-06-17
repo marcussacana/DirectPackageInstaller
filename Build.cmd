@@ -2,14 +2,19 @@
 goto BATCH
 clear
 
-# The correct SDK directory, contains a build-tools directory
-export AndroidSdkDirectory=~/Android/Sdk/
+if [ -v ANDROID_SDK_ROOT ]; then
+  # The correct SDK directory, contains a build-tools directory
+  export AndroidSdkDirectory=${ANDROID_SDK_ROOT}
 
-# The correct NDK directory, contains a ndk-build executable
-export AndroidNdkDirectory=~/Android/Sdk/ndk/24.0.8215888/ 
+  # The correct NDK directory, contains a ndk-build executable
+  export AndroidNdkDirectory=${ANDROID_SDK_ROOT}/ndk/24.0.8215888/ 
+else
+  # The correct SDK directory, contains a build-tools directory
+  export AndroidSdkDirectory=~/Android/Sdk/
 
-dotnet publish -c Release -r android-arm64
-
+  # The correct NDK directory, contains a ndk-build executable
+  export AndroidNdkDirectory=~/Android/Sdk/ndk/24.0.8215888/ 
+fi;
 
 echo "DirectPackageInstaller Build Script - Unix";
 
