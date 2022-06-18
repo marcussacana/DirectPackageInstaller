@@ -737,7 +737,16 @@ namespace DirectPackageInstaller.Views
 
                 if (Installer.Server != null)
                 {
-                    while (Installer.Server.Decompress.Tasks.Any(x => x.Value.Running) || Installer.Server.Connections > 0)
+                    bool Decompressing() => Installer.Server?.Decompress.Tasks.Any(x => x.Value.Running) ?? false;
+                    
+                    int LastRequest()
+                    {
+                        if (Installer.Server?.LastRequest == null)
+                            return int.MaxValue;
+                        return (int)(DateTime.Now - (Installer.Server!.LastRequest!.Value)).TotalSeconds;
+                    }
+                    
+                    while (Decompressing() || Installer.Server.Connections > 0 || LastRequest() > 15)
                         await Task.Delay(5000);
                 }
             }
