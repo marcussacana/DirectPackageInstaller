@@ -17,6 +17,7 @@ using DirectPackageInstaller.IO;
 using DirectPackageInstaller.Others;
 using DirectPackageInstaller.Tasks;
 using DirectPackageInstaller.ViewModels;
+using DynamicData.Kernel;
 using LibOrbisPkg.PKG;
 using SharpCompress.Archives;
 using Image = Avalonia.Controls.Image;
@@ -679,6 +680,8 @@ namespace DirectPackageInstaller.Views
             if (!BatchList.Any() && (Installer.CurrentFileList == null || CurrentDecompressor == null))
                 return;
 
+            bool ErrorIgnored = false;
+
             foreach (var File in Installer.CurrentFileList ?? BatchList.Select(x => x.Source))
             {
                 var ContentSource = tbURL.Text;
@@ -722,10 +725,14 @@ namespace DirectPackageInstaller.Views
                     } catch { continue; }
                 }
 
-                if (!await Install(ContentSource, true)) {
-                    var Reply = await MessageBox.ShowAsync("Continue trying install the others packages?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                    if (Reply != DialogResult.Yes)
+                if (!await Install(ContentSource, true) && !ErrorIgnored)
+                {
+                    var Reply = await MessageBox.ShowAsync("Continue trying install the others packages?","DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    if (Reply != DialogResult.Yes){
                         break;
+                    }
+
+                    ErrorIgnored = true;
                 }
 
                 if (Installer.Server != null)
@@ -776,18 +783,24 @@ namespace DirectPackageInstaller.Views
                         var OriSource = InputType;
                         InputType = Source.NONE;
                         
-                        var FileEntry = CurrentDecompressor!.Entries.First(x => x.Key.EndsWith(Entry, StringComparison.InvariantCultureIgnoreCase));
-                        Installer.EntryFileName = Path.GetFileName(FileEntry.Key);
-                        var Stream = new ReadSeekableStream(FileEntry.OpenEntryStream());
-                        
-                        App.Callback(() =>
-                        {
-                            BtnLoadOnClick(Stream, null);
-                            
-                            //Restore variables that is modified by the BtnLoadOnClick event
-                            InputType = OriSource;
+                        if (OriSource.HasFlag(Source.RAR) || OriSource.HasFlag(Source.SevenZip)) {
+                            var FileEntry = CurrentDecompressor!.Entries.First(x => x.Key.EndsWith(Entry, StringComparison.InvariantCultureIgnoreCase));
                             Installer.EntryFileName = Path.GetFileName(FileEntry.Key);
-                        });
+                            var Stream = new ReadSeekableStream(FileEntry.OpenEntryStream());
+                            
+                            App.Callback(() =>
+                            {
+                                BtnLoadOnClick(Stream, null);
+                                
+                                //Restore variables that is modified by the BtnLoadOnClick event
+                                InputType = OriSource;
+                                Installer.EntryFileName = Path.GetFileName(FileEntry.Key);
+                            });
+                            return;
+                        }
+
+                        tbURL.Text = Entry;
+                        App.Callback(() => BtnLoadOnClick(Entry, null));
                     };
 
                     Items.Insert(0, Item);

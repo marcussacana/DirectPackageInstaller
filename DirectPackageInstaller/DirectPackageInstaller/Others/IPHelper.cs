@@ -73,16 +73,8 @@ namespace DirectPackageInstaller
                 var Resp = await Response.Content.ReadAsStringAsync();
                 if (Resp.Contains("Unsupported method") && Resp.Contains("fail"))
                     return true;
-#if DEBUG
-                await MessageBox.ShowAsync("RPI RESP: " + Resp, "DPI", MessageBoxButtons.OK, MessageBoxIcon.Error);
-#endif
             }
-            catch (Exception ex)
-            {
-#if DEBUG
-                await MessageBox.ShowAsync("RPI ERROR: " + ex.ToString(), "DPI", MessageBoxButtons.OK, MessageBoxIcon.Error);
-#endif
-            }
+            catch  { }
             return false;
         }
     }
