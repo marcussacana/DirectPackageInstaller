@@ -46,7 +46,7 @@ namespace DirectPackageInstaller
 
         const string UpdateList = "Update.ini";
 
-        public static Version CurrentVersion = new Version("6.1.4");
+        public static Version CurrentVersion = new Version("6.1.5");
 
         public static Version? LastVersion = null;
 

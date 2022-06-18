@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
@@ -19,7 +19,9 @@ using DirectPackageInstaller.Tasks;
 using DirectPackageInstaller.ViewModels;
 using LibOrbisPkg.PKG;
 using SharpCompress.Archives;
+using Image = Avalonia.Controls.Image;
 using Path = System.IO.Path;
+using Size = Avalonia.Size;
 
 namespace DirectPackageInstaller.Views
 {
@@ -207,18 +209,18 @@ namespace DirectPackageInstaller.Views
                      
                      await App.Updater.DownloadUpdate();
                  }
-
-                 if (string.IsNullOrWhiteSpace(App.WorkingDirectory))
-                 {
-                     await MessageBox.ShowAsync("Failed find the Working Directory Path of the DirectPackageInstaller.\nPlease, Restart the Program.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                     Environment.Exit(0);
-                 }
-
-                 if (App.IsAndroid)
-                 {
-                     await MessageBox.ShowAsync("DirectPackageInstaller was developed based on the AvaloniaUI Framework, which is in beta for android devices.\nBe warned that the application may behave poorly and unstable until AvaloniaUI becomes stable.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                 }
              });
+
+             if (string.IsNullOrWhiteSpace(App.WorkingDirectory))
+             {
+                 await MessageBox.ShowAsync("Failed find the Working Directory Path of the DirectPackageInstaller.\nPlease, Restart the Program.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                 Environment.Exit(0);
+             }
+
+             if (App.IsAndroid)
+             {
+                 await MessageBox.ShowAsync("DirectPackageInstaller was developed based on the AvaloniaUI Framework, which is in beta for android devices.\nBe warned that the application may behave poorly and unstable until AvaloniaUI becomes stable.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+             }
         }
 
         
@@ -919,6 +921,7 @@ namespace DirectPackageInstaller.Views
         private void btnExitOnClick(object? sender, RoutedEventArgs? e)
         {
             App.SaveSettings();
+            TempHelper.Clear();
             Environment.Exit(0);
         }
         
@@ -933,7 +936,7 @@ namespace DirectPackageInstaller.Views
             });
         }
 
-        bool InLandscape = true;
+        bool? InLandscape = null;
         protected override Size MeasureCore(Size availableSize)
         {
             bool ChangeToLandscape = availableSize.Width > availableSize.Height; 
@@ -946,10 +949,15 @@ namespace DirectPackageInstaller.Views
                     {
                         new RowDefinition()
                     };
+                    
+                    var IconSize = IconBox.Bounds.Height;
+                    if (IconSize == 0)
+                        IconSize = Double.PositiveInfinity;
+                    
                     PreviewGrid.ColumnDefinitions = new ColumnDefinitions()
                     {
-                        Width > 400 ? new ColumnDefinition(330f, GridUnitType.Pixel) : new ColumnDefinition(),
-                        new ColumnDefinition(5f, GridUnitType.Pixel),
+                        availableSize.Width/2 > IconSize ? new ColumnDefinition(IconSize, GridUnitType.Pixel) : new ColumnDefinition(),
+                        new ColumnDefinition(App.IsAndroid ? 10f : 5f, GridUnitType.Pixel),
                         new ColumnDefinition()
                     };
 
@@ -965,10 +973,15 @@ namespace DirectPackageInstaller.Views
                 else
                 {
                     InLandscape = false;
+
+                    var IconSize = IconBox.Bounds.Width;
+                    if (IconSize == 0)
+                        IconSize = Double.PositiveInfinity;
+                    
                     PreviewGrid.RowDefinitions = new RowDefinitions()
                     {
-                        Height > 400 ? new RowDefinition(330f, GridUnitType.Pixel) : new RowDefinition(),
-                        new RowDefinition(5f, GridUnitType.Pixel),
+                        availableSize.Height/2 > IconSize ? new RowDefinition(IconSize, GridUnitType.Pixel) : new RowDefinition(),
+                        new RowDefinition(App.IsAndroid ? 10f : 5f, GridUnitType.Pixel),
                         new RowDefinition()
                     };
                     PreviewGrid.ColumnDefinitions = new ColumnDefinitions()
