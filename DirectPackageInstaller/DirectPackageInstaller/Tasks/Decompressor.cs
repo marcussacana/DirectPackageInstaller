@@ -143,10 +143,17 @@ namespace DirectPackageInstaller.Tasks
                     Info = URLAnalyzer.URLInfos[FirstUrl];
                     if (Info?.Failed ?? true)
                         return null;
+                    
+                    URLAnalyzer.URLInfoEntry[] URLs;
+                    if (CompType.HasFlag(Source.RAR))
+                        URLs = Info!.Value.Urls.SortRarFiles().ToArray();
+                    else if (CompType.HasFlag(Source.SevenZip))
+                        URLs = Info!.Value.Urls.Sort7zFiles().ToArray();
+                    else throw new NotSupportedException("");
 
                     MissingData = false;
 
-                    if (Volumes.Length != Info?.Urls.Length)
+                    if (Volumes.Length != URLs.Length)
                         MustReload = true;
                 }
 

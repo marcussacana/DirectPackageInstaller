@@ -96,6 +96,7 @@ namespace DirectPackageInstaller
                 IniWriter.SetValue("AllDebridApiKey", Config.AllDebridApiKey);
                 IniWriter.SetValue("Concurrency", SegmentedStream.DefaultConcurrency.ToString());
                 IniWriter.SetValue("ShowError", Config.ShowError.ToString());
+                IniWriter.SetValue("SkipUpdateCheck", Config.SkipUpdateCheck.ToString());
                 
                 IniWriter.Save();
             } catch {}

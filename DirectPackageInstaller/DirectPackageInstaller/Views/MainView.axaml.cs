@@ -117,7 +117,8 @@ namespace DirectPackageInstaller.Views
                 App.Config.AllDebridApiKey = IniReader.GetValue("AllDebridApiKey");
                 App.Config.EnableCNL = IniReader.GetBooleanValue("EnableCNL");
                 App.Config.ShowError = IniReader.GetBooleanValue("ShowError");
-
+                App.Config.SkipUpdateCheck = IniReader.GetBooleanValue("SkipUpdateCheck");
+                
                 ConnectionHelper.AllowReconnect = IniReader.GetBooleanValue("AllowReconnect");
 
                 var Concurrency = IniReader.GetValue("Concurrency");
@@ -141,6 +142,7 @@ namespace DirectPackageInstaller.Views
                     UseAllDebrid = false,
                     EnableCNL = true,
                     ShowError = false,
+                    SkipUpdateCheck = false,
                     AllDebridApiKey = null
                 };
 
@@ -202,7 +204,7 @@ namespace DirectPackageInstaller.Views
              
              App.Callback(async () =>
              {
-                 if (await App.Updater.HasUpdates())
+                 if (!App.Config.SkipUpdateCheck && await App.Updater.HasUpdates())
                  {
                      var Response = await MessageBox.ShowAsync($"New Update Found, You're using the {SelfUpdate.CurrentVersion} the last version is {SelfUpdate.LastVersion},\nDo you wanna update the DirectPackageInstaller now?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                      if (Response != DialogResult.Yes)
