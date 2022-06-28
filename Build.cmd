@@ -11,24 +11,18 @@ fi
 
 echo ".NET 6 SDK FOUND"
 
+# The correct SDK directory, contains a build-tools directory
+export AndroidSdkDirectory=~/Android/Sdk/
+
+# The correct NDK directory, contains a ndk-build executable
+export AndroidNdkDirectory=~/Android/Sdk/ndk/24.0.8215888/
+
 if [ -d "/usr/local/lib/android/sdk" ]; then
    echo "Github Action Android SDK Path Found"
    export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
+   export AndroidSdkDirectory=${ANDROID_SDK_ROOT}
+   export AndroidNdkDirectory=${ANDROID_SDK_ROOT}/ndk/24.0.8215888/ 
 fi
-
-if [ -v ANDROID_SDK_ROOT ]; then
-  # The correct SDK directory, contains a build-tools directory
-  export AndroidSdkDirectory=${ANDROID_SDK_ROOT}
-
-  # The correct NDK directory, contains a ndk-build executable
-  export AndroidNdkDirectory=${ANDROID_SDK_ROOT}/ndk/24.0.8215888/ 
-else
-  # The correct SDK directory, contains a build-tools directory
-  export AndroidSdkDirectory=~/Android/Sdk/
-
-  # The correct NDK directory, contains a ndk-build executable
-  export AndroidNdkDirectory=~/Android/Sdk/ndk/24.0.8215888/ 
-fi;
 
 dotnet clean
 rm -r Release
