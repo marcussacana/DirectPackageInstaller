@@ -870,6 +870,10 @@ namespace DirectPackageInstaller.Views
 
             if (Url.StartsWith("http", StringComparison.InvariantCultureIgnoreCase) && !Uri.IsWellFormedUriString(Url, UriKind.Absolute)) {
                 int PathOrQueryPos = Url.IndexOfAny(new char[] { '/', '?' }, Url.IndexOf("://", StringComparison.Ordinal) + 3);
+                
+                if (PathOrQueryPos < 0)
+                    return;
+                
                 var Host = Url.Substring(0, PathOrQueryPos);
 
                 var PathAndQuery = Url.Substring(PathOrQueryPos);
