@@ -19,9 +19,8 @@ export AndroidNdkDirectory=~/Android/Sdk/ndk/24.0.8215888/
 
 if [ -d "/usr/local/lib/android/sdk" ]; then
    echo "Github Action Android SDK Path Found"
-   export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
-   export AndroidSdkDirectory=${ANDROID_SDK_ROOT}
-   export AndroidNdkDirectory=${ANDROID_SDK_ROOT}/ndk/24.0.8215888/ 
+   export AndroidSdkDirectory=/usr/local/lib/android/sdk
+   export AndroidNdkDirectory=/usr/local/lib/android/sdk/ndk/24.0.8215888/ 
 fi
 
 dotnet clean
