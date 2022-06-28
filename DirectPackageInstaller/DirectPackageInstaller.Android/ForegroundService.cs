@@ -20,10 +20,11 @@ public class ForegroundService : Service
     
     public override void OnCreate()
     {
-        base.OnCreate();
         
         BindChannel();
         BindForeground();
+        
+        base.OnCreate();
     }
 
     public override StartCommandResult OnStartCommand(Intent? intent, StartCommandFlags flags, int startId)
@@ -91,13 +92,15 @@ public class ForegroundService : Service
         {
             try
             {
-                var Notification = new Notification.Builder(this, "ServiceChannel")
-                    .SetContentIntent(
-                        PendingIntent.GetBroadcast(this, 0, new Intent(this, typeof(NotificationReceiver)), 0))
-                    .SetContentText("A thread is running.")
-                    .Build();
+                var Intent = new Intent(this, typeof(NotificationReceiver));
+                PendingIntentFlags Flags = Build.VERSION.SdkInt >= BuildVersionCodes.S ? PendingIntentFlags.Mutable : 0;
+                var pendingIntent = PendingIntent.GetBroadcast(this, 0, Intent, Flags);
+                
+                var Notification = new Notification.Builder(this, "ServiceChannel");
+                Notification.SetContentIntent(pendingIntent);
+                Notification.SetContentText("A thread is running.");
 
-                StartForeground(NotificationID, Notification);
+                StartForeground(NotificationID, Notification.Build());
             }
             catch (Exception ex)
             {

@@ -651,7 +651,7 @@ namespace DirectPackageInstaller.Views
             {
                 if (!await IPHelper.IsRPIOnline(App.Config.PS4IP) && !await Installer.TryConnectSocket(App.Config.PS4IP))
                 {
-                    await MessageBox.ShowAsync($"Remote Package Installer Not Found at {App.Config.PS4IP}, Ensure if he is open.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    await MessageBox.ShowAsync($"Remote Package Installer or GoldHEN Not Found at {App.Config.PS4IP}, Verify if is running.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return false;
                 }
 
