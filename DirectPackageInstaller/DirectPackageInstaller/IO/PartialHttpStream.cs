@@ -61,7 +61,7 @@ namespace DirectPackageInstaller.IO
 
         public override bool CanRead => true;
         public override bool CanWrite => false;
-        public override bool CanSeek => true;
+        public override bool CanSeek => Length > 0;
 
         public override long Position { get; set; }
 
@@ -238,7 +238,7 @@ namespace DirectPackageInstaller.IO
                     foreach (var Header in Headers)
                         req.Headers[Header.Key] = Header.Value;
 
-                    if (length != null || Position > 0)
+                    if (length > 0 || Position > 0)
                         req.AddRange(Position, Length - 1);
                     
                     resp = req.GetResponse();
@@ -273,6 +273,9 @@ namespace DirectPackageInstaller.IO
                     Readed = ResponseStream.Read(buffer, offset + nread, count - nread);
                     nread += Readed;
                 } while (Readed > 0 && count > 0);
+
+                if (Readed == 0 && length is null or -1)
+                    length = nread;
 
                 offset += nread;
                 count -= nread;

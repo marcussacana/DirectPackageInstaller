@@ -46,7 +46,7 @@ namespace DirectPackageInstaller
 
         const string UpdateList = "Update.ini";
 
-        public static Version CurrentVersion = new Version("6.1.8");
+        public static Version CurrentVersion = new Version("6.1.9");
 
         public static Version? LastVersion = null;
 
@@ -156,14 +156,17 @@ namespace DirectPackageInstaller
 
         public bool FinishUpdatePending()
         {
-            if (!App.IsAndroid)
+            if (App.IsAndroid)
             {
                 try
                 {
                     if (Directory.Exists(TempUpdateDir))
+                    {
                         Directory.Delete(TempUpdateDir, true);
+                    }
                 }
                 catch { }
+
                 return false;
             }
             

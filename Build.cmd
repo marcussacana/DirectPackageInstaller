@@ -71,12 +71,10 @@ OSXPublish (){
 
 AndroidPublish (){
    if ! [ -d "${AndroidSdkDirectory}build-tools" ]; then
-   	printf "\x1b[31mINVALID ANDROID SDK PATH\x1b[0m\n";
-   	return;
+   	echo "POSSIBLE INVALID ANDROID SDK PATH";
    fi
    if ! [ -f "${AndroidNdkDirectory}ndk-build" ]; then
-   	printf "\x1b[31mINVALID ANDROID NDK PATH\x1b[0m\n";
-   	return;
+   	echo "POSSIBLE INVALID ANDROID NDK PATH";
    fi
    
    dotnet workload restore
