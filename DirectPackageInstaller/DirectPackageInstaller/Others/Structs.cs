@@ -18,7 +18,9 @@ public class FileEntry
 
     public bool IsPhone { get; set; }
     public bool IsSDCard { get; set; }
-    public bool IsPKG => !IsDirectory && Name.EndsWith(".pkg", StringComparison.InvariantCultureIgnoreCase);
+
+    public bool IsPKG => !IsDirectory && (Name.EndsWith(".pkg", StringComparison.InvariantCultureIgnoreCase) ||
+                                          Name.EndsWith(".json", StringComparison.InvariantCultureIgnoreCase));
     public bool IsDirectory => FullPath.EndsWith("\\") || FullPath.EndsWith("/");
 
     public string Name

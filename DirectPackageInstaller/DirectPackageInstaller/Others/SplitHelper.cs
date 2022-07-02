@@ -20,6 +20,16 @@ namespace DirectPackageInstaller
                 return OpenJSON(JSON);
             }
         }
+        
+        public static Stream OpenLocalJSON(string FilePath) {
+            using (Stream Reader = new FileStream(FilePath, FileMode.Open, FileAccess.Read))
+            using (MemoryStream Buffer = new MemoryStream())
+            {
+                Reader.CopyTo(Buffer);
+                var JSON = Encoding.UTF8.GetString(Buffer.ToArray());
+                return OpenJSON(JSON);
+            }
+        }
 
         private static Stream OpenJSON(string JSON)
         {

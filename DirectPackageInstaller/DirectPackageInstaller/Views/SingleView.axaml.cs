@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using DirectPackageInstaller.ViewModels;
@@ -58,6 +59,7 @@ public partial class SingleView : UserControl
 
         if (Popup)
         {
+            View.AttachedToVisualTree += ViewOnAttachedToVisualTree;
             LifetimeView.Popup.IsVisible = true;
             LifetimeView.PopupContent.Children.Clear();
             LifetimeView.PopupContent.Children.Add(View);
@@ -70,6 +72,11 @@ public partial class SingleView : UserControl
         }
 
         await CompletionSource.Task;
+    }
+
+    private static void ViewOnAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        ((UserControl?)sender)?.Focus();
     }
 
     public static void ReturnView(UserControl View)

@@ -105,7 +105,20 @@ namespace DirectPackageInstaller.Tasks
 
             try
             {
-                This.SegmentedRead = new SegmentedStream(() => new FileHostStream(This.Url), null);
+                This.SegmentedRead = new SegmentedStream(() =>
+                {
+                    if (This.Url.EndsWith(".json", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        if (This.Url.IsFilePath())
+                        {
+                            return SplitHelper.OpenLocalJSON(This.Url);
+                        }
+
+                        return SplitHelper.OpenRemoteJSON(This.Url);
+                    }
+                    
+                    return new FileHostStream(This.Url);
+                }, null);
                 This.OpenRead = () => This.SegmentedRead;
             }
             catch (Exception ex)

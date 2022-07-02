@@ -82,7 +82,7 @@ namespace DirectPackageInstaller.Tasks
                 InputType &= ~(Source.Proxy | Source.Segmented | Source.DiskCache);
 
             if (InputType.HasFlag(Source.JSON))
-                InputType &= ~(Source.Proxy | Source.Segmented);
+                InputType &= ~(Source.Proxy | Source.DiskCache | Source.URL | Source.File);
 
             if (InputType.HasFlag(Source.File))
                 InputType &= ~(Source.Proxy | Source.Segmented | Source.DiskCache);
@@ -151,6 +151,7 @@ namespace DirectPackageInstaller.Tasks
                     URL = $"http://{Config.PCIP}:{ServerPort}/{(InputType.HasFlag(Source.SevenZip) ? "un7z" : "unrar")}/?id={ID}";
                     break;
 
+                case Source.JSON | Source.Segmented:
                 case Source.URL | Source.DiskCache:
                 case Source.URL | Source.Segmented:
                     var CacheTask = Downloader.CreateTask(URL);
@@ -170,9 +171,10 @@ namespace DirectPackageInstaller.Tasks
                     URL = $"http://{Config.PCIP}:{ServerPort}/proxy/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
                     break;
 
-                case Source.URL | Source.JSON:
+                case Source.JSON:
                     URL = $"http://{Config.PCIP}:{ServerPort}/merge/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
                     break;
+                
                 case Source.File:
                     URL = $"http://{Config.PCIP}:{ServerPort}/file/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
                     break;
@@ -461,7 +463,7 @@ namespace DirectPackageInstaller.Tasks
                     Message += $"\nOr clean more {AltMissingSpace.ToFileSize()} in your {AltStorageName}.";
                 }
                 
-                if (InputType == (Source.URL | Source.Segmented))
+                if (InputType.HasFlag(Source.Segmented))
                     Message += "\nAlternatively, you can disable Segmented Download feature.";
 
                 if (!TempHelper.CacheIsEmpty() && Server is {Connections: 0})

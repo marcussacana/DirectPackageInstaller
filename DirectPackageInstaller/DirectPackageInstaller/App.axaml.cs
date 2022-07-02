@@ -1,4 +1,4 @@
-#define DEBUG_SINGLEVIEW
+//#define DEBUG_SINGLEVIEW
 
 using System;
 using System.Collections;

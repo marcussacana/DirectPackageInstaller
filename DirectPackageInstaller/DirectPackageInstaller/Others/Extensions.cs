@@ -111,6 +111,11 @@ public static class Extensions
                 return httpStream.Filename;
             return null;
         }
+
+        public static bool IsFilePath(this string Path)
+        {
+            return Path.Length > 2 && (Path[1] == ':' || Path[0] == '/' || Path.StartsWith("\\\\"));
+        }
         public static string Substring(this string String, string Substring)
         {
             return String.Substring(String.IndexOf(Substring) + Substring.Length);

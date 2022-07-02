@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using DirectPackageInstaller.ViewModels;
@@ -33,6 +34,53 @@ public partial class MessageBoxView : UserControl
         ButtonB.Click += BtnClicked;
         ButtonC.Click += BtnClicked;
         ButtonD.Click += BtnClicked;
+
+        KeyDown += OnKeyDown;
+
+        AttachedToVisualTree += (sender, args) =>
+        {
+            ((UserControl?)sender)?.Focus();
+        };
+    }
+
+    private void OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter)
+        {
+            if (Model!.Buttons.HasFlag(MessageBoxButtons.OK))
+            {
+                e.Handled = true;
+                Model.Result = DialogResult.OK;
+                Close();
+                return;
+            }
+            if (Model!.Buttons.HasFlag(MessageBoxButtons.Yes))
+            {
+                e.Handled = true;
+                Model.Result = DialogResult.Yes;
+                Close();
+                return;
+            }
+        }
+
+        if (e.Key == Key.Escape)
+        {
+            if (Model!.Buttons.HasFlag(MessageBoxButtons.Cancel))
+            {
+                e.Handled = true;
+                Model.Result = DialogResult.Cancel;
+                Close();
+                return;
+            }
+            
+            if (Model!.Buttons.HasFlag(MessageBoxButtons.No))
+            {
+                e.Handled = true;
+                Model.Result = DialogResult.No;
+                Close();
+                return;
+            }
+        }
     }
 
     private Window? Window;
@@ -152,17 +200,22 @@ public partial class MessageBoxView : UserControl
                 return;
         }
         
-            App.Callback(() =>
+        Close();
+    }
+
+    private void Close()
+    {
+        App.Callback(() =>
+        {
+            if (Window == null)
             {
-                if (Window == null)
-                {
-                    SingleView.ReturnView(this);
-                }
-                else
-                {
-                    Window.Hide();
-                    App.Callback(Window.Close);
-                }
-            });
+                SingleView.ReturnView(this);
+            }
+            else
+            {
+                Window.Hide();
+                App.Callback(Window.Close);
+            }
+        });
     }
 }

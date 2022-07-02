@@ -1,25 +1,23 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using LibOrbisPkg.PKG;
+using SharpCompress.Archives;
 using DirectPackageInstaller.Compression;
 using DirectPackageInstaller.Host;
 using DirectPackageInstaller.IO;
 using DirectPackageInstaller.Others;
 using DirectPackageInstaller.Tasks;
 using DirectPackageInstaller.ViewModels;
-using DynamicData.Kernel;
-using LibOrbisPkg.PKG;
-using SharpCompress.Archives;
 using Image = Avalonia.Controls.Image;
 using Path = System.IO.Path;
 using Size = Avalonia.Size;
@@ -90,7 +88,10 @@ namespace DirectPackageInstaller.Views
             btnExit.IsVisible = App.IsAndroid;
             
             CNL.OnLinksReceived = OnLinksReceived;
+            
+            IconBox.PropertyChanged += IconBoxOnPropertyChanged; 
         }
+
         public async Task OnShown(MainWindow? Parent)
         {
             if (Model == null)
@@ -277,7 +278,12 @@ namespace DirectPackageInstaller.Views
                             new()
                             {
                                 Name = "ALL PKG Files",
-                                Extensions = new List<string>() {"pkg", "PKG"},
+                                Extensions = new List<string>() {"pkg", "PKG", "json", "JSON"},
+                            },
+                            new()
+                            {
+                                Name = "Split PKG Manifest",
+                                Extensions = new List<string>() {"json", "JSON"}
                             },
                             new()
                             {
@@ -354,11 +360,18 @@ namespace DirectPackageInstaller.Views
                 {
                     if (SourcePackage.EndsWith(".json", StringComparison.InvariantCultureIgnoreCase))
                     {
-                        PKGStream = SplitHelper.OpenRemoteJSON(SourcePackage);
-                        InputType = Source.URL | Source.JSON;
+                        if (SourcePackage.IsFilePath())
+                        {
+                            InputType = Source.File | Source.JSON;
+                            PKGStream = SplitHelper.OpenLocalJSON(SourcePackage);
+                        }
+                        else
+                        {
+                            PKGStream = SplitHelper.OpenRemoteJSON(SourcePackage);
+                            InputType = Source.URL | Source.JSON;
+                        }
                     }
-                    else if (SourcePackage.Length > 2 && (SourcePackage[1] == ':' || SourcePackage[0] == '/' ||
-                                                          SourcePackage.StartsWith("\\\\")))
+                    else if (SourcePackage.IsFilePath())
                     {
                         PKGStream = File.Open(SourcePackage, FileMode.Open, FileAccess.Read, FileShare.Read);
                         InputType = Source.File;
@@ -964,6 +977,15 @@ namespace DirectPackageInstaller.Views
             });
         }
 
+        private void IconBoxOnPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+        {
+            if (e.Property.Name != "Bounds")
+                return;
+            
+            InLandscape = null;
+            InvalidateMeasure();
+        }
+
         bool? InLandscape = null;
         protected override Size MeasureCore(Size availableSize)
         {
@@ -978,13 +1000,15 @@ namespace DirectPackageInstaller.Views
                         new RowDefinition()
                     };
                     
-                    var IconSize = IconBox.Bounds.Height;
+                    var IconSize = PreviewGrid.Bounds.Height;
                     if (IconSize == 0)
                         IconSize = Double.PositiveInfinity;
+
+                    var MaxWidth = availableSize.Width / 2;
                     
                     PreviewGrid.ColumnDefinitions = new ColumnDefinitions()
                     {
-                        availableSize.Width/2 > IconSize ? new ColumnDefinition(IconSize, GridUnitType.Pixel) : new ColumnDefinition(),
+                        MaxWidth > IconSize ? new ColumnDefinition(IconSize, GridUnitType.Pixel) : new ColumnDefinition(),
                         new ColumnDefinition(App.IsAndroid ? 10f : 5f, GridUnitType.Pixel),
                         new ColumnDefinition()
                     };
@@ -1002,13 +1026,15 @@ namespace DirectPackageInstaller.Views
                 {
                     InLandscape = false;
 
-                    var IconSize = IconBox.Bounds.Width;
+                    var IconSize = PreviewGrid.Bounds.Width;
                     if (IconSize == 0)
                         IconSize = Double.PositiveInfinity;
+
+                    var MaxHeight = availableSize.Height / 2;
                     
                     PreviewGrid.RowDefinitions = new RowDefinitions()
                     {
-                        availableSize.Height/2 > IconSize ? new RowDefinition(IconSize, GridUnitType.Pixel) : new RowDefinition(),
+                        MaxHeight > IconSize ? new RowDefinition(IconSize, GridUnitType.Pixel) : new RowDefinition(),
                         new RowDefinition(App.IsAndroid ? 10f : 5f, GridUnitType.Pixel),
                         new RowDefinition()
                     };
@@ -1025,6 +1051,16 @@ namespace DirectPackageInstaller.Views
                     
                     PkgInfoGrid[Grid.ColumnProperty] = 0;
                     PkgInfoGrid[Grid.RowProperty] = 2;
+                }
+            }
+            else if (InLandscape != null)
+            {
+                var CurrentSize = InLandscape == true ? PreviewGrid.Bounds.Height : PreviewGrid.Bounds.Width;
+                var MaxSize = InLandscape == true ? availableSize.Width / 2 : availableSize.Height / 2;
+                if (CurrentSize > MaxSize)
+                {
+                    InLandscape = null;
+                    return MeasureCore(availableSize);
                 }
             }
 

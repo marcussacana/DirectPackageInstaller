@@ -31,9 +31,9 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
              <Button Grid.Column="4" Name="ButtonA" />
-            <Button Grid.Column="3" Name="ButtonB" />
-            <Button Grid.Column="2" Name="ButtonC" />
-            <Button Grid.Column="1" Name="ButtonD" />
+             <Button Grid.Column="3" Name="ButtonB" />
+             <Button Grid.Column="2" Name="ButtonC" />
+             <Button Grid.Column="1" Name="ButtonD" />
         </Grid>
     </Grid>
     <UserControl.Styles>

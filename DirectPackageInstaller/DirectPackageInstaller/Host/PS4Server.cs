@@ -275,7 +275,7 @@ namespace DirectPackageInstaller.Host
             Context.Response.StatusCode = Partial ? 206 : 200;
             Context.Response.StatusDescription = Partial ? "Partial Content" : "OK";
 
-            Stream Origin = SplitHelper.OpenRemoteJSON(Url);
+            Stream Origin = Url.IsFilePath() ? SplitHelper.OpenLocalJSON(Url) : SplitHelper.OpenRemoteJSON(Url);
 
             try
             {
