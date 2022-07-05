@@ -209,7 +209,7 @@ namespace DirectPackageInstaller
             return Failed;
         }
         
-        internal static Settings Config;
+        internal static Settings Config = new Settings();
 
         internal static WebClientWithCookies HttpClient = new WebClientWithCookies();
         internal static bool IsRunningOnMono => Type.GetType("Mono.Runtime") != null;
@@ -255,8 +255,19 @@ namespace DirectPackageInstaller
         public static bool UseSDCard = false;
         public static string? CacheBaseDirectory => (UseSDCard ? AndroidSDCacheDir : AndroidCacheDir) ?? AndroidCacheDir;
         
-        public static string WorkingDirectory => _WorkingDir ??= Environment.GetEnvironmentVariable("CD") ?? Directory.GetCurrentDirectory();
-        
+        public static string WorkingDirectory
+        {
+            get
+            {
+                var Result = _WorkingDir ??= Environment.GetEnvironmentVariable("CD") ?? Directory.GetCurrentDirectory();
+                
+                if (string.IsNullOrWhiteSpace(Result.Trim('/', '\\')))
+                    throw new Exception("FAILED TO GET THE WORKING DIRECTORY PATH");
+                
+                return Result;
+            }
+        }
+
         public static Func<long> GetFreeStorageSpace = () =>
         {
             if (CurrentPlatform == OS.Windows)

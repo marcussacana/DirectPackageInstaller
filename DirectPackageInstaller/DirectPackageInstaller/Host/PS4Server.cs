@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -23,10 +24,8 @@ namespace DirectPackageInstaller.Host
         public Dictionary<string, string> JSONs = new Dictionary<string, string>();
 
         Dictionary<string, int> Instances = new Dictionary<string, int>();
-
-#if DEBUG
-        static TextWriter LOGWRITER = System.IO.File.CreateText(Path.Combine(App.WorkingDirectory, "DPIServer.log"));
-#endif
+        
+        static TextWriter? LOGWRITER = null;
         public int Connections { get; private set; } = 0;
 
         public string LastRequestMode = null;
@@ -37,6 +36,9 @@ namespace DirectPackageInstaller.Host
         public string IP { get => Server.Settings.Hostname; }
         public PS4Server(string IP, int Port = 9898)
         {
+            if (App.Config.ShowError)
+                LOGWRITER = System.IO.File.CreateText(Path.Combine(App.WorkingDirectory, "DPIServer.log"));
+            
             Server = new Webserver(new WebserverSettings(IP, Port)
             {
                 IO = new WebserverSettings.IOSettings()
@@ -50,14 +52,17 @@ namespace DirectPackageInstaller.Host
             LOG("Server Address: {0}:{1}", IP, Port);
         }
 
-        public void LOG(string Message, params object[] Format) {
-#if DEBUG
+        private static void LOG(string Message, params object[] Format)
+        {
+            if (!App.Config.ShowError || LOGWRITER == null)
+                return;
+            
             lock (LOGWRITER)
             {
-                LOGWRITER.WriteLine(string.Format(Message, Format));
+                LOGWRITER.WriteLine(Message, Format);
                 LOGWRITER.Flush();
             }
-#endif
+            
         }
 
         public void Start()

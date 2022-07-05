@@ -167,18 +167,20 @@ namespace DirectPackageInstaller.Views
             {
                 _ = PS4Finder.StartFinder((PS4IP, PCIP) =>
                 {
-                    Dispatcher.UIThread.InvokeAsync(() =>
+                    Dispatcher.UIThread.InvokeAsync(async () =>
                     {
-                        if (string.IsNullOrEmpty(Model.PS4IP))
+                        if (!string.IsNullOrEmpty(Model.PS4IP))
                         {
-                            Model.PS4IP = PS4IP.ToString();
-                            
-                            var NewPCIP = PCIP?.ToString() ?? IPHelper.FindLocalIP(PS4IP.ToString()) ?? "";
-                            if (!string.IsNullOrWhiteSpace(NewPCIP) && NewPCIP != "0.0.0.0")
-                                Model.PCIP = NewPCIP;
-                            
-                            RestartServer_OnClick(null, null);
+                            if (Model.PS4IP == PS4IP.ToString() || await MessageBox.ShowAsync($"A new PS4 IP has been found ({PS4IP}), Update the PS4 IP?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.No)
+                                return;
                         }
+                        Model.PS4IP = PS4IP.ToString();
+                        
+                        var NewPCIP = PCIP?.ToString() ?? IPHelper.FindLocalIP(PS4IP.ToString()) ?? "";
+                        if (!string.IsNullOrWhiteSpace(NewPCIP) && NewPCIP != "0.0.0.0")
+                            Model.PCIP = NewPCIP;
+                        
+                        RestartServer_OnClick(null, null);
                     });
                 });
             }
@@ -469,6 +471,8 @@ namespace DirectPackageInstaller.Views
             }
             catch (Exception ex)
             {
+                await File.WriteAllTextAsync(Path.Combine(App.WorkingDirectory, "DPI-ERROR.log"), ex.ToString());
+                
                 if (ex is not AbortException)
                     await MessageBox.ShowAsync(ex.ToString(), "DirectPackageInstaller - Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 else if (App.Config.ShowError)
