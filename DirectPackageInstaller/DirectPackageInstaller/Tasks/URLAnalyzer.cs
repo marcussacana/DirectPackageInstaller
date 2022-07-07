@@ -57,7 +57,7 @@ public static class URLAnalyzer
                     Info.Stream = () => new FileHostStream(URL);
                     
                     FileHostStream Head = Info.Stream();
-                    Info.Filename = Head.Filename;
+                    Info.Filename = Head.TryGetRemoteFileName();
                     
                     if (Head.SingleConnection)
                     {

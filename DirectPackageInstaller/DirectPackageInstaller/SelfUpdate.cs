@@ -46,7 +46,7 @@ namespace DirectPackageInstaller
 
         const string UpdateList = "Update.ini";
 
-        public static Version CurrentVersion = new Version("6.1.11");
+        public static Version CurrentVersion = new Version("6.1.12");
 
         public static Version? LastVersion = null;
 
@@ -294,8 +294,7 @@ namespace DirectPackageInstaller
                 MemoryStream MEM = new MemoryStream();
 
                 PartialHttpStream File = new PartialHttpStream(URL);
-                await File.CopyToAsync(MEM);
-
+                await File.CopyToAsync(MEM, 1024);
                 byte[] DATA = MEM.ToArray();
                 MEM.Close();
                 return DATA;

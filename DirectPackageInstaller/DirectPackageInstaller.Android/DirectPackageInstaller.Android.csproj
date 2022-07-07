@@ -29,10 +29,8 @@
         <DebugSymbols>True</DebugSymbols>
         <DebugType>portable</DebugType>
         <AndroidLinkMode>none</AndroidLinkMode>
-        <EnableLLVM>False</EnableLLVM>
         <DebugType>pdbonly</DebugType>
         <RunAOTCompilation>False</RunAOTCompilation>
-        <EmbedAssembliesIntoApk>True</EmbedAssembliesIntoApk>
     </PropertyGroup>
 
     <ItemGroup>

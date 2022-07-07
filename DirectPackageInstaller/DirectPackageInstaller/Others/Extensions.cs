@@ -108,7 +108,7 @@ public static class Extensions
                 Source = decomp.Base;
             
             if (Source is PartialHttpStream httpStream)
-                return httpStream.Filename;
+                return httpStream.Filename ?? Path.GetFileName(httpStream.FinalURL);
             return null;
         }
 

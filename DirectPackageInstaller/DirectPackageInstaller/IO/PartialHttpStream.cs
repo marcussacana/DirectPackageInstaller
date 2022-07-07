@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Web;
 
 namespace DirectPackageInstaller.IO
@@ -12,13 +13,13 @@ namespace DirectPackageInstaller.IO
         public WebProxy Proxy = null;
 
         public Action RefreshUrl = null;
-        private string FinalURL;
+        public string FinalURL { get; private set; }
         private string FinalContentType;
 
         public List<(string Key, string Value)> Headers = new List<(string Key, string Value)>();
         public CookieContainer Cookies = new CookieContainer();
         string _fn;
-        public string Filename
+        public string? Filename
         {
             get {
                 if (Length == 0)
@@ -61,7 +62,7 @@ namespace DirectPackageInstaller.IO
 
         public override bool CanRead => true;
         public override bool CanWrite => false;
-        public override bool CanSeek => Length > 0;
+        public override bool CanSeek => length == null || length > 0;
 
         public override long Position { get; set; }
 
@@ -74,7 +75,7 @@ namespace DirectPackageInstaller.IO
             {
                 if (length == null)
                     length = HttpGetLength();
-                return length.Value;
+                return length ?? -1;
             }
         }
 
@@ -228,7 +229,7 @@ namespace DirectPackageInstaller.IO
                     }
 
                     req = HttpWebRequest.CreateHttp(Url);
-                    req.ConnectionGroupName = new Guid().ToString();
+                    req.ConnectionGroupName = Guid.NewGuid().ToString();
                     req.CookieContainer = Cookies;
                     req.CachePolicy = new System.Net.Cache.RequestCachePolicy(System.Net.Cache.RequestCacheLevel.NoCacheNoStore);
 
@@ -343,11 +344,12 @@ namespace DirectPackageInstaller.IO
             try
             {
                 HttpWebRequest request = WebRequest.CreateHttp(Url);
-                request.ConnectionGroupName = new Guid().ToString();
+                request.ConnectionGroupName = Guid.NewGuid().ToString();
                 request.KeepAlive = false;
                 request.CookieContainer = Cookies;
                 request.Proxy = Proxy;
                 request.Method = NoHead ? "GET" : "HEAD";
+                request.Timeout = 15000;
 
 
                 foreach (var Header in Headers)

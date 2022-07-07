@@ -89,7 +89,7 @@ namespace DirectPackageInstaller.Views
             
             CNL.OnLinksReceived = OnLinksReceived;
             
-            IconBox.PropertyChanged += IconBoxOnPropertyChanged; 
+            PreviewGrid.PropertyChanged += PreviewGridOnPropertyChanged; 
         }
 
         public async Task OnShown(MainWindow? Parent)
@@ -477,7 +477,7 @@ namespace DirectPackageInstaller.Views
                     await MessageBox.ShowAsync(ex.ToString(), "DirectPackageInstaller - Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 else if (App.Config.ShowError)
                     await MessageBox.ShowAsync(ex.Message, "DirectPackageInstaller - Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                
+
                 IconBox.Source = null;
                 Model.PKGParams?.Clear();
 
@@ -485,6 +485,9 @@ namespace DirectPackageInstaller.Views
                 btnLoad.Content = "Load";
 
                 PackagesMenu.IsVisible = false;
+#if DEBUG
+                throw;
+#endif
 
                 await SetStatus("Failed to Open the PKG");
             }
@@ -981,7 +984,7 @@ namespace DirectPackageInstaller.Views
             });
         }
 
-        private void IconBoxOnPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+        private void PreviewGridOnPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
         {
             if (e.Property.Name != "Bounds")
                 return;
