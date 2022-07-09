@@ -36,8 +36,14 @@ namespace DirectPackageInstaller.Host
         public string IP { get => Server.Settings.Hostname; }
         public PS4Server(string IP, int Port = 9898)
         {
+            
+#if DEBUG
+            if (LOGWRITER == null)
+                LOGWRITER = System.IO.File.CreateText(Path.Combine(App.WorkingDirectory, "DPIServer.log"));
+#else
             if (App.Config.ShowError)
                 LOGWRITER = System.IO.File.CreateText(Path.Combine(App.WorkingDirectory, "DPIServer.log"));
+#endif
             
             Server = new Webserver(new WebserverSettings(IP, Port)
             {
@@ -54,8 +60,10 @@ namespace DirectPackageInstaller.Host
 
         private static void LOG(string Message, params object[] Format)
         {
+#if !DEBUG
             if (!App.Config.ShowError || LOGWRITER == null)
                 return;
+#endif
             
             lock (LOGWRITER)
             {
@@ -77,11 +85,14 @@ namespace DirectPackageInstaller.Host
             LOG("Server Stopped");
         }
 
+        private static int ConnectionID = 0;
         async Task Process(HttpContext Context)
         {
             LastRequest = DateTime.Now;
-            
-            LOG("Request Received: {0}", Context.Request.Url.Full);
+
+            int CID = ConnectionID++;
+
+            LOG("Request '{0}' Received: {1}", CID, Context.Request.Url.Full);
             foreach (var Header in Context.Request.Headers)
                 LOG("Request Header: {0}: {1}", Header.Key, Header.Value);
 
@@ -148,6 +159,7 @@ namespace DirectPackageInstaller.Host
             }
             finally
             {
+                LOG("Connection '{0}' Closed", CID);
                 LastRequest = DateTime.Now;
                 Connections--;
             }

@@ -379,10 +379,13 @@ namespace DirectPackageInstaller.IO
 
             if (Response.Headers.AllKeys.Contains("Content-Disposition"))
             {
-                _fn = Response.Headers["Content-Disposition"];
+                var Disposition = Response.Headers["Content-Disposition"]!;
                 const string prefix = "filename=";
-                _fn = _fn.Substring(_fn.IndexOf(prefix) + prefix.Length).Trim('"');
-                _fn = HttpUtility.UrlDecode(_fn.Split(';').First().Trim('"'));
+                if (Disposition.Contains(prefix, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    Disposition = Disposition.Substring(Disposition.IndexOf(prefix, StringComparison.InvariantCultureIgnoreCase) + prefix.Length).Trim('"');
+                    _fn = HttpUtility.UrlDecode(Disposition.Split(';').First().Trim('"'));
+                }
             }
 
             var Length = Response.ContentLength;
