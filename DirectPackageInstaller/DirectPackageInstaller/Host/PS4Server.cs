@@ -148,6 +148,8 @@ namespace DirectPackageInstaller.Host
                     await Proxy(Context, Query, Url);
                 else if (Path.StartsWith("merge"))
                     await Merge(Context, Query, Url);
+                else if (Path.StartsWith("torrent"))
+                    await Torrent(Context, Query, Url);
                 else if (Path.StartsWith("file"))
                     await File(Context, Query, Url);
                 else if (Path.StartsWith("cache"))
@@ -165,6 +167,34 @@ namespace DirectPackageInstaller.Host
             }
 
             //Context.Close();
+        }
+        async Task Torrent(HttpContext Context, NameValueCollection Query, string Path)
+        {
+            HttpRange? Range = null;
+            bool Partial = Context.Request.HeaderExists("Range", true);
+            if (Partial)
+                Range = new HttpRange(Context.Request.Headers["Range"]);
+
+            Context.Response.StatusCode = Partial ? 206 : 200;
+            Context.Response.StatusDescription = Partial ? "Partial Content" : "OK";
+
+            Stream Origin = null;
+            if (Path.IsFilePath())
+                await App.RunInNewThread(() => Origin = new TorrentStream(System.IO.File.ReadAllBytes(Path)));
+            else
+                await App.RunInNewThread(() => Origin = new TorrentStream(Path));
+
+            if (Origin == null)
+                throw new Exception("Failed to open the torrent");
+
+            try
+            {
+                await SendStream(Context, Origin, Range);
+            }
+            finally
+            {
+                Origin.Close();
+            }
         }
 
         async Task File(HttpContext Context, NameValueCollection Query, string Path)

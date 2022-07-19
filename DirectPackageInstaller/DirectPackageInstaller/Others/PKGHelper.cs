@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
 using DirectPackageInstaller.ViewModels;
 using LibOrbisPkg.PKG;
@@ -12,6 +13,14 @@ namespace DirectPackageInstaller;
 
 public static class PKGHelper
 {
+    public static async Task<PKGInfo?> GetPKGInfoAsync(this Stream Input)
+    {
+        PKGInfo? Result = null;
+        if (await App.RunInNewThread(() => Result = Input.GetPKGInfo()))
+            return null;
+        return Result;
+    }
+    
     public static PKGInfo? GetPKGInfo(this Stream Input)
     {
         try

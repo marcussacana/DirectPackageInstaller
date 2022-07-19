@@ -78,8 +78,11 @@ namespace DirectPackageInstaller.Tasks
 
 
             //Just to reduce the switch cases
+            if (InputType.HasFlag(Source.Torrent))
+                InputType &= ~(Source.File | Source.URL | Source.Proxy | Source.Segmented | Source.DiskCache);
+
             if (InputType.HasFlag(Source.SevenZip) || InputType.HasFlag(Source.RAR))
-                InputType &= ~(Source.Proxy | Source.Segmented | Source.DiskCache);
+                InputType &= ~(Source.Proxy | Source.Segmented | Source.DiskCache | Source.Torrent);
 
             if (InputType.HasFlag(Source.JSON))
                 InputType &= ~(Source.Proxy | Source.DiskCache | Source.URL | Source.File);
@@ -179,6 +182,10 @@ namespace DirectPackageInstaller.Tasks
                     URL = $"http://{Config.PCIP}:{ServerPort}/file/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
                     break;
 
+                case Source.Torrent:
+                    URL = $"http://{Config.PCIP}:{ServerPort}/torrent/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
+                    break;
+                
                 case Source.URL:
                     break;
 

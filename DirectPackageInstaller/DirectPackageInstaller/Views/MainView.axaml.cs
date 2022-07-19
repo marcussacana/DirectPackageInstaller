@@ -18,6 +18,7 @@ using DirectPackageInstaller.IO;
 using DirectPackageInstaller.Others;
 using DirectPackageInstaller.Tasks;
 using DirectPackageInstaller.ViewModels;
+using MonoTorrent;
 using Image = Avalonia.Controls.Image;
 using Path = System.IO.Path;
 using Size = Avalonia.Size;
@@ -280,12 +281,17 @@ namespace DirectPackageInstaller.Views
                             new()
                             {
                                 Name = "ALL PKG Files",
-                                Extensions = new List<string>() {"pkg", "PKG", "json", "JSON"},
+                                Extensions = new List<string>() {"pkg", "PKG", "json", "JSON", "torrent", "TORRENT"},
                             },
                             new()
                             {
                                 Name = "Split PKG Manifest",
                                 Extensions = new List<string>() {"json", "JSON"}
+                            },
+                            new()
+                            {
+                                Name = "Torrent Files",
+                                Extensions = new List<string>() { "torrent", "TORRENT"}
                             },
                             new()
                             {
@@ -373,6 +379,18 @@ namespace DirectPackageInstaller.Views
                             InputType = Source.URL | Source.JSON;
                         }
                     }
+                    else if (SourcePackage.IsFilePath() && SourcePackage.EndsWith(".torrent", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        InputType = Source.Torrent | Source.File;
+
+                        PKGStream = await LoadTorrent(SourcePackage);
+                    }
+                    else if (SourcePackage.EndsWith(".torrent", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        InputType = Source.Torrent | Source.URL;
+
+                        PKGStream = await LoadTorrent(SourcePackage);
+                    }
                     else if (SourcePackage.IsFilePath())
                     {
                         PKGStream = File.Open(SourcePackage, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -451,7 +469,7 @@ namespace DirectPackageInstaller.Views
 
                 await SetStatus("Reading PKG...");
 
-                var Info = Installer.CurrentPKG = PKGStream.GetPKGInfo() ?? throw new AbortException("Failed to read the PKG information");
+                var Info = Installer.CurrentPKG = await PKGStream.GetPKGInfoAsync() ?? throw new AbortException("Failed to read the PKG information");
 
                 await SetStatus(Info.Description);
 
@@ -500,6 +518,108 @@ namespace DirectPackageInstaller.Views
             PKGStream?.Close();
         }
 
+        private async Task<Stream> LoadTorrent(string TorrentSource)
+        {
+            await SetStatus("Loading Torrent Info...");
+            
+            Torrent tTorrent;
+            if (TorrentSource.IsFilePath())
+                tTorrent = await Torrent.LoadAsync(File.ReadAllBytes(TorrentSource));
+            else
+                tTorrent = await Torrent.LoadAsync(new Uri(TorrentSource), TempHelper.GetTempFile(null));
+
+            var Files = TorrentStream.GetTorrentFiles(tTorrent);
+
+            var PKGs = Files.Where(x => x.EndsWith(".pkg", StringComparison.InvariantCultureIgnoreCase)).ToArray();
+            
+            var RARs = Files.Where(x => x.EndsWith(".rar", StringComparison.InvariantCultureIgnoreCase) ||
+                                        (Path.GetExtension(x).StartsWith(".r", StringComparison.InvariantCultureIgnoreCase) && 
+                                         int.TryParse(Path.GetExtension(x).TrimStart('.', 'r', 'R'), out _))).ToArray();
+            
+            var SevenZips = Files.Where(x => x.EndsWith(".7z", StringComparison.InvariantCultureIgnoreCase) 
+                                          || int.TryParse(Path.GetExtension(x).TrimStart('.'), out _)).ToArray();
+            
+            if (PKGs.Length > 0)
+            {
+                string EntryName = null;
+                if (App.IsSingleView)
+                {
+                    var ChoiceBox = Extensions.CreateInstance<SelectView>(new SelectViewModel());
+                    ChoiceBox.Initialize(null, PKGs.Select(x=>Path.GetFileName(x)).ToArray(), (n) =>
+                    {
+                        EntryName = n;
+                        SingleView.ReturnView(ChoiceBox);
+                    });
+
+                    await SingleView.CallView(ChoiceBox, true);
+                }
+                else
+                {
+                    var ChoiceBox = new Select(PKGs.Select(x=>Path.GetFileName(x)).ToArray());
+                    if (await ChoiceBox.ShowDialogAsync() != DialogResult.OK)
+                        return null;
+                    EntryName = ChoiceBox.Choice;
+                }
+
+                var PKG = PKGs.Where(x => x.EndsWith(EntryName)).Single();
+                PKGs = new string[] {PKG};
+            }
+            
+            if (PKGs.Length == 1)
+            {
+                await SetStatus("Initializing Torrent Download...");
+                
+                TorrentStream? Stream = null;
+                if (await App.RunInNewThread(() => Stream = new TorrentStream(tTorrent, PKGs.Single())))
+                    throw new AbortException("Failed to Initialize the Torrent");
+                return Stream!;
+            }
+
+            if (RARs.Length > 0)
+            {
+                await SetStatus("Initializing Torrent Download...");
+                URLAnalyzer.URLInfos[TorrentSource] = new URLAnalyzer.URLInfo()
+                {
+                    MainURL = TorrentSource,
+                    Urls = RARs.Select(x => new URLAnalyzer.URLInfoEntry()
+                    {
+                        URL = x,
+                        Stream = () => new TorrentStream(tTorrent, x),
+                        Filename = Path.GetFileName(x),
+                        Verified = true
+                    }).ToArray()
+                };
+
+                TorrentStream? Stream = null;
+                if (await App.RunInNewThread(() => Stream = new TorrentStream(tTorrent, RARs.First())))
+                    throw new AbortException("Failed to Initialize the Torrent");
+                return Stream!;
+            }
+            
+            if (SevenZips.Length > 0)
+            {
+                await SetStatus("Initializing Torrent Download...");
+                URLAnalyzer.URLInfos[TorrentSource] = new URLAnalyzer.URLInfo()
+                {
+                    MainURL = TorrentSource,
+                    Urls = SevenZips.Select(x => new URLAnalyzer.URLInfoEntry()
+                    {
+                        URL = x,
+                        Stream = () => new TorrentStream(tTorrent, x),
+                        Filename = Path.GetFileName(x),
+                        Verified = true
+                    }).ToArray()
+                };
+
+                TorrentStream? Stream = null;
+                if (await App.RunInNewThread(() => Stream = new TorrentStream(tTorrent, SevenZips.First())))
+                    throw new AbortException("Failed to Initialize the Torrent");
+                return Stream!;
+            }
+
+            throw new AbortException("No valid file found in the torrent");
+        }
+
         private async Task<FileHostStream?> LoadUrl(string SourcePackage)
         {
             await SetStatus("Analyzing Urls...");
@@ -522,7 +642,7 @@ namespace DirectPackageInstaller.Views
 
             if (UrlInfo.Urls.Any(x => x.SingleConnection))
             {
-                FHStream = UrlInfo.Urls.First().Stream();
+                FHStream = (FileHostStream)UrlInfo.Urls.First().Stream();
             }
             else
             {
@@ -725,7 +845,7 @@ namespace DirectPackageInstaller.Views
                         if (!Stream.CanSeek)
                             Stream = new ReadSeekableStream(Stream, TempHelper.GetTempFile(null));
 
-                        Installer.CurrentPKG = Stream.GetPKGInfo() ?? throw new Exception();
+                        Installer.CurrentPKG = await Stream.GetPKGInfoAsync() ?? throw new Exception();
                     }
                     catch
                     {
@@ -743,7 +863,7 @@ namespace DirectPackageInstaller.Views
                     try
                     {
                          using (FileStream Stream = new FileStream(File, FileMode.Open))
-                            Installer.CurrentPKG = Stream.GetPKGInfo() ?? throw new Exception();
+                            Installer.CurrentPKG = await Stream.GetPKGInfoAsync() ?? throw new Exception();
                     } catch { continue; }
                 }
 

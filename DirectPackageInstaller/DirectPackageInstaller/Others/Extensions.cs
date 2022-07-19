@@ -13,6 +13,8 @@ using Avalonia.Platform;
 using Avalonia.Threading;
 using DirectPackageInstaller.IO;
 using LibOrbisPkg.SFO;
+using MonoTorrent;
+using MonoTorrent.Client;
 
 namespace DirectPackageInstaller;
 
@@ -111,7 +113,6 @@ public static class Extensions
                 return httpStream.Filename ?? Path.GetFileName(httpStream.FinalURL);
             return null;
         }
-
         public static bool IsFilePath(this string Path)
         {
             return Path.Length > 2 && (Path[1] == ':' || Path[0] == '/' || Path.StartsWith("\\\\"));

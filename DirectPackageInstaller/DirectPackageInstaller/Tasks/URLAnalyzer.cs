@@ -56,7 +56,7 @@ public static class URLAnalyzer
                     string URL = Info.URL;
                     Info.Stream = () => new FileHostStream(URL);
                     
-                    FileHostStream Head = Info.Stream();
+                    FileHostStream Head = Info.Stream() as FileHostStream;
                     Info.Filename = Head.TryGetRemoteFileName();
                     
                     if (Head.SingleConnection)
@@ -104,7 +104,7 @@ public static class URLAnalyzer
         public bool SingleConnection;
         public bool Verified;
         public bool Failed;
-        public Func<FileHostStream> Stream;
+        public Func<Stream> Stream;
         public string Filename;
     }
 }
