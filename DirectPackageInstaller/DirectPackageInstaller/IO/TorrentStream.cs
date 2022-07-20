@@ -20,7 +20,7 @@ public class TorrentStream : Stream
     private Torrent CurrentTorrent;
     private TorrentFile CurrentFile;
         
-    private Stream CurrentStream;
+    private Stream? CurrentStream;
     
     public TorrentStream(string TorrentUrl, string? EntryName = null) : this(Torrent.Load(new Uri(TorrentUrl), TempHelper.GetTempFile(null)), EntryName) {}
 
@@ -41,13 +41,11 @@ public class TorrentStream : Stream
                 throw new Exception("No PKG Found in the given Torrent");
 
             CurrentFile = PKGEntries.Single();
-            OpenTorrent(CancellationToken.None).GetAwaiter().GetResult();
             return;
         }
 
         var Entries = Torrent.Files.Where(x => Path.GetFileName(x.Path).Equals(EntryName, StringComparison.InvariantCultureIgnoreCase)).ToArray();
         CurrentFile = Entries.Single();
-        OpenTorrent(CancellationToken.None).GetAwaiter().GetResult();
     }
 
     ~TorrentStream()
@@ -61,7 +59,7 @@ public class TorrentStream : Stream
 
     public override void Flush()
     {
-        CurrentStream.Flush();
+        CurrentStream?.Flush();
     }
 
     public override int Read(byte[] buffer, int offset, int count)
@@ -71,14 +69,31 @@ public class TorrentStream : Stream
 
     public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
     {
+        if (CurrentStream == null)
+            await OpenTorrent(cancellationToken);
+        
         if (Manager!.State == TorrentState.Stopped)
             await Manager.StartAsync();
         
-        return await CurrentStream.ReadAsync(buffer, offset, count, cancellationToken);
+        return await CurrentStream!.ReadAsync(buffer, offset, count, cancellationToken);
     }
 
     private async Task OpenTorrent(CancellationToken cancellationToken)
     {
+        if (!StreamMap.ContainsKey(CurrentFile.Path))
+        {
+            try
+            {
+                CurrentStream = StreamMap[CurrentFile.Path];
+                CurrentStream.Position = 0;
+                return;
+            }
+            catch
+            {
+                
+            }
+        }
+
         var OpenTorrents = Engine.Torrents.Where(x => x.InfoHash.ToHex() == CurrentTorrent.InfoHash.ToHex()).ToArray();
         var TempDir = TempHelper.GetTempFile(null) + Path.DirectorySeparatorChar;
         Manager = OpenTorrents.Any() ? OpenTorrents.Single() : (await Engine.AddStreamingAsync(CurrentTorrent, TempDir));
@@ -88,9 +103,12 @@ public class TorrentStream : Stream
             if (File.Path == CurrentFile.Path)
             {
                 await Manager.SetFilePriorityAsync(File, Priority.Highest);
-                
+
+                var Cancel = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                Cancel.CancelAfter(TimeSpan.FromMinutes(5));
+
                 if (!StreamMap.ContainsKey(CurrentFile.Path))
-                    StreamMap[CurrentFile.Path] = await Manager.StreamProvider.CreateStreamAsync(File, cancellationToken);
+                    StreamMap[CurrentFile.Path] = await Manager.StreamProvider.CreateStreamAsync(File, Cancel.Token);
                 
                 CurrentStream = StreamMap[CurrentFile.Path];
                 continue;
@@ -103,7 +121,7 @@ public class TorrentStream : Stream
 
     public override long Seek(long offset, SeekOrigin origin)
     {
-        return CurrentStream.Seek(offset, origin);
+        return CurrentStream?.Seek(offset, origin) ?? throw new Exception("Torrent not Initialized");
     }
 
     public override void SetLength(long value)
@@ -126,5 +144,16 @@ public class TorrentStream : Stream
     public override bool CanSeek { get => true; }
     public override bool CanWrite { get => false; }
     public override long Length { get => CurrentFile.Length; }
-    public override long Position { get => CurrentStream.Position; set => CurrentStream.Position = value; }
+    public override long Position
+    {
+        get => CurrentStream?.Position ?? 0;
+        set
+        {
+         
+            if (CurrentStream != null) 
+                CurrentStream.Position = value;
+            else if (value > 0)
+                throw new Exception("Torrent not Initialized");
+        }
+}
 }

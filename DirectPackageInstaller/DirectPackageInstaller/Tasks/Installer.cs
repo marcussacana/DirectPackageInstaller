@@ -183,14 +183,17 @@ namespace DirectPackageInstaller.Tasks
                     break;
 
                 case Source.Torrent:
-                    URL = $"http://{Config.PCIP}:{ServerPort}/torrent/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
+                    if (EntryFileName is not null)
+                        URL = $"http://{Config.PCIP}:{ServerPort}/torrent/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}&fnb64={Convert.ToBase64String(Encoding.UTF8.GetBytes(EntryFileName))}";
+                    else
+                        URL = $"http://{Config.PCIP}:{ServerPort}/torrent/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}";
                     break;
                 
                 case Source.URL:
                     break;
 
                 default:
-                    MessageBox.ShowSync("Unexpected Install Method: \n" + InputType.ToString());
+                    await MessageBox.ShowAsync("Unexpected Install Method: \n" + InputType.ToString());
                     return false;
             }
 

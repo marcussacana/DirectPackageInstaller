@@ -178,14 +178,15 @@ namespace DirectPackageInstaller.Host
             Context.Response.StatusCode = Partial ? 206 : 200;
             Context.Response.StatusDescription = Partial ? "Partial Content" : "OK";
 
-            Stream Origin = null;
-            if (Path.IsFilePath())
-                await App.RunInNewThread(() => Origin = new TorrentStream(System.IO.File.ReadAllBytes(Path)));
-            else
-                await App.RunInNewThread(() => Origin = new TorrentStream(Path));
+            string? EntryName = null;
+            if (Query.AllKeys.Contains("fnb64"))
+                EntryName = Encoding.UTF8.GetString(Convert.FromBase64String(Query["fnb64"]));
 
-            if (Origin == null)
-                throw new Exception("Failed to open the torrent");
+            Stream Origin;
+            if (Path.IsFilePath())
+                Origin = new TorrentStream(System.IO.File.ReadAllBytes(Path), EntryName);
+            else
+                Origin = new TorrentStream(Path, EntryName);
 
             try
             {

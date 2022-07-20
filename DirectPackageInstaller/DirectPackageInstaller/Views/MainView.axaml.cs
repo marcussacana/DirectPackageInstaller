@@ -568,11 +568,10 @@ namespace DirectPackageInstaller.Views
             if (PKGs.Length == 1)
             {
                 await SetStatus("Initializing Torrent Download...");
-                
-                TorrentStream? Stream = null;
-                if (await App.RunInNewThread(() => Stream = new TorrentStream(tTorrent, PKGs.Single())))
-                    throw new AbortException("Failed to Initialize the Torrent");
-                return Stream!;
+
+                var Entry = PKGs.Single();
+                Installer.EntryFileName = Entry;
+                return new TorrentStream(tTorrent, Entry);
             }
 
             if (RARs.Length > 0)
@@ -590,10 +589,7 @@ namespace DirectPackageInstaller.Views
                     }).ToArray()
                 };
 
-                TorrentStream? Stream = null;
-                if (await App.RunInNewThread(() => Stream = new TorrentStream(tTorrent, RARs.First())))
-                    throw new AbortException("Failed to Initialize the Torrent");
-                return Stream!;
+                return new TorrentStream(tTorrent, RARs.First());
             }
             
             if (SevenZips.Length > 0)
@@ -611,10 +607,7 @@ namespace DirectPackageInstaller.Views
                     }).ToArray()
                 };
 
-                TorrentStream? Stream = null;
-                if (await App.RunInNewThread(() => Stream = new TorrentStream(tTorrent, SevenZips.First())))
-                    throw new AbortException("Failed to Initialize the Torrent");
-                return Stream!;
+                return new TorrentStream(tTorrent, SevenZips.First());
             }
 
             throw new AbortException("No valid file found in the torrent");
