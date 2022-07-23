@@ -425,6 +425,11 @@ namespace DirectPackageInstaller.Views
                     PKGStream = new VirtualStream(DownTask.OpenRead(), 0, DownTask.SafeLength) {ForceAmount = true};
                 }
 
+                if (InputType.HasFlag(Source.Torrent))
+                {
+                    await MessageBox.ShowAsync("Be sure your torrent has a good amount of seeds before downloading.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+
                 if (LimitedFHost && !BadHostAlert)
                 {
                     await MessageBox.ShowAsync("This Filehosting is limited, Even though it is compatible with DirectPackageInstaller it is not recommended for use, prefer services like alldebrid to download from this server, otherwise you may have connection and/or speed problems.\nDon't expect to compressed files works as expected as well, the DirectPackageInstaller will need download the entire file before can do anything", "Bad File Hosting Service", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -539,7 +544,7 @@ namespace DirectPackageInstaller.Views
             var SevenZips = Files.Where(x => x.EndsWith(".7z", StringComparison.InvariantCultureIgnoreCase) 
                                           || int.TryParse(Path.GetExtension(x).TrimStart('.'), out _)).ToArray();
             
-            if (PKGs.Length > 0)
+            if (PKGs.Length > 1)
             {
                 string EntryName = null;
                 if (App.IsSingleView)

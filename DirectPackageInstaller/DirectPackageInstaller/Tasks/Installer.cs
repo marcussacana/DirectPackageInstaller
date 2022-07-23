@@ -183,6 +183,21 @@ namespace DirectPackageInstaller.Tasks
                     break;
 
                 case Source.Torrent:
+                    PKGStream!.Position = 0;
+                    OriStatus = GetStatus();
+                    
+                    var Buffer = new byte[1024 * 1024];
+                    while (PKGStream.Position < LastResource)
+                    {
+                        await SetStatus($"Preloading PKG... ({(double)(PKGStream.Position) / LastResource:P})");
+                        await PKGStream.ReadAsync(Buffer);
+                    }
+                    
+                    await SetStatus(OriStatus);
+                    PKGStream!.Position = 0;
+
+                    Server!.TorrentStream[URL + "/" + EntryFileName] = PKGStream;
+                    
                     if (EntryFileName is not null)
                         URL = $"http://{Config.PCIP}:{ServerPort}/torrent/?b64={Convert.ToBase64String(Encoding.UTF8.GetBytes(URL))}&fnb64={Convert.ToBase64String(Encoding.UTF8.GetBytes(EntryFileName))}";
                     else

@@ -33,6 +33,7 @@ namespace DirectPackageInstaller.Host
 
         public DecompressService Decompress = new DecompressService();
 
+        public Dictionary<string, Stream> TorrentStream = new Dictionary<string, Stream>();
         public string IP { get => Server.Settings.Hostname; }
         public PS4Server(string IP, int Port = 9898)
         {
@@ -183,7 +184,9 @@ namespace DirectPackageInstaller.Host
                 EntryName = Encoding.UTF8.GetString(Convert.FromBase64String(Query["fnb64"]));
 
             Stream Origin;
-            if (Path.IsFilePath())
+            if (TorrentStream.ContainsKey(Path + "/" + EntryName))
+                Origin = TorrentStream[Path + "/" + EntryName];
+            else if (Path.IsFilePath())
                 Origin = new TorrentStream(System.IO.File.ReadAllBytes(Path), EntryName);
             else
                 Origin = new TorrentStream(Path, EntryName);
@@ -371,7 +374,6 @@ namespace DirectPackageInstaller.Host
                     if (Origin is FileHostStream)
                         Context.Response.Headers["Content-Disposition"] = $"attachment; filename=\"{((FileHostStream)Origin).Filename}\"";
                     else
-
                         Context.Response.Headers["Content-Disposition"] = $"attachment; filename=\"app.pkg\"";
                 }
                 
@@ -381,6 +383,11 @@ namespace DirectPackageInstaller.Host
                     Context.Response.Headers["Content-Range"] = $"bytes {Range?.Begin ?? 0}-{Range?.End ?? Origin.Length}/{Origin.Length}";
 
                     Origin = new VirtualStream(Origin, Range?.Begin ?? 0, Context.Response.ContentLength.Value);
+                }
+                else
+                {
+                    if (Origin.Position > 0)
+                        Origin.Position = 0;
                 }
 
                 LOG("Response Context: {0}", Context.Request.Url.Full);

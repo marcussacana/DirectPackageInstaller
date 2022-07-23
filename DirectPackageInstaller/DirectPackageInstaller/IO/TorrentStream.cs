@@ -2,11 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using MonoTorrent;
 using MonoTorrent.Client;
+using MonoTorrent.Client.PiecePicking;
+using MonoTorrent.TorrentWatcher;
 
 namespace DirectPackageInstaller.IO;
 
@@ -21,7 +24,6 @@ public class TorrentStream : Stream
     private TorrentFile CurrentFile;
         
     private Stream? CurrentStream;
-    
     public TorrentStream(string TorrentUrl, string? EntryName = null) : this(Torrent.Load(new Uri(TorrentUrl), TempHelper.GetTempFile(null)), EntryName) {}
 
     public TorrentStream(byte[] TorrentData, string? EntryName = null) : this(Torrent.Load(TorrentData), EntryName) { }
