@@ -41,7 +41,7 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </ScrollViewer>
-        <TextBlock Grid.Row="1">Password:</TextBlock>
+        <TextBlock Grid.Row="1" Grid.Column="0" Text="Password:"/>
         <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Password}" IsEnabled="{Binding HasPassword}"></TextBox>
         <Button Grid.Row="1" Grid.Column="2" Name="btnOK">OK</Button>
     </Grid>

@@ -10,11 +10,12 @@
         <AvaloniaResource Include="Assets\**" />
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="Avalonia" Version="0.10.15" />
-        <PackageReference Include="Avalonia.Controls.DataGrid" Version="0.10.15" />
+        <PackageReference Include="Avalonia" Version="0.10.999-cibuild0022654-beta" />
+        <PackageReference Include="Avalonia.Controls.DataGrid" Version="0.10.999-cibuild0022654-beta" />
         <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
-        <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="0.10.15" />
-        <PackageReference Include="Avalonia.ReactiveUI" Version="0.10.15" />
+        <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="0.10.999-cibuild0022654-beta" />
+        <PackageReference Include="Avalonia.ReactiveUI" Version="0.10.999-cibuild0022654-beta" />
+        <PackageReference Include="Avalonia.Themes.Fluent" Version="0.10.999-cibuild0022654-beta" />
         <PackageReference Include="CoreCLR-NCalc" Version="2.2.110" />
         <PackageReference Include="HtmlAgilityPack" Version="1.11.43" />
         <PackageReference Include="SharpCompress" Version="0.32.1" />
