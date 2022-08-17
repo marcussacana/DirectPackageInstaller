@@ -16,8 +16,8 @@
         <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="0.10.999-cibuild0022654-beta" />
         <PackageReference Include="Avalonia.ReactiveUI" Version="0.10.999-cibuild0022654-beta" />
         <PackageReference Include="Avalonia.Themes.Fluent" Version="0.10.999-cibuild0022654-beta" />
-        <PackageReference Include="CoreCLR-NCalc" Version="2.2.110" />
         <PackageReference Include="HtmlAgilityPack" Version="1.11.43" />
+        <PackageReference Include="Jint" Version="2.11.58" />
         <PackageReference Include="SharpCompress" Version="0.32.1" />
         <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="6.0.1" />
         <PackageReference Include="System.Management" Version="6.0.0" />
