@@ -99,6 +99,7 @@ int main()
    
     if (rv == 0x80990088){
        sceSysUtilSendSystemNotificationWithText(222, "DPI: Package Already Installed!");
+       sceBgftFinalize();
        return 0; 
     }
     
