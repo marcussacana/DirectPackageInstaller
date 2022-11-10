@@ -2,12 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Dynamic;
+using System.Linq;
 using System.Text.Json.Serialization;
+using Avalonia.Controls;
 using HtmlAgilityPack;
 using Jint;
 using Jint.Native;
 using Jint.Native.Object;
 using Jint.Native.String;
+using Jint.Runtime.Environments;
 using Jint.Runtime.Interop;
 
 namespace DirectPackageInstaller.Javascript;
@@ -28,11 +31,19 @@ public class Document : JsValue
 
         var Dictionary = (IDictionary<String, Object>)Object;
 
-        
+        var StringAttributes = new string[] { "class" };
         foreach (var Attribute in Node.Attributes)
         {
-            Dictionary[Attribute.Name] = ConvertString(Attribute.Value);
+            if (StringAttributes.Contains(Attribute.Name))
+                Dictionary[Attribute.Name] = Attribute.Value;
+            else
+                Dictionary[Attribute.Name] = ConvertString(Attribute.Value);
         }
+
+        Dictionary["getAttribute"] = new Func<string, object>(name =>
+        {
+            return Dictionary[name];
+        });
     
         ((INotifyPropertyChanged)Object).PropertyChanged += OnPropertyChanged;
         
