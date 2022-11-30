@@ -2,7 +2,7 @@
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <TargetFramework>net6.0-android</TargetFramework>
-        <SupportedOSPlatformVersion>23</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion>23</SupportedOSPlatformVersion>
         <Nullable>enable</Nullable>
         <ApplicationId>com.marcussacana.DirectPackageInstaller</ApplicationId>
         <ApplicationVersion>1</ApplicationVersion>
@@ -34,10 +34,14 @@
         <EmbedAssembliesIntoApk>True</EmbedAssembliesIntoApk>
     </PropertyGroup>
 
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+      <EmbedAssembliesIntoApk>True</EmbedAssembliesIntoApk>
+    </PropertyGroup>
+
     <ItemGroup>
-        <PackageReference Include="Xamarin.AndroidX.AppCompat" Version="1.3.1.3" />
-        <PackageReference Include="Xamarin.AndroidX.Lifecycle.ViewModel" Version="2.3.1.3" />
-        <PackageReference Include="Avalonia.Android" Version="0.10.999-cibuild0022654-beta" />
+        <PackageReference Include="Xamarin.AndroidX.AppCompat" Version="1.5.1.1" />
+        <PackageReference Include="Xamarin.AndroidX.Lifecycle.ViewModel" Version="2.5.1.1" />
+        <PackageReference Include="Avalonia.Android" Version="11.0.0-preview4" />
     </ItemGroup>
 
     <ItemGroup>

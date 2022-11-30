@@ -23,16 +23,16 @@ using File = Java.IO.File;
 namespace DirectPackageInstaller.Android
 {
     [Activity(Label = "DirectPackageInstaller.Android", Theme = "@style/MyTheme.NoActionBar", Icon = "@drawable/icon",
-        LaunchMode = LaunchMode.SingleInstance,
+        LaunchMode = LaunchMode.SingleTop,
         ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize)]
-    public class MainActivity : AvaloniaActivity<App>
+    public class MainActivity : AvaloniaMainActivity
     {
         public static int Instances = 0;
         
         protected override async void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
-            
+
             if (Instances == 0)
             {
                 ActivityCompat.RequestPermissions(this, new []{
@@ -140,11 +140,6 @@ namespace DirectPackageInstaller.Android
             catch
             {
             }
-        }
-
-        protected override AppBuilder CustomizeAppBuilder(AppBuilder builder)
-        {
-            return base.CustomizeAppBuilder(builder);
         }
 
         protected override void OnDestroy()

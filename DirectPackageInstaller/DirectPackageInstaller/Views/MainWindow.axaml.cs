@@ -37,7 +37,7 @@ namespace DirectPackageInstaller.Views
         {
             try
             {
-                if (Installer.Server.Connections > 0 && !ForceClose)
+                if (Installer.Server?.Connections > 0 && !ForceClose)
                 {
                     App.Callback(async () =>
                     {

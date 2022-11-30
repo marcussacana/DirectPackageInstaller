@@ -1,14 +1,17 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirectPackageInstaller.Android", "DirectPackageInstaller\DirectPackageInstaller.Android\DirectPackageInstaller.Android.csproj", "{0959340D-0DC7-4D1F-9413-0F8FE1F3F402}"
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33110.190
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DirectPackageInstaller.Android", "DirectPackageInstaller\DirectPackageInstaller.Android\DirectPackageInstaller.Android.csproj", "{0959340D-0DC7-4D1F-9413-0F8FE1F3F402}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirectPackageInstaller.Desktop", "DirectPackageInstaller\DirectPackageInstaller.Desktop\DirectPackageInstaller.Desktop.csproj", "{A12ADF0D-F760-43EF-81CB-3DF785A77AC1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DirectPackageInstaller.Desktop", "DirectPackageInstaller\DirectPackageInstaller.Desktop\DirectPackageInstaller.Desktop.csproj", "{A12ADF0D-F760-43EF-81CB-3DF785A77AC1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirectPackageInstaller", "DirectPackageInstaller\DirectPackageInstaller\DirectPackageInstaller.csproj", "{921CC84D-9B3F-454A-852C-433CD6585311}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DirectPackageInstaller", "DirectPackageInstaller\DirectPackageInstaller\DirectPackageInstaller.csproj", "{921CC84D-9B3F-454A-852C-433CD6585311}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LibOrbisPkg.Core", "LibOrbisPkg\LibOrbisPkg.Core\LibOrbisPkg.Core.csproj", "{8A5EB900-7726-4D50-87C2-BE3BD202F6A2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibOrbisPkg.Core", "LibOrbisPkg\LibOrbisPkg.Core\LibOrbisPkg.Core.csproj", "{8A5EB900-7726-4D50-87C2-BE3BD202F6A2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HttpServerLite", "HttpServerLite\HttpServerLite\HttpServerLite.csproj", "{E970BB82-F0AA-4D8D-B201-288C2BC2CDD3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HttpServerLite", "HttpServerLite\HttpServerLite\HttpServerLite.csproj", "{E970BB82-F0AA-4D8D-B201-288C2BC2CDD3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -16,6 +19,11 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0959340D-0DC7-4D1F-9413-0F8FE1F3F402}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0959340D-0DC7-4D1F-9413-0F8FE1F3F402}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0959340D-0DC7-4D1F-9413-0F8FE1F3F402}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{0959340D-0DC7-4D1F-9413-0F8FE1F3F402}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0959340D-0DC7-4D1F-9413-0F8FE1F3F402}.Release|Any CPU.Build.0 = Release|Any CPU
 		{A12ADF0D-F760-43EF-81CB-3DF785A77AC1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{A12ADF0D-F760-43EF-81CB-3DF785A77AC1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A12ADF0D-F760-43EF-81CB-3DF785A77AC1}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -24,16 +32,6 @@ Global
 		{921CC84D-9B3F-454A-852C-433CD6585311}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{921CC84D-9B3F-454A-852C-433CD6585311}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{921CC84D-9B3F-454A-852C-433CD6585311}.Release|Any CPU.Build.0 = Release|Any CPU
-		{0BB8DB11-B2EC-4618-9E8E-325363FA8722}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0BB8DB11-B2EC-4618-9E8E-325363FA8722}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0BB8DB11-B2EC-4618-9E8E-325363FA8722}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
-		{0BB8DB11-B2EC-4618-9E8E-325363FA8722}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0BB8DB11-B2EC-4618-9E8E-325363FA8722}.Release|Any CPU.Build.0 = Release|Any CPU
-		{0BB8DB11-B2EC-4618-9E8E-325363FA8722}.Release|Any CPU.Deploy.0 = Release|Any CPU
-		{B053F491-FF0F-4CBB-B03B-520591BB0441}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B053F491-FF0F-4CBB-B03B-520591BB0441}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B053F491-FF0F-4CBB-B03B-520591BB0441}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B053F491-FF0F-4CBB-B03B-520591BB0441}.Release|Any CPU.Build.0 = Release|Any CPU
 		{8A5EB900-7726-4D50-87C2-BE3BD202F6A2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{8A5EB900-7726-4D50-87C2-BE3BD202F6A2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8A5EB900-7726-4D50-87C2-BE3BD202F6A2}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -42,9 +40,11 @@ Global
 		{E970BB82-F0AA-4D8D-B201-288C2BC2CDD3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E970BB82-F0AA-4D8D-B201-288C2BC2CDD3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E970BB82-F0AA-4D8D-B201-288C2BC2CDD3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{0959340D-0DC7-4D1F-9413-0F8FE1F3F402}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0959340D-0DC7-4D1F-9413-0F8FE1F3F402}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0959340D-0DC7-4D1F-9413-0F8FE1F3F402}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0959340D-0DC7-4D1F-9413-0F8FE1F3F402}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C14C768B-B2AF-4CA1-B26C-F8DE14D3BE74}
 	EndGlobalSection
 EndGlobal

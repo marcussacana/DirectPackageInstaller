@@ -261,7 +261,7 @@ namespace DirectPackageInstaller
             {
                 var Result = _WorkingDir ??= Environment.GetEnvironmentVariable("CD") ?? Directory.GetCurrentDirectory();
                 
-                if (string.IsNullOrWhiteSpace(Result.Trim('/', '\\')))
+                if (string.IsNullOrWhiteSpace(Result.Trim('/', '\\')) && CurrentPlatform != OS.Android)
                     throw new Exception("FAILED TO GET THE WORKING DIRECTORY PATH");
                 
                 return Result;

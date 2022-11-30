@@ -83,8 +83,12 @@ public partial class FilePicker : UserControl
 
             List<FileEntry> Entries = new List<FileEntry>();
 
+            if (Path == App.AndroidRootInternalDir || Path == App.AndroidRootSDDir)
+                SubDirs = SubDirs.Where(x => !x.EndsWith("/Android")).ToArray();
+
             Entries.AddRange(SubDirs.Select(x => new FileEntry(x, true)).OrderBy(x => x.Name));
             Entries.AddRange(Files.Select(x => new FileEntry(x, false)).OrderBy(x => x.Name));
+
 
 
             if (Path != LastDir && LastDir != null)

@@ -222,11 +222,6 @@ namespace DirectPackageInstaller.Views
                  await MessageBox.ShowAsync("Failed find the Working Directory Path of the DirectPackageInstaller.\nPlease, Restart the Program.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                  Environment.Exit(0);
              }
-
-             if (App.IsAndroid)
-             {
-                 await MessageBox.ShowAsync("DirectPackageInstaller was developed based on the AvaloniaUI Framework, which is in beta for android devices.\nBe warned that the application may behave poorly and unstable until AvaloniaUI becomes stable.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-             }
         }
 
         

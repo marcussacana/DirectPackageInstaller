@@ -387,7 +387,8 @@ namespace DirectPackageInstaller.Tasks
             else if (string.IsNullOrEmpty(EntryName))
                 return null;
 
-            var SelectedEntry = PKGs.Single(x => Path.GetFileName(x.Key) == EntryName);
+            var SelectedEntries = PKGs.Where(x => Path.GetFileName(x.Key) == EntryName);
+            var SelectedEntry = SelectedEntries.Any() ? PKGs.First() : SelectedEntries.Single();
             var SelectedFile = Path.GetFileName(SelectedEntry.Key);
 
             var Stream = SelectedEntry.OpenEntryStream();
