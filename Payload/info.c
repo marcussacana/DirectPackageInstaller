@@ -115,11 +115,17 @@ int get_pkg_info(struct bgft_download_param* params)
     int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if(sock < 0)
     	return -1;
-    	
-    ssize_t sz = -1;
+
     if(connect(sock, (struct sockaddr*)&conn_info, sizeof(conn_info)) < 0){
     	close(sock);
     	return -1;
+    }
+
+
+    //Finish the payload service if requested by the client
+    if (get_uint32(sock) == 1) {
+        close(sock);
+        return 1;
     }
     
     //Order: URL, Name, ID, size, [Icon Len, Icon Data]
