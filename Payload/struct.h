@@ -29,11 +29,16 @@ struct bgft_download_param {
 	unsigned long package_size;
 };
 
-
 int get_pkg_info(struct bgft_download_param* params);
 
 
 #define BGFT_INVALID_TASK_ID (-1)
+#define ORBIS_KERNEL_PRIO_FIFO_NORMAL  0x2BC
+
+
+typedef struct OrbisUserServiceInitializeParams {
+	uint32_t priority;
+} OrbisUserServiceInitializeParams;
 
 struct bgft_init_params {
 	void* mem;

@@ -20,13 +20,21 @@ int main()
     clear_stack();
 
     void* usrsrv = dlopen("/system/common/lib/libSceUserService.sprx", 0);
+    int(*sceUserServiceInitialize)(OrbisUserServiceInitializeParams* user_id) = dlsym(usrsrv, "sceUserServiceInitialize");
     int(*sceUserServiceGetForegroundUser)(int* user_id) = dlsym(usrsrv, "sceUserServiceGetForegroundUser");
+    int(*sceUserServiceTerminate)(void) = dlsym(usrsrv, "sceUserServiceTerminate");
+    
+    struct OrbisUserServiceInitializeParams init_params = {
+    	.priority = ORBIS_KERNEL_PRIO_FIFO_NORMAL
+    };
     
     int uid = 0;
+    sceUserServiceInitialize(&init_params);
     sceUserServiceGetForegroundUser(&uid);
+    sceUserServiceTerminate();
     
-    struct bgft_download_param params = {
-    	    .user_id = 0,
+    struct bgft_download_param bgft_params = {
+    	    .user_id = uid,
 	    .entitlement_type = 5,
 	    .id = "",
 	    .content_url = "",
@@ -43,17 +51,19 @@ int main()
 
     void* handle = dlopen("/system/common/lib/libSceSysUtil.sprx", 0);
     int(*sceSysUtilSendSystemNotificationWithText)(int, const char*) = dlsym(handle, "sceSysUtilSendSystemNotificationWithText");
-    	
-    if (get_pkg_info(&params) == -1){
-    	sceSysUtilSendSystemNotificationWithText(222, "DPI GET INFO ERROR"); 
+   
+    if (get_pkg_info(&bgft_params) == -1){
+    	sceSysUtilSendSystemNotificationWithText(222, "DPI: GET INFO ERROR"); 
     	return -1;
-    }    
+    }
     
     int rv;
     
     void* bgft = dlopen("/system/common/lib/libSceBgft.sprx", 0);
     
     int(*sceBgftInitialize)(struct bgft_init_params*) = dlsym(bgft, "sceBgftServiceIntInit");
+    int(*sceBgftFinalize)(void) = dlsym(bgft, "sceBgftFinalize");
+    
     int(*sceBgftDownloadRegisterTask)(struct bgft_download_param*, int*) = dlsym(bgft, "sceBgftServiceDownloadRegisterTask");
     int(*sceBgftDebugDownloadRegisterTask)(struct bgft_download_param*, int*) = dlsym(bgft, "sceBgftServiceIntDebugDownloadRegisterPkg");
     int(*sceBgftDownloadStartTask)(int) = dlsym(bgft, "sceBgftServiceIntDownloadStartTask");
@@ -71,30 +81,35 @@ int main()
     rv = sceBgftInitialize(&ip);
  
     int task = BGFT_INVALID_TASK_ID;
-    rv = sceBgftDownloadRegisterTask(&params, &task);
+    rv = sceBgftDownloadRegisterTask(&bgft_params, &task);
     
     if(rv != 0x80990088 && task != BGFT_INVALID_TASK_ID){ 
     	rv = sceBgftDownloadStartTask(task);
+    	sceBgftFinalize();
     	return 0;
     }
     
-    rv = sceBgftDebugDownloadRegisterTask(&params, &task);
+    rv = sceBgftDebugDownloadRegisterTask(&bgft_params, &task);
     	
     if(rv != 0x80990088 && task != BGFT_INVALID_TASK_ID){ 
     	rv = sceBgftDownloadStartTask(task);
+    	sceBgftFinalize();
     	return 0;
     }
    
     if (rv == 0x80990088){
        sceSysUtilSendSystemNotificationWithText(222, "DPI: Package Already Installed!");
+       sceBgftFinalize();
        return 0; 
     }
     
+    	
     void* libc = dlopen("/system/common/lib/libc.sprx", 0);
     int (*sprintf)(char* dst, const char *fmt, ...) = dlsym(libc, "sprintf");
     char str[0x100] = "\x00";
     sprintf(str,"DPI: Error 0x%x", rv);
     sceSysUtilSendSystemNotificationWithText(222, str); 
-       
+
+    sceBgftFinalize();
     return -1;
 }

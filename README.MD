@@ -147,4 +147,6 @@ I'm no responsible for what you do with this tool, like, you know very well what
 LibOrbisPkg by **maxton**  
 HttpServerLite by **jchristn**  
 Payload template by **sleirsgoevy**  
+Help with PS4 OS internals by **LM**  
+PS4 exports definitions by **OpenOrbis SDK**  
 DirectPackageInstaller by **marcussacana**
