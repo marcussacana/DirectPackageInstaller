@@ -10,108 +10,108 @@
   <Design.DataContext>
     <viewModels:MainViewModel />
   </Design.DataContext>
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="40"/>
-            <RowDefinition Height="40"/>
-            <RowDefinition/>
-            <RowDefinition Height="40"/>
-        </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="330"/>
-            <ColumnDefinition/>
-        </Grid.ColumnDefinitions>
-        
-        <Menu Grid.ColumnSpan="2">
-            <MenuItem Header="_Options">
-                <MenuItem Header="_Proxy Downloads" Name="btnProxyDownload">
-                    <MenuItem.Icon>
-                        <CheckBox BorderThickness="0" IsChecked="{Binding ProxyMode, Mode=TwoWay}"/>
-                    </MenuItem.Icon>
-                </MenuItem>
-                <MenuItem Header="_Segmented Downloads" Name="btnSegmentedDownload" >
-                    <MenuItem.Icon>
-                        <CheckBox BorderThickness="0" IsChecked="{Binding SegmentedMode, Mode=TwoWay}"/>
-                    </MenuItem.Icon>
-                </MenuItem>
-                <MenuItem Header="_CNL Support" Name="btnCNLService" >
-                    <MenuItem.Icon>
-                        <CheckBox BorderThickness="0" IsChecked="{Binding CNLService, Mode=TwoWay}"/>
-                    </MenuItem.Icon>
-                </MenuItem>
-                <MenuItem Header="_IP Address">
-                    <Grid Margin="10">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition/>
-                            <ColumnDefinition/>
-                        </Grid.ColumnDefinitions>
-                        <Label Grid.Column="0">PS4 IP:</Label>
-                        <TextBox Grid.Column="1" Text="{Binding PS4IP, Mode=TwoWay}"></TextBox>
-                    </Grid>
-                    <Grid Margin="10">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition></ColumnDefinition>
-                            <ColumnDefinition></ColumnDefinition>
-                        </Grid.ColumnDefinitions>
-                        <Label Grid.Column="0">PC IP:</Label>
-                        <TextBox Grid.Column="1" Text="{Binding PCIP, Mode=TwoWay}"></TextBox>
-                    </Grid>
-                </MenuItem>
-                <MenuItem Header="_AllDebrid">
-                    <Grid Margin="10">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition/>
-                            <ColumnDefinition/>
-                        </Grid.ColumnDefinitions>
-                        <Label Grid.Column="0">API Key:</Label>
-                        <TextBox Grid.Column="1" Text="{Binding AllDebirdApiKey, Mode=TwoWay}"></TextBox>
-                    </Grid>
-                    <MenuItem Header="_Enabled" Padding="10, 10,0,10" Name="btnAllDebirdEnabled">
-                        <MenuItem.Icon>
-                            <CheckBox BorderThickness="0" IsChecked="{Binding UseAllDebird, Mode=TwoWay}"/>
-                        </MenuItem.Icon>
-                    </MenuItem>
-                </MenuItem>
-                <MenuItem Header="_Restart Server" Name="btnRestartServer"/>
-                <MenuItem Header="_Exit" Name="btnExit"/>
-            </MenuItem>
-            <MenuItem Header="Packages" IsVisible="False" Name="PackagesMenu">
-                <Separator></Separator>
-                <MenuItem Header="Install _All" Name="btnInstallAll"></MenuItem>
-            </MenuItem>
-        </Menu>
-        
-        <Grid Grid.Row="1" Grid.ColumnSpan="2">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="auto"></ColumnDefinition>
-                <ColumnDefinition Width="*"></ColumnDefinition>
-                <ColumnDefinition Width="auto"></ColumnDefinition>
-            </Grid.ColumnDefinitions>
-            <Label Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="5,0,0,0">URL:</Label>
-            <TextBox Grid.Row="0" Grid.Column="1" Margin="5" Text="{Binding CurrentURL, Mode=TwoWay}" Name="tbURL"></TextBox>
-            <Button Grid.Row="0" Grid.Column="2" HorizontalAlignment="Right" Margin="5,0,5,0" Name="btnLoad">Open</Button>
-        </Grid>
-        
-        
-        <Grid Grid.Row="2" Grid.ColumnSpan="2" Name="PreviewGrid">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="330"/>
-                <ColumnDefinition Width="5"/>
-                <ColumnDefinition/>
-            </Grid.ColumnDefinitions>
-            <Image Name="IconBox"></Image>
-            <GridSplitter Name="MainGridSplitter" Grid.Column="1"></GridSplitter>
-            
-            <DataGrid Grid.Column="2" Items="{Binding PKGParams}" Name="PkgInfoGrid">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="Param" Binding="{Binding Name}"/>
-                    <DataGridTextColumn Header="Value" Binding="{Binding Value}"/>
-                </DataGrid.Columns>
-            </DataGrid>
-        </Grid>
-        
-        <TextBlock Grid.Row="3" Grid.ColumnSpan="2" Grid.Column="0" Name="Status"/>
-    </Grid>
+	<Grid DragDrop.AllowDrop="True" Name="MainViewGrid">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="40"/>
+			<RowDefinition Height="40"/>
+			<RowDefinition/>
+			<RowDefinition Height="40"/>
+		</Grid.RowDefinitions>
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="330"/>
+			<ColumnDefinition/>
+		</Grid.ColumnDefinitions>
+
+		<Menu Grid.ColumnSpan="2">
+			<MenuItem Header="_Options">
+				<MenuItem Header="_Proxy Downloads" Name="btnProxyDownload">
+					<MenuItem.Icon>
+						<CheckBox BorderThickness="0" IsChecked="{Binding ProxyMode, Mode=TwoWay}"/>
+					</MenuItem.Icon>
+				</MenuItem>
+				<MenuItem Header="_Segmented Downloads" Name="btnSegmentedDownload" >
+					<MenuItem.Icon>
+						<CheckBox BorderThickness="0" IsChecked="{Binding SegmentedMode, Mode=TwoWay}"/>
+					</MenuItem.Icon>
+				</MenuItem>
+				<MenuItem Header="_CNL Support" Name="btnCNLService" >
+					<MenuItem.Icon>
+						<CheckBox BorderThickness="0" IsChecked="{Binding CNLService, Mode=TwoWay}"/>
+					</MenuItem.Icon>
+				</MenuItem>
+				<MenuItem Header="_IP Address">
+					<Grid Margin="10">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition/>
+							<ColumnDefinition/>
+						</Grid.ColumnDefinitions>
+						<Label Grid.Column="0">PS4 IP:</Label>
+						<TextBox Grid.Column="1" Text="{Binding PS4IP, Mode=TwoWay}"></TextBox>
+					</Grid>
+					<Grid Margin="10">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition></ColumnDefinition>
+							<ColumnDefinition></ColumnDefinition>
+						</Grid.ColumnDefinitions>
+						<Label Grid.Column="0">PC IP:</Label>
+						<TextBox Grid.Column="1" Text="{Binding PCIP, Mode=TwoWay}"></TextBox>
+					</Grid>
+				</MenuItem>
+				<MenuItem Header="_AllDebrid">
+					<Grid Margin="10">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition/>
+							<ColumnDefinition/>
+						</Grid.ColumnDefinitions>
+						<Label Grid.Column="0">API Key:</Label>
+						<TextBox Grid.Column="1" Text="{Binding AllDebirdApiKey, Mode=TwoWay}"></TextBox>
+					</Grid>
+					<MenuItem Header="_Enabled" Padding="10, 10,0,10" Name="btnAllDebirdEnabled">
+						<MenuItem.Icon>
+							<CheckBox BorderThickness="0" IsChecked="{Binding UseAllDebird, Mode=TwoWay}"/>
+						</MenuItem.Icon>
+					</MenuItem>
+				</MenuItem>
+				<MenuItem Header="_Restart Server" Name="btnRestartServer"/>
+				<MenuItem Header="_Exit" Name="btnExit"/>
+			</MenuItem>
+			<MenuItem Header="Packages" IsVisible="False" Name="PackagesMenu">
+				<Separator></Separator>
+				<MenuItem Header="Install _All" Name="btnInstallAll"></MenuItem>
+			</MenuItem>
+		</Menu>
+
+		<Grid Grid.Row="1" Grid.ColumnSpan="2">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="auto"></ColumnDefinition>
+				<ColumnDefinition Width="*"></ColumnDefinition>
+				<ColumnDefinition Width="auto"></ColumnDefinition>
+			</Grid.ColumnDefinitions>
+			<Label Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="5,0,0,0">URL:</Label>
+			<TextBox Grid.Row="0" Grid.Column="1" Margin="5" Text="{Binding CurrentURL, Mode=TwoWay}" Name="tbURL"></TextBox>
+			<Button Grid.Row="0" Grid.Column="2" HorizontalAlignment="Right" Margin="5,0,5,0" Name="btnLoad">Open</Button>
+		</Grid>
+
+
+		<Grid Grid.Row="2" Grid.ColumnSpan="2" Name="PreviewGrid">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="330"/>
+				<ColumnDefinition Width="5"/>
+				<ColumnDefinition/>
+			</Grid.ColumnDefinitions>
+			<Image Name="IconBox"></Image>
+			<GridSplitter Name="MainGridSplitter" Grid.Column="1"></GridSplitter>
+
+			<DataGrid Grid.Column="2" Items="{Binding PKGParams}" Name="PkgInfoGrid">
+				<DataGrid.Columns>
+					<DataGridTextColumn Header="Param" Binding="{Binding Name}"/>
+					<DataGridTextColumn Header="Value" Binding="{Binding Value}"/>
+				</DataGrid.Columns>
+			</DataGrid>
+		</Grid>
+
+		<TextBlock Grid.Row="3" Grid.ColumnSpan="2" Grid.Column="0" Name="Status"/>
+	</Grid>
     <UserControl.Styles>
         <Style Selector="CheckBox">
             <Setter Property="Width" Value="20"/>

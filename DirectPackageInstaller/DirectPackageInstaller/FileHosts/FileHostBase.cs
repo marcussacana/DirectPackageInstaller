@@ -27,7 +27,13 @@ namespace DirectPackageInstaller.FileHosts
                 if (Cookies != null)
                 {
                     foreach (var Cookie in Cookies)
-                        App.HttpClient.Container.Add(Cookie);
+                    {
+                        try
+                        {
+                            App.HttpClient.Container.Add(Cookie);
+                        }
+                        catch { }
+                    }
                 }
 
                 return App.HttpClient.DownloadString(URL);
@@ -46,7 +52,13 @@ namespace DirectPackageInstaller.FileHosts
                 if (Cookies != null)
                 {
                     foreach (var Cookie in Cookies)
-                        App.HttpClient.Container.Add(Cookie);
+                    {
+                        try
+                        {
+                            App.HttpClient.Container.Add(Cookie);
+                        }
+                        catch { }
+                    }
                 }
 
                 try
@@ -74,7 +86,13 @@ namespace DirectPackageInstaller.FileHosts
                 if (Cookies != null)
                 {
                     foreach (var Cookie in Cookies)
-                        App.HttpClient.Container.Add(Cookie);
+                    {
+                        try
+                        {
+                            App.HttpClient.Container.Add(Cookie);
+                        }
+                        catch { }
+                    }
                 }
 
                 return App.HttpClient.UploadString(URL, Data);
@@ -93,7 +111,13 @@ namespace DirectPackageInstaller.FileHosts
                 if (Cookies != null)
                 {
                     foreach (var Cookie in Cookies)
-                        App.HttpClient.Container.Add(Cookie);
+                    {
+                        try
+                        {
+                            App.HttpClient.Container.Add(Cookie);
+                        }
+                        catch { }
+                    }
                 }
 
                 return (App.HttpClient.DownloadData(URL), App.HttpClient.ResponseHeaders);

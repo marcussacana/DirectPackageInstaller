@@ -21,6 +21,7 @@ using DirectPackageInstaller.ViewModels;
 using Image = Avalonia.Controls.Image;
 using Path = System.IO.Path;
 using Size = Avalonia.Size;
+using Avalonia.Controls.Shapes;
 
 namespace DirectPackageInstaller.Views
 {
@@ -53,6 +54,8 @@ namespace DirectPackageInstaller.Views
         public MainView()
         {
             InitializeComponent();
+
+            MainViewGrid = this.Find<Grid>("MainViewGrid");
 
             PackagesMenu = this.Find<MenuItem>("PackagesMenu");
 
@@ -89,7 +92,10 @@ namespace DirectPackageInstaller.Views
             
             CNL.OnLinksReceived = OnLinksReceived;
             
-            PreviewGrid.PropertyChanged += PreviewGridOnPropertyChanged; 
+            PreviewGrid.PropertyChanged += PreviewGridOnPropertyChanged;
+
+            AddHandler(DragDrop.DragOverEvent, DragOver);
+            AddHandler(DragDrop.DropEvent, DropEventEvent);
         }
 
         public async Task OnShown(MainWindow? Parent)
@@ -849,7 +855,48 @@ namespace DirectPackageInstaller.Views
             tbURL.Text = Info.Links.First();
             App.Callback(() => BtnLoadOnClick(null, new RoutedEventArgs()));
         }
-        
+
+        private void DropEventEvent(object? sender, DragEventArgs e)
+        {
+            if (e.Data.Contains(DataFormats.Text))
+            {
+                var Links = e.Data.GetText()!.Split('\n', '\r')
+                    .Where(x => !string.IsNullOrEmpty(x.Trim()) && x.Trim().StartsWith("http"))
+                    .Select(x => x.Trim()).ToArray();
+
+                _ = URLAnalyzer.Analyze(Links, false);
+
+                App.Callback(() => {
+                    Model.CurrentURL = Links.First();
+                    App.Callback(() => BtnLoadOnClick(null, new RoutedEventArgs()));
+                });
+                return;
+            }
+
+            if (e.Data.Contains(DataFormats.FileNames))
+            {
+                var Files = e.Data.GetFileNames()!.ToArray();
+
+                BatchList.Clear();
+                BatchList.AddRange(Files.Select(x => (x, Path.GetFileName(x))));
+
+                ListEntries(Files);
+
+                App.Callback(() => {
+                    Model.CurrentURL = Files.First();
+                    App.Callback(() => BtnLoadOnClick(null, new RoutedEventArgs()));
+                });
+            }
+        }
+
+        private void DragOver(object? sender, DragEventArgs e)
+        {
+            e.DragEffects = e.DragEffects & (DragDropEffects.Copy | DragDropEffects.Link);
+
+            if (!e.Data.Contains(DataFormats.Text) && !e.Data.Contains(DataFormats.FileNames))
+                e.DragEffects = DragDropEffects.None;
+        }
+
         private void UrlChanged(string Url)
         {
             InputType = Source.NONE;

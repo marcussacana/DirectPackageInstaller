@@ -64,8 +64,12 @@ namespace DirectPackageInstaller.IO
             {
                 foreach (var Cookie in Info.Cookies)
                 {
-                    Cookies.Add(Cookie);
-                    DirectLink = false;
+                    try
+                    {
+                        Cookies.Add(Cookie);
+                        DirectLink = false;
+                    }
+                    catch { }
                 }
             }
 
