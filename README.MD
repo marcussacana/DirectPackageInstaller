@@ -44,7 +44,7 @@ Or alternatively the RemotePackageInstaller Homebrew.
 	- Click at "Install" and wait again.
 	- It's done, you can close the DirectPackageInstaller or turn off your computer.
 
-- Proxied Download Mode (Faster)
+- Proxied Download Mode (for PS4 that has no Internet access)
 	- Open the Remote Package Installer or Enable Goldhen Payload Server.
 	- Open the DirectPackageInstaller.
 	- Go to `Options -> Proxy Downloads` and check the option.
@@ -88,6 +88,10 @@ The tool can works without the Remote Package Installer if you want, for that, j
 This tool allow you to install pkgs from RAR as well, in this case the tool will work in a very similar way to the other existing ones, but with the advantage that everything is done simultaneously, while the file is downloaded from the internet, it is being decompressed to your disk temporarily and is sent to your PS4, in this scenario you don't need to waste time extracting large PKGs or depending on your file manager downloads, doing the post-download file reconstruction, everything is done simultaneously saving a lot of time of your life.
 
 The Segmented Download mode will start a background multithreaded download of the PKG to your computer and send to your PS4 at the same time, this should be faster than the Proxied Mode with the disadvantage of having to allocate the PKG on your HD.
+
+Notice that the Segmented Download is primally downloaded in your PC, this mean the PS4 can't show the real download progress and his remaining time.
+
+If your PS4 has a LAN-Only connection, you can use the "Proxy Downloads" option, then the DirectPackageInstaller will act as a bridge to the PS4 be able to download your package from the internet.
 
 ### Command Line Interface
 The DirectPackageInstaller has an experimental CLI,  

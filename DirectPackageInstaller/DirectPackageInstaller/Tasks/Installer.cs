@@ -26,8 +26,9 @@ namespace DirectPackageInstaller.Tasks
 
         public static string? EntryFileName;
 
-        private static Socket? PayloadSocket;
         private static bool ForceProxy;
+
+        public static PayloadService Payload = new PayloadService();
 
         public static async Task<bool> PushPackage(Settings Config, Source InputType, Stream? PKGStream, string URL, IArchive? Decompressor, DecompressorHelperStream[]? DecompressorStreams, Func<string, Task> SetStatus, Func<string> GetStatus, bool Silent)
         {
@@ -191,8 +192,8 @@ namespace DirectPackageInstaller.Tasks
             if (await IPHelper.IsRPIOnline(Config.PS4IP))
                 OK = await PushRPI(URL, Config, Silent);
             else
-                OK = await SendPKGPayload(Config.PS4IP, Config.PCIP, URL, Silent);
-
+                OK = await Payload.SendPKGPayload(Config.PS4IP, Config.PCIP, URL, Silent);
+            
             return OK;
         }
 
@@ -263,115 +264,6 @@ namespace DirectPackageInstaller.Tasks
                 return false;
             }
         }
-        public static async Task<bool> SendPKGPayload(string PS4IP, string PCIP, string URL, bool Silent)
-        {
-            var Payload = Resources.Payload;
-            
-            var Offset = Payload.IndexOf(new byte[] { 0xB4, 0xB4, 0xB4, 0xB4, 0xB4, 0xB4});
-            if (Offset == -1)
-                return false;
-
-            URL = Server.RegisterJSON(URL, PCIP, CurrentPKG);
-
-            Socket InfoSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            
-            InfoSocket.Bind(new IPEndPoint(IPAddress.Any, 0));
-            InfoSocket.Listen();
-
-            if (PayloadSocket == null || !PayloadSocket.Connected)
-            {
-                if (!await TryConnectSocket(PS4IP))
-                    return false;
-            }
-
-            ushort LocalPort = (ushort)((IPEndPoint)InfoSocket.LocalEndPoint).Port;
-            
-            var IP = IPAddress.Parse(PCIP).GetAddressBytes();
-            var Port = BitConverter.GetBytes(LocalPort).Reverse().ToArray();
-            
-            IP.CopyTo(Payload, Offset);
-            Port.CopyTo(Payload, Offset + 4);
-
-            PayloadSocket.SendBufferSize = Payload.Length;
-            
-            if (PayloadSocket.Send(Payload) != Payload.Length)
-                return false;
-
-            SocketAsyncEventArgs DisconnectEvent = new SocketAsyncEventArgs();
-            DisconnectEvent.RemoteEndPoint = PayloadSocket.RemoteEndPoint;
-            
-            PayloadSocket.Disconnect(false);
-            PayloadSocket.Close();
-            
-            
-            CancellationTokenSource CToken = new CancellationTokenSource();
-            CToken.CancelAfter(10000);
-
-            Socket PKGInfoSocket;
-            
-            try
-            {
-                PKGInfoSocket = await InfoSocket.AcceptAsync(CToken.Token);
-            }
-            catch
-            {
-                return false;
-            }
-            finally
-            {
-                CToken.Dispose();
-            }
-
-            List<byte> PKGInfoBuffer = new List<byte>();
-
-            var UrlData = Encoding.UTF8.GetBytes(URL);
-            var NameData = Encoding.UTF8.GetBytes(CurrentPKG.FriendlyName);
-            var IDData = Encoding.UTF8.GetBytes(CurrentPKG.ContentID);
-            var PKGType = Encoding.UTF8.GetBytes(CurrentPKG.BGFTContentType);
-            var PackageSize = BitConverter.GetBytes(CurrentPKG.PackageSize);
-            var IconData = CurrentPKG.IconData;
-
-            if (IconData == null)
-                IconData = new byte[0];
-            
-            PKGInfoBuffer.AddRange(BitConverter.GetBytes(UrlData.Length));
-            PKGInfoBuffer.AddRange(UrlData);
-            PKGInfoBuffer.AddRange(BitConverter.GetBytes(NameData.Length));
-            PKGInfoBuffer.AddRange(NameData);
-            PKGInfoBuffer.AddRange(BitConverter.GetBytes(IDData.Length));
-            PKGInfoBuffer.AddRange(IDData);
-            PKGInfoBuffer.AddRange(BitConverter.GetBytes(PKGType.Length));
-            PKGInfoBuffer.AddRange(PKGType);
-
-            PKGInfoBuffer.AddRange(PackageSize);
-            
-            if (IconData.Length == 0)
-            {
-                PKGInfoBuffer.AddRange(new byte[4]);
-            }
-            else
-            {
-                PKGInfoBuffer.AddRange(BitConverter.GetBytes(IconData.Length));
-                PKGInfoBuffer.AddRange(IconData);
-            }
-
-            SocketAsyncEventArgs PkgInfoEvent = new SocketAsyncEventArgs();
-            PkgInfoEvent.RemoteEndPoint = PKGInfoSocket.RemoteEndPoint;
-            PkgInfoEvent.SetBuffer(PKGInfoBuffer.ToArray());
-            PkgInfoEvent.Completed += (sender, e) =>
-            {
-                PKGInfoSocket.Close();
-                InfoSocket.Close();
-                PayloadSocket.Close();
-            };
-            
-            PKGInfoSocket.SendAsync(PkgInfoEvent);
-
-            if (!Silent)
-                await MessageBox.ShowAsync("Package Sent!", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-            return true;
-        }
         
         public static async Task StartServer(string LocalIP)
         {
@@ -398,31 +290,6 @@ namespace DirectPackageInstaller.Tasks
                     await MessageBox.ShowAsync($"Failed to Open the Http Server\n{ex}", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
-        }
-
-        public static async Task<bool> TryConnectSocket(string IP, bool Retry = true)
-        {
-            int[] Ports = new int[] { 9090, 9021, 9020 };
-            foreach (var Port in Ports)
-            {
-                PayloadSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                PayloadSocket.ReceiveTimeout = 3000;
-                PayloadSocket.SendTimeout = 3000;
-
-                try
-                {
-                    await PayloadSocket.ConnectAsync(new IPEndPoint(IPAddress.Parse(IP), Port));
-                    break;
-                } catch { }
-            }
-
-            if (!PayloadSocket!.Connected && Retry)
-            {
-                await Task.Delay(3000);
-                return await TryConnectSocket(IP, false);
-            }
-
-            return PayloadSocket.Connected;
         }
 
         private static async Task<bool> EnsureFreeSpace(Stream? PKGStream, DecompressorHelperStream[]? DecompressorStreams, Source InputType)

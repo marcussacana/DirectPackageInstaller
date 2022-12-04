@@ -247,7 +247,7 @@ namespace DirectPackageInstaller.Desktop
             Installer.Server = PSServer;
             Installer.CurrentPKG = Info!.Value;
             
-            bool Status = Installer.SendPKGPayload(PS4, Server, URL, true).ConfigureAwait(false).GetAwaiter().GetResult();
+            bool Status = Installer.Payload.SendPKGPayload(PS4, Server, URL, true).ConfigureAwait(false).GetAwaiter().GetResult();
 
             if (!Status)
             {

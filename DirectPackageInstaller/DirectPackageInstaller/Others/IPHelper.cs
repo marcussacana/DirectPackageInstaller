@@ -60,6 +60,24 @@ namespace DirectPackageInstaller
         {
             Timeout = TimeSpan.FromMilliseconds(1000)
         };
+        
+        
+        public static async Task<bool> IsGoldHENOnline(string IP)
+        {
+            if (!IPAddress.TryParse(IP, out _))
+                return false;
+            
+            var APIUrl = $"http://{IP}:9090/status";
+            try
+            {
+                using var Response = await Client.GetAsync(APIUrl);
+                var Resp = await Response.Content.ReadAsStringAsync();
+                if (Resp.Replace(" ", "").Contains("\"status\":\"ready\""))
+                    return true;
+            }
+            catch  { }
+            return false;
+        } 
 
         public static async Task<bool> IsRPIOnline(string IP)
         {

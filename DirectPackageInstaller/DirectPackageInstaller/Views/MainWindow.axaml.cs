@@ -33,11 +33,14 @@ namespace DirectPackageInstaller.Views
 
         private bool ForceClose = false;
         
-        private void MainWindowClosing(object? sender, CancelEventArgs e)
+        private async void MainWindowClosing(object? sender, CancelEventArgs e)
         {
             try
             {
-                if (Installer.Server?.Connections > 0 && !ForceClose)
+                bool PS4Connected = Installer.Server?.Connections > 0;
+                PS4Connected |= (DateTime.Now - Installer.Server?.LastRequest)?.TotalSeconds < 5;
+
+                if (PS4Connected && !ForceClose)
                 {
                     App.Callback(async () =>
                     {
@@ -54,6 +57,7 @@ namespace DirectPackageInstaller.Views
             catch {}
 
            App.SaveSettings();
+           await Installer.Payload.StopServer();
         }
     }
 }

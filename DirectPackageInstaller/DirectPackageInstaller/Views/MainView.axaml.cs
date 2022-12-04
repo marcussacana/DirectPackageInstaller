@@ -223,8 +223,7 @@ namespace DirectPackageInstaller.Views
                  Environment.Exit(0);
              }
         }
-
-        
+  
         private async void BtnLoadOnClick(object? sender, RoutedEventArgs e)
         {
             if (e != null)
@@ -664,9 +663,9 @@ namespace DirectPackageInstaller.Views
             tbURL.IsEnabled = false;
             try
             {
-                if (!await IPHelper.IsRPIOnline(App.Config.PS4IP) && !await Installer.TryConnectSocket(App.Config.PS4IP))
+                if (!await IPHelper.IsRPIOnline(App.Config.PS4IP) && (!await IPHelper.IsGoldHENOnline(App.Config.PS4IP) && !Installer.Payload.ClientRunning))
                 {
-                    await MessageBox.ShowAsync($"Remote Package Installer or GoldHEN Not Found at {App.Config.PS4IP}, Verify if is running.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    await MessageBox.ShowAsync($"Remote Package Installer or GoldHEN Not Found at {App.Config.PS4IP}, Verify if is running.\nYou may need re-enable the payload server.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return false;
                 }
 
