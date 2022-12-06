@@ -65,6 +65,7 @@ namespace DirectPackageInstaller.FileHosts
                 {
                     var Response = App.HttpClient.OpenRead(URL);
                     Response.Close();
+
                     return App.HttpClient.ResponseHeaders;
                 }
                 catch

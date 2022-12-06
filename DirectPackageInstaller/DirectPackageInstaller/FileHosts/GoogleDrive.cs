@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using DirectPackageInstaller.Views;
 using System.Net;
-using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 using DirectPackageInstaller.UIBase;
@@ -28,11 +27,13 @@ namespace DirectPackageInstaller.FileHosts
             List<Cookie> Cookies = new List<Cookie>();
             Cookies.AddRange(UserCookies);
 
-            var DownloadUri = $"https://drive.google.com/u/0/uc?id={GetFileID(URL)}&export=download&confirm=t";
+            var DownloadPageUri = $"https://drive.google.com/u/0/uc?id={GetFileID(URL)}&export=download";
+
+            var DownloadUri = $"{DownloadPageUri}&confirm=t";
 
             var Headers = Head(DownloadUri, Cookies.ToArray());
             
-            if (Headers == null)
+            if (Headers == null || Headers.AllKeys.Contains("x-auto-login"))
             {
                 var OldCount = Cookies.Count;
                 UserCookies = CookieManagerView.GetUserCookies("google.com");
@@ -69,6 +70,11 @@ namespace DirectPackageInstaller.FileHosts
                     return GetDownloadInfo(URL);
                 
                 throw new Exception();
+            }
+
+            if (Cookies.Any())
+            {
+                CookieAsked = true;
             }
 
             return new DownloadInfo()
