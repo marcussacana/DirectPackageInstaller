@@ -165,6 +165,16 @@ int main()
 			continue;
 		}
 
+		if (rv == 0x80990039 || rv == 0x80A30026) {
+			sceSysUtilSendSystemNotificationWithText(222, "DPI: Insufficient storage space.\nPlease free up space on your hard drive.");
+			continue;
+		}
+		
+		if (rv == 0x80990085) {
+			sceSysUtilSendSystemNotificationWithText(222, "DPI: Insufficient storage space.\nPlease free up non fragmented space on your hard drive.");
+			continue;
+		}
+
 		char err[0x200] = "\x0";
 		char errCode[0x20] = "\x0";
 		int32ToHex(rv, (char*)&errCode);
