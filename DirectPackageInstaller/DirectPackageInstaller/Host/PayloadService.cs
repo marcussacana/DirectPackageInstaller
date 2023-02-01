@@ -55,6 +55,8 @@ namespace DirectPackageInstaller.Host
 
 
             var PKGInfoSocket = Queue.Dequeue();
+            
+            ClientRunning = Queue.Count > 0;
 
             var UrlData = Encoding.UTF8.GetBytes(URL);
             var NameData = Encoding.UTF8.GetBytes(Installer.CurrentPKG.FriendlyName);
@@ -149,7 +151,13 @@ namespace DirectPackageInstaller.Host
 
             ClientRunning = false;
         }
-
+        
+        /// <summary>
+        /// Tries to connect the PayloadSocket at the GoldHEN/MiraLoader payload port
+        /// </summary>
+        /// <param name="IP">The PS4 IP</param>
+        /// <param name="Retry">For internal usage, don't set this parameter</param>
+        /// <returns>When true the PayloadSocket holds a valid connection</returns>
         public async Task<bool> TryConnectSocket(string IP, bool Retry = true)
         {
             int[] Ports = new int[] { 9090, 9021, 9020 };
@@ -176,6 +184,11 @@ namespace DirectPackageInstaller.Host
             return PayloadSocket.Connected;
         }
 
+        /// <summary>
+        /// Ensure the PKG Info Server is Listening
+        /// </summary>
+        /// <param name="PS4IP"></param>
+        /// <returns></returns>
         private async Task<bool> EnsureServer(string PS4IP)
         {
             if (ServerRunning)
@@ -202,6 +215,10 @@ namespace DirectPackageInstaller.Host
             return true;
         }
 
+        /// <summary>
+        /// Runs the PKG Info Socket connection accept loop.
+        /// </summary>
+        /// <exception cref="NullReferenceException"></exception>
         private async Task ServerLoop()
         {
             if (ServiceSocket == null)
@@ -215,7 +232,6 @@ namespace DirectPackageInstaller.Host
                 try
                 {
                     var ClientSocket = await ServiceSocket.AcceptAsync(CToken.Token);
-                    ClientRunning = true;
                     Queue.Enqueue(ClientSocket);
                 }
                 catch
@@ -224,14 +240,21 @@ namespace DirectPackageInstaller.Host
                 }
                 finally
                 {
+                    ClientRunning = Queue.Count > 0;
                     CToken.Dispose();
                 }
+                
             } while (ServerRunning);
 
             ServiceSocket?.Close();
             ServiceSocket = null;
         }
 
+        /// <summary>
+        /// Ensure the Client Installer Payload is running in the PS4 System
+        /// </summary>
+        /// <param name="PCIP">The PC IP</param>
+        /// <returns>If is running/started returns true, otherwise false</returns>
         private bool EnsureClient(string PCIP)
         {
             if (ClientRunning)
