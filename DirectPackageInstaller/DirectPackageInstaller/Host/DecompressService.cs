@@ -141,8 +141,6 @@ namespace DirectPackageInstaller.Host
 
             try
             {
-                Context.Response.BufferSize = 1024 * 1024 * 2;
-
                 Context.Response.Headers["Connection"] = "Keep-Alive";
                 Context.Response.Headers["Accept-Ranges"] = "none";
                 Context.Response.Headers["Content-Type"] = "application/octet-stream";

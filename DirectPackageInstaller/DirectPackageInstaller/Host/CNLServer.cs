@@ -103,7 +103,6 @@ public class CNLServer
             {
                 Http.Response.StatusCode = 400;
                 Http.Response.TrySend(true);
-                Http.Close();
                 return;
             }
 
@@ -158,7 +157,6 @@ public class CNLServer
             {
                 Http.Response.StatusCode = 400;
                 Http.Response.TrySend(true);
-                Http.Close();
                 return;
             }
 

@@ -116,8 +116,12 @@ public static class Extensions
         {
             return Path.Length > 2 && (Path[1] == ':' || Path[0] == '/' || Path.StartsWith("\\\\"));
         }
-        public static string Substring(this string String, string Substring)
+
+        public static string? Substring(this string String, string Substring)
         {
+            if (!String.Contains(Substring))
+                return null;
+
             return String.Substring(String.IndexOf(Substring) + Substring.Length);
         }
         

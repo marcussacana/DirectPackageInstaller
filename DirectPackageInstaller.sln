@@ -11,7 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DirectPackageInstaller", "D
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibOrbisPkg.Core", "LibOrbisPkg\LibOrbisPkg.Core\LibOrbisPkg.Core.csproj", "{8A5EB900-7726-4D50-87C2-BE3BD202F6A2}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HttpServerLite", "HttpServerLite\HttpServerLite\HttpServerLite.csproj", "{E970BB82-F0AA-4D8D-B201-288C2BC2CDD3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HttpServerLite", "HttpServerLite\src\HttpServerLite\HttpServerLite.csproj", "{E970BB82-F0AA-4D8D-B201-288C2BC2CDD3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

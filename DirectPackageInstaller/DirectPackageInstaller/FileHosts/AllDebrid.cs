@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Web;
 
@@ -22,7 +23,7 @@ namespace DirectPackageInstaller.FileHosts
             const string URLMask = "https://api.alldebrid.com/v4/link/unlock?agent=DirectPackageInstaller&apikey={0}&link={1}";
 
             var Response = DownloadString(string.Format(URLMask, App.Config.AllDebridApiKey, HttpUtility.UrlEncode(URL)));
-            var Data = Newtonsoft.Json.JsonConvert.DeserializeObject<AllDebridApi>(Response);
+            var Data = JsonSerializer.Deserialize<AllDebridApi>(Response);
 
             if (Info?.status != "success")
                 throw new Exception();
@@ -43,7 +44,7 @@ namespace DirectPackageInstaller.FileHosts
             if (Info == null)
             {
                 var Status = DownloadString("https://api.alldebrid.com/v4/user/hosts?agent=DirectPackageInstaller&apikey=" + App.Config.AllDebridApiKey);
-                Info = Newtonsoft.Json.JsonConvert.DeserializeObject<AllDebridApi>(Status);
+                Info = JsonSerializer.Deserialize<AllDebridApi>(Status);
             }
 
             if (Info?.status != "success")

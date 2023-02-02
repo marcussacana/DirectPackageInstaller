@@ -28,12 +28,12 @@ namespace DirectPackageInstaller.Host
 
         private Queue<Socket> Queue = new Queue<Socket>();
 
-        public async Task<bool> SendPKGPayload(string PS4IP, string PCIP, string URL, bool Silent)
+        public async Task<bool> SendPKGPayload(string PS4IP, string PCIP, string URL, bool Silent, bool AutoSplit)
         {
             if (Installer.Server == null)
                 return false;
 
-            URL = Installer.Server.RegisterJSON(URL, PCIP, Installer.CurrentPKG);
+            URL = Installer.Server.RegisterJSON(URL, PCIP, Installer.CurrentPKG, AutoSplit);
 
             if (!await EnsureServer(PS4IP))
                 return false;
@@ -191,15 +191,20 @@ namespace DirectPackageInstaller.Host
         /// <returns></returns>
         private async Task<bool> EnsureServer(string PS4IP)
         {
-            if (ServerRunning)
-                return true;
-
-            if (ServiceSocket == null)
+            if (!ServerRunning)
             {
-                ServiceSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                if (ServiceSocket == null)
+                {
+                    ServiceSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
-                ServiceSocket.Bind(new IPEndPoint(IPAddress.Any, 0));
-                ServiceSocket.Listen();
+                    ServiceSocket.Bind(new IPEndPoint(IPAddress.Any, 0));
+                    ServiceSocket.Listen();
+                }
+
+
+                ServerRunning = true;
+
+                _ = ServerLoop();
             }
 
             if (PayloadSocket == null || !PayloadSocket.Connected)
@@ -207,10 +212,6 @@ namespace DirectPackageInstaller.Host
                 if (!await TryConnectSocket(PS4IP))
                     return false;
             }
-
-            ServerRunning = true;
-
-            _ = ServerLoop();
 
             return true;
         }

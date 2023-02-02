@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using DirectPackageInstaller.IO;
-using Newtonsoft.Json;
+using System.Text.Json;
 
 namespace DirectPackageInstaller
 {
@@ -33,26 +33,26 @@ namespace DirectPackageInstaller
 
         private static Stream OpenJSON(string JSON)
         {
-            SplitPkgInfo Info = JsonConvert.DeserializeObject<SplitPkgInfo>(JSON);
+            PKGManifest Info = JsonSerializer.Deserialize<PKGManifest>(JSON);
             Stream[] Urls = (from x in Info.pieces orderby x.fileOffset ascending select new FileHostStream(x.url)).ToArray();
             long[] Sizes = (from x in Info.pieces orderby x.fileOffset ascending select x.fileSize).ToArray();
             return new MergedStream(Urls, Sizes);
         }
 
-        struct SplitPkgInfo
+        public struct PKGManifest
         {
-            public long originalFileSize;
-            public string packageDigest;
-            public int numberOfSplitFiles;
-            public PkgPiece[] pieces;
+            public long originalFileSize { get; set; }
+            public string packageDigest { get; set; }
+            public int numberOfSplitFiles { get; set; }
+            public PkgPiece[] pieces { get; set; }
         }
 
-        struct PkgPiece
+        public struct PkgPiece
         {
-            public string url;
-            public long fileOffset;
-            public long fileSize;
-            public string hashValue;
+            public string url { get; set; }
+            public long fileOffset { get; set; }
+            public long fileSize { get; set; }
+            public string hashValue { get; set; }
         }
     }
 }

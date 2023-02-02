@@ -95,12 +95,16 @@ namespace DirectPackageInstaller.Tasks
             if (!await EnsureFreeSpace(PKGStream, DecompressorStreams, InputType))
                 return false;
 
+            bool CanSplit = true;
+
             uint LastResource = CurrentPKG.PreloadLength;
 
             switch (InputType)
             {
                 case Source.URL | Source.SevenZip:
                 case Source.URL | Source.RAR:
+                    CanSplit = false;
+
                     bool Retry = false;
 
                     var ID = DecompressService.TaskCache.Count.ToString();
@@ -155,6 +159,8 @@ namespace DirectPackageInstaller.Tasks
                 case Source.JSON | Source.Segmented:
                 case Source.URL | Source.DiskCache:
                 case Source.URL | Source.Segmented:
+                    CanSplit = !InputType.HasFlag(Source.DiskCache);
+
                     var CacheTask = Downloader.CreateTask(URL);
                     
                     OriStatus = GetStatus();
@@ -192,7 +198,7 @@ namespace DirectPackageInstaller.Tasks
             if (await IPHelper.IsRPIOnline(Config.PS4IP))
                 OK = await PushRPI(URL, Config, Silent);
             else
-                OK = await Payload.SendPKGPayload(Config.PS4IP, Config.PCIP, URL, Silent);
+                OK = await Payload.SendPKGPayload(Config.PS4IP, Config.PCIP, URL, Silent, CanSplit);
             
             return OK;
         }

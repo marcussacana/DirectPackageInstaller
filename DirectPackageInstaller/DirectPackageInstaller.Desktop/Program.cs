@@ -1,20 +1,31 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
-using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Avalonia;
-using Avalonia.Controls.Primitives;
 using DirectPackageInstaller.Host;
 using DirectPackageInstaller.IO;
 using DirectPackageInstaller.Tasks;
-using LibOrbisPkg.GP4;
 
 namespace DirectPackageInstaller.Desktop
 {
     class Program
     {
+        const uint SW_SHOW = 5;
+
+        static IntPtr hConsole = IntPtr.Zero;
+
+        [DllImport("kernel32.dll")]
+        static extern bool AllocConsole();
+
+        [DllImport("kernel32.dll")]
+        static extern IntPtr GetConsoleWindow();
+
+        [DllImport("user32.dll")]
+        static extern bool ShowWindow(IntPtr hWnd, uint nCmdShow);
+
+
         // Initialization code. Don't use any Avalonia, third-party APIs or any
         // SynchronizationContext-reliant code before AppMain is called: things aren't initialized
         // yet and stuff might break.
@@ -28,6 +39,14 @@ namespace DirectPackageInstaller.Desktop
 
                 Environment.Exit(0);
                 return;
+            }
+
+            if (OperatingSystem.IsWindows())
+            {
+                AllocConsole();
+                Console.OutputEncoding = Encoding.Unicode;
+                hConsole = GetConsoleWindow();
+                ShowWindow(hConsole, SW_SHOW);
             }
 
             Console.Title = "DirectPacakgeInstaller";
@@ -91,6 +110,7 @@ namespace DirectPackageInstaller.Desktop
                         Console.WriteLine("Instead URL you can put a absolute file path as well.");
                         Console.WriteLine();
                         Console.WriteLine("DirectPackageInstaller - By Marcussacana");
+                        Console.ReadKey();
                         return;
                     default:
                         if (!Arg.StartsWith("http") && !File.Exists(args[i]))
@@ -110,7 +130,7 @@ namespace DirectPackageInstaller.Desktop
 
             if (PS4 == null)
             {
-                PS4Finder.StartFinder((PSIP, PCIP) =>
+                _ = PS4Finder.StartFinder((PSIP, PCIP) =>
                 {
                     PS4 = PSIP.ToString();
                     
@@ -247,7 +267,7 @@ namespace DirectPackageInstaller.Desktop
             Installer.Server = PSServer;
             Installer.CurrentPKG = Info!.Value;
             
-            bool Status = Installer.Payload.SendPKGPayload(PS4, Server, URL, true).ConfigureAwait(false).GetAwaiter().GetResult();
+            bool Status = Installer.Payload.SendPKGPayload(PS4, Server, URL, true, false).ConfigureAwait(false).GetAwaiter().GetResult();
 
             if (!Status)
             {

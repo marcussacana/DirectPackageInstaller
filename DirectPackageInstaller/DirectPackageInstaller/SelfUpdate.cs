@@ -46,7 +46,7 @@ namespace DirectPackageInstaller
 
         const string UpdateList = "Update.ini";
 
-        public static Version CurrentVersion = new Version("6.2.3");
+        public static Version CurrentVersion = new Version("6.2.4");
 
         public static Version? LastVersion = null;
 
@@ -149,7 +149,14 @@ namespace DirectPackageInstaller
             }
             else
             {
-                Process.Start(Path.Combine(TempUpdateDir, Path.GetFileName(MainExecutable)));
+                var UpdatedExecutable = Path.Combine(TempUpdateDir, Path.GetFileName(MainExecutable));
+
+                if (App.IsOSX || App.IsUnix)
+                {
+                    chmod(UpdatedExecutable, 0b111_101_101);//rwxr-xr-x
+                }
+
+                Process.Start(UpdatedExecutable);
                 Environment.Exit(0);
             }
         }
@@ -305,5 +312,7 @@ namespace DirectPackageInstaller
             }
         }
 
+        [DllImport("libc", SetLastError = true)]
+        public static extern int chmod(string path, int mode);
     }
 }
