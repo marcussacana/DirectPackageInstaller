@@ -266,6 +266,7 @@ namespace DirectPackageInstaller.Views
                 return;
             }
 
+            //No Source, Open File Selection Dialog
             if (string.IsNullOrEmpty(SourcePackage))
             {
 
@@ -323,6 +324,7 @@ namespace DirectPackageInstaller.Views
 
                 return;
             }
+
 
             PKGStream?.Close();
 
@@ -518,6 +520,8 @@ namespace DirectPackageInstaller.Views
                 throw new AbortException("Failed to load URL info");
             }
 
+            UrlInfo.ApplyFormatFilter();
+
             FileHostStream FHStream;
 
             if (UrlInfo.Urls.Any(x => x.SingleConnection))
@@ -527,16 +531,17 @@ namespace DirectPackageInstaller.Views
             else
             {
 
-                var FName = UrlInfo.Urls.First().Filename?.ToLowerInvariant();
-
-                bool ValidExt = string.IsNullOrWhiteSpace(FName) || FName.EndsWith(".rar") || FName.EndsWith(".7z") ||
-                                FName.EndsWith(".pkg");
+                var ValidExt = UrlInfo.Urls.Select(x => x.Filename?.ToLowerInvariant()).Where(FName =>
+                   string.IsNullOrWhiteSpace(FName)
+                || FName.EndsWith(".rar")
+                || FName.EndsWith(".7z") 
+                || FName.EndsWith(".pkg")).Any();
 
                 if (!ValidExt)
                 {
                     if (UrlInfo.Urls.Length == 1)
                     {
-                        await MessageBox.ShowAsync($"This url contains a {Path.GetExtension(FName)} file but isn't supported,\nSupported Files: .rar .7z .pkg", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        await MessageBox.ShowAsync($"The input file has a unsupported format,\nSupported Files: .rar .7z .pkg", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return null;
                     }
 
@@ -555,13 +560,16 @@ namespace DirectPackageInstaller.Views
                         UrlInfo.Urls = SevenZip;
                     }
 
-                    if (UrlInfo.Urls.Any(x =>
-                            x.Filename.EndsWith(".pkg", StringComparison.InvariantCultureIgnoreCase)))
+                    if (UrlInfo.Urls.Any(x => x.Filename.EndsWith(".pkg", StringComparison.InvariantCultureIgnoreCase)))
                     {
-                        SourcePackage = UrlInfo.Urls.First().URL;
+                        SourcePackage = UrlInfo.Links.First();
                     }
 
                     URLAnalyzer.URLInfos[SourcePackage] = UrlInfo;
+                }
+                else
+                {
+                    SourcePackage = UrlInfo.Links.First();
                 }
 
                 FHStream = new FileHostStream(SourcePackage);

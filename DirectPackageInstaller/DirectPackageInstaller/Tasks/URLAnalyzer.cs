@@ -47,7 +47,7 @@ public static class URLAnalyzer
                 MaxDegreeOfParallelism = 4
             }, (i, loop) =>
             {
-                if (loop.ShouldExitCurrentIteration)
+                if (loop.ShouldExitCurrentIteration || !URLInfos.ContainsKey(MainURL))
                     return;
                 
                 ref var Info = ref URLInfos[MainURL].Urls[i];
@@ -96,6 +96,40 @@ public static class URLAnalyzer
 
         public int TotalVerified => Urls.Count(x => x.Verified);
         public string Progress => $"{TotalVerified}/{Urls.Length} ({(double)TotalVerified/Urls.Length:P0})";
+
+        public void ApplyFormatFilter()
+        {
+            if (!Ready)
+                throw new Exception("URLs not ready");
+
+            if (Failed)
+                throw new Exception("Broken URLs in list");
+
+            var Verify = (URLInfoEntry Entry) => {
+                var FN = Entry.Filename;
+                if (string.IsNullOrEmpty(FN))//Url without filename
+                {
+                    return true;
+                }
+
+                FN = FN.ToLowerInvariant();
+
+                if (FN.EndsWith(".rar") || FN.EndsWith(".7z") || FN.EndsWith(".pkg"))
+                    return true;
+
+                var Ext = Path.GetExtension(FN).TrimStart('.');
+
+                if (Ext.StartsWith("r") && int.TryParse(Ext.Substring(1), out int _))//.r00
+                    return true;
+
+                if (int.TryParse(Ext, out int _))
+                    return true;
+
+                return false;
+            };
+
+            Urls = Urls.Where(x => Verify(x)).ToArray();
+        }
     }
 
     public struct URLInfoEntry
@@ -105,7 +139,7 @@ public static class URLAnalyzer
         public bool Verified;
         public bool Failed;
         public Func<FileHostStream> Stream;
-        public string Filename;
+        public string? Filename;
     }
 }
 
