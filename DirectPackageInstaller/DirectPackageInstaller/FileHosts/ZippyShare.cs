@@ -1,5 +1,9 @@
 ﻿using System;
+using System.IO;
+using System.Linq;
+using DirectPackageInstaller.Host;
 using DirectPackageInstaller.Javascript;
+using DirectPackageInstaller.Tasks;
 using HtmlAgilityPack;
 using Jint.Native;
 
@@ -20,14 +24,23 @@ namespace DirectPackageInstaller.FileHosts
             var FullPage = new HtmlDocument();
             FullPage.LoadHtml(Page);
 
-            Page = Page.Substring("<a id=\"dlbutton\"  href=\"#\">");
-            Page = Page.Substring("<script type=\"text/javascript\">", "</script>");
+            var Scripts = FullPage.DocumentNode.SelectNodes("//script[@type='text/javascript' and contains(., 'dlbutton')]");
 
-            Page += "\r\nif (document.getElementById('dlbutton')) this.link = document.getElementById('dlbutton').href; if (document.getElementById('fimage')) this.link = document.getElementById('fimage').href;";
+            var GetLinkJS = "\r\nif (document.getElementById('dlbutton')) this.link = document.getElementById('dlbutton').href; if (document.getElementById('fimage')) this.link = document.getElementById('fimage').href;";
             
             var Engine = JSEngine.GetEngine(FullPage);
            
-            Engine.Execute(Page);
+            foreach (var Script in Scripts)
+            {
+                try
+                {
+                    Engine.Execute(Script.InnerHtml);
+                }
+                catch { }
+            }
+
+            Engine.Execute(GetLinkJS);
+            
             var EvalResult = Engine.GetValue("link");
 
             var Result = EvalResult.AsString();
