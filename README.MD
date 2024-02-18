@@ -22,7 +22,6 @@ Or alternatively the RemotePackageInstaller Homebrew.
 - AllDebrid (API Key Required)
 - Google Drive (With or Without Authentication)
 - Mediafire (Without Authentication)
-- Zippyshare
 - PixelDrain
 - 1Fichier (Must wait 60 minutes after downloaded)
 

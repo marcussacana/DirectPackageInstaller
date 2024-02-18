@@ -276,7 +276,7 @@ namespace DirectPackageInstaller
             return new DriveInfo(CacheBaseDirectory ?? WorkingDirectory).AvailableFreeSpace;
         };
 
-        public static Action GetRootDirPermission;
+        public static Func<Task>? GetRootDirPermission;
         public static string RootDir
         {
             get
@@ -286,7 +286,7 @@ namespace DirectPackageInstaller
 
                 if (IsAndroid)
                     return (UseSDCard ? AndroidRootSDDir : AndroidRootInternalDir) ?? throw new Exception();
-                
+
                 return Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             }
         }
@@ -296,9 +296,7 @@ namespace DirectPackageInstaller
             get
             {
                 if (IsAndroid)
-                {
-                    GetRootDirPermission?.Invoke();
-                    
+                {                    
                     var Parent = Path.GetDirectoryName(AndroidSDCacheDir);
                     Parent = Path.GetDirectoryName(Parent);
                     Parent = Path.GetDirectoryName(Parent);
@@ -313,28 +311,7 @@ namespace DirectPackageInstaller
                 return null;
             }
         }
-        public static string? AndroidRootInternalDir
-        {
-            get
-            {
-                if (IsAndroid)
-                {
-                    GetRootDirPermission?.Invoke();
-                    
-                    var Parent = Path.GetDirectoryName(AndroidCacheDir);
-                    Parent = Path.GetDirectoryName(Parent);
-                    Parent = Path.GetDirectoryName(Parent);
-                    Parent = Path.GetDirectoryName(Parent);
-                    
-                    if (Parent != null && !Parent.EndsWith("/") && !Parent.EndsWith("\\"))
-                        Parent += Path.DirectorySeparatorChar;
-                    
-                    return Parent;
-                }
-
-                return null;
-            }
-        }
+        public static string? AndroidRootInternalDir { get; set; }
 
         internal static string SettingsPath => Path.Combine(WorkingDirectory, "Settings.ini");
 

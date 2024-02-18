@@ -26,7 +26,7 @@ public partial class LinkListView : UserControl
         get
         {
             if (!CheckAccess())
-                return Dispatcher.UIThread.InvokeAsync(() => Links).ConfigureAwait(false).GetAwaiter().GetResult();
+                return Dispatcher.UIThread.InvokeAsync(() => Links).Result;
                 
             return Model?.Links.Distinct()
                 .Where(x => !string.IsNullOrWhiteSpace(x.Content))
@@ -121,7 +121,7 @@ public partial class LinkListView : UserControl
 
             foreach (var Link in Lines)
             {
-                if (!Uri.IsWellFormedUriString(Link, UriKind.Absolute))
+                if (!Link.IsValidURL())
                 {
                     await MessageBox.ShowAsync("Invalid URL:\n" + Link, "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;

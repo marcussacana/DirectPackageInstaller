@@ -12,6 +12,7 @@ using DirectPackageInstaller.IO;
 using DirectPackageInstaller.Tasks;
 using HttpServerLite;
 using static DirectPackageInstaller.SplitHelper;
+using SharpCompress;
 
 namespace DirectPackageInstaller.Host
 {
@@ -94,9 +95,7 @@ namespace DirectPackageInstaller.Host
 
             int CID = ConnectionID++;
 
-            LOG("Request '{0}' Received: {1}", CID, Context.Request.Url.Full);
-            foreach (var Header in Context.Request.Headers)
-                LOG("Request Header: {0}: {1}", Header.Key, Header.Value);
+            LOG("Request '{0}' Received: {1}", CID, Context.Request.Url.Full);;
 
             bool FromPS4 = false;
             var Path = Context.Request.Url.Full;
@@ -174,7 +173,7 @@ namespace DirectPackageInstaller.Host
         async Task File(HttpContext Context, NameValueCollection Query, string Path)
         {
             HttpRange? Range = null;
-            bool Partial = Context.Request.HeaderExists("Range", true);
+            bool Partial = Context.Request.HeaderExists("Range");
             if (Partial)
                 Range = new HttpRange(Context.Request.Headers["Range"]);
 
@@ -196,7 +195,7 @@ namespace DirectPackageInstaller.Host
         async Task Cache(HttpContext Context, NameValueCollection Query, string Url, bool FromPS4)
         {
             HttpRange? Range = null;
-            bool Partial = Context.Request.HeaderExists("Range", true);
+            bool Partial = Context.Request.HeaderExists("Range");
             if (Partial)
                 Range = new HttpRange(Context.Request.Headers["Range"]);
 
@@ -235,9 +234,6 @@ namespace DirectPackageInstaller.Host
                     LOG("Response Context: {0}", Context.Request.Url.Full);
                     LOG("Content Length: {0}", Context.Response.ContentLength);
 
-                    foreach (var Header in Context.Response.Headers)
-                        LOG("Header: {0}: {1}", Header.Key, Header.Value);
-
                     Context.Response.Send(true);
                 }
                 catch { }
@@ -255,6 +251,10 @@ namespace DirectPackageInstaller.Host
             {
                 await SendStream(Context, Stream, Range);
             }
+            catch
+            {
+
+            }
             finally
             {
                 Stream.Close();
@@ -267,7 +267,7 @@ namespace DirectPackageInstaller.Host
         async Task Proxy(HttpContext Context, NameValueCollection Query, string Url)
         {
             HttpRange? Range = null;
-            bool Partial = Context.Request.HeaderExists("Range", true);
+            bool Partial = Context.Request.HeaderExists("Range");
             if (Partial)
                 Range = new HttpRange(Context.Request.Headers["Range"]);
 
@@ -289,7 +289,7 @@ namespace DirectPackageInstaller.Host
         async Task Merge(HttpContext Context, NameValueCollection Query, string Url) {
 
             HttpRange? Range = null;
-            bool Partial = Context.Request.HeaderExists("Range", true);
+            bool Partial = Context.Request.HeaderExists("Range");
             if (Partial)
                 Range = new HttpRange(Context.Request.Headers["Range"]);
 
@@ -311,7 +311,7 @@ namespace DirectPackageInstaller.Host
         async Task Split(HttpContext Context, NameValueCollection Query, string Url)
         {
             HttpRange? Range = null;
-            bool Partial = Context.Request.HeaderExists("Range", true);
+            bool Partial = Context.Request.HeaderExists("Range");
             if (Partial)
                 Range = new HttpRange(Context.Request.Headers["Range"]);
 
@@ -373,7 +373,7 @@ namespace DirectPackageInstaller.Host
         async Task Json(HttpContext Context, NameValueCollection Query, string Path)
         {
             HttpRange? Range = null;
-            bool Partial = Context.Request.HeaderExists("Range", true);
+            bool Partial = Context.Request.HeaderExists("Range");
             if (Partial)
                 Range = new HttpRange(Context.Request.Headers["Range"]);
 
@@ -420,9 +420,6 @@ namespace DirectPackageInstaller.Host
 
                 LOG("Response Context: {0}", Context.Request.Url.Full);
                 LOG("Content Length: {0}", Context.Response.ContentLength);
-
-                foreach (var Header in Context.Response.Headers)
-                    LOG("Header: {0}: {1}", Header.Key, Header.Value);
 
                 Origin = new BufferedStream(Origin);
 

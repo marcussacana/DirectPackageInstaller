@@ -11,7 +11,7 @@ public abstract class DialogWindow : Window
     public static T CreateInstance<T>() where T : Window, new()
     {
         if (!Dispatcher.UIThread.CheckAccess())
-            return Dispatcher.UIThread.InvokeAsync(CreateInstance<T>).ConfigureAwait(false).GetAwaiter().GetResult();
+            return Dispatcher.UIThread.InvokeAsync(CreateInstance<T>).Result;
 
         return new T();
     }
@@ -19,7 +19,7 @@ public abstract class DialogWindow : Window
     public DialogResult ShowDialogSync(Window? Parent = null)
     {
         if (!Dispatcher.UIThread.CheckAccess())
-            return Dispatcher.UIThread.InvokeAsync(() => ShowDialogSync(Parent)).ConfigureAwait(false).GetAwaiter().GetResult();
+            return Dispatcher.UIThread.InvokeAsync(() => ShowDialogSync(Parent)).Result;
 
         Extensions.ShowDialogSync(this, Parent ?? MainWindow.Instance);
         

@@ -102,7 +102,7 @@
 			<Image Name="IconBox"></Image>
 			<GridSplitter Name="MainGridSplitter" Grid.Column="1"></GridSplitter>
 
-			<DataGrid Grid.Column="2" Items="{Binding PKGParams}" Name="PkgInfoGrid">
+			<DataGrid Grid.Column="2" Name="PkgInfoGrid" ItemsSource="{Binding PKGParams}">
 				<DataGrid.Columns>
 					<DataGridTextColumn Header="Param" Binding="{Binding Name}"/>
 					<DataGridTextColumn Header="Value" Binding="{Binding Value}"/>

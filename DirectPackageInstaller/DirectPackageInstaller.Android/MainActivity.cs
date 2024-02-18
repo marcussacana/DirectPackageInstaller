@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using System.Threading.Tasks;
 using Android;
 using Android.App;
@@ -9,40 +8,55 @@ using Android.Content.PM;
 using Android.Net;
 using Android.Net.Wifi;
 using Android.OS;
-using Android.Views;
 using AndroidX.Core.App;
 using AndroidX.Core.Content;
 using Avalonia.Android;
 using Avalonia;
+using Avalonia.ReactiveUI;
 using Java.Lang;
 using Application = Android.App.Application;
 using File = Java.IO.File;
+using System.Linq;
+using Android.Runtime;
 
 [assembly: Application(UsesCleartextTraffic = true)]
 
 namespace DirectPackageInstaller.Android
 {
-    [Activity(Label = "DirectPackageInstaller.Android", Theme = "@style/MyTheme.NoActionBar", Icon = "@drawable/icon",
-        LaunchMode = LaunchMode.SingleTop,
-        ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize)]
-    public class MainActivity : AvaloniaMainActivity
+    [Activity(Label = "DirectPackageInstaller.Android", Theme = "@style/MyTheme.NoActionBar", Icon = "@drawable/icon", MainLauncher = true, ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.UiMode)]
+    public class MainActivity : AvaloniaMainActivity<App>
     {
         public static int Instances = 0;
+        public ClipboardManager? ClipboardManager;
+
+	 	protected override AppBuilder CustomizeAppBuilder(AppBuilder builder)
+	    {
+	        return base.CustomizeAppBuilder(builder)
+	            .WithInterFont()
+	            .UseReactiveUI();
+        }
         
         protected override async void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
 
-            if (Instances == 0)
+            if (Instances++ == 0)
             {
-                ActivityCompat.RequestPermissions(this, new []{
-                        Manifest.Permission.ReadExternalStorage,
-                        Manifest.Permission.WriteExternalStorage,
-                        Manifest.Permission.ManageExternalStorage
-                    },
-                    1
-                );
-                
+                SetupEnv();
+
+                var Permissions = new[] {
+                    Manifest.Permission.ReadExternalStorage,
+                    Manifest.Permission.WriteExternalStorage,
+                    Manifest.Permission.ManageExternalStorage
+                };
+
+                var MissingPermissions = Permissions.Where(x => CheckSelfPermission(x) != Permission.Granted);
+
+                if (MissingPermissions.Any())
+                    RequestPermissions(MissingPermissions.ToArray(), 1);
+
+                await IgnoreBatteryOptimizations();
+
                 App.InstallApk = (Path) =>
                 {
                     var Install = new Intent(Intent.ActionView);
@@ -53,10 +67,65 @@ namespace DirectPackageInstaller.Android
                 };
 
                 ForegroundService.StartService(this, null);
-
-                await IgnoreBatteryOptimizations();
             }
-            Instances++;
+        }
+
+        private void SetupEnv()
+        {
+            ClipboardManager = (ClipboardManager)GetSystemService(ClipboardService);
+
+            App.GetClipboardText = () =>
+            {
+                var PrimaryClip = ClipboardManager.PrimaryClip;
+                if (PrimaryClip.ItemCount != 1)
+                    return null;
+
+                var ClipItem = PrimaryClip.GetItemAt(0);
+                return ClipItem.CoerceToText(null);
+            };
+
+            var CacheDirs = Application.GetExternalCacheDirs();
+
+            var ExtCacheDir = CacheDirs?.First() ?? Application.CacheDir;
+            var SDCardDir = CacheDirs?.Length > 1 ? CacheDirs.Skip(1).MaxBy(x => x.FreeSpace) : null;
+
+            var BaseDir = Application.GetExternalFilesDir(null);
+
+            App._IsAndroid = true;
+            App._WorkingDir = BaseDir?.AbsolutePath;
+            App.AndroidCacheDir = ExtCacheDir?.AbsolutePath;
+            App.AndroidSDCacheDir = SDCardDir?.AbsolutePath;
+            App.GetRootDirPermission = () => GetStorageAccess();
+            App.AndroidRootInternalDir = Environment.ExternalStorageDirectory?.AbsolutePath;
+            //App.GetFreeStorageSpace = () => BaseDir.UsableSpace;
+
+            if (string.IsNullOrWhiteSpace(App.AndroidCacheDir))
+                throw new FileNotFoundException("Failed to find the cache directory");
+
+            TempHelper.Clear();
+        }
+
+        public async Task GetStorageAccess()
+        {
+            if (Build.VERSION.SdkInt >= BuildVersionCodes.R)
+            {
+                if (!Environment.IsExternalStorageManager)
+                {
+                    try
+                    {
+
+                        Uri? uri = Uri.Parse("package:" + PackageName);
+                        Intent intent = new Intent(global::Android.Provider.Settings.ActionManageAppAllFilesAccessPermission, uri);
+                        await StartActivityAndWait(intent);
+                    }
+                    catch (Exception ex)
+                    {
+                        Intent intent = new Intent();
+                        intent.SetAction(global::Android.Provider.Settings.ActionManageAppAllFilesAccessPermission);
+                        await StartActivityAndWait(intent);
+                    }
+                }
+            }
         }
 
         private Dictionary<int, TaskCompletionSource> Tasks = new();

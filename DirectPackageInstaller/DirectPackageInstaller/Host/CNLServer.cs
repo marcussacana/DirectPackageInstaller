@@ -83,7 +83,7 @@ public class CNLServer
             
             var URLs = Args.First(x => x.Key == "urls").Value
                 .Split('\r', '\n')
-                .Where(x => Uri.IsWellFormedUriString(x, UriKind.Absolute));
+                .Where(x => x.IsValidURL());
 
             OnLinksReceived?.Invoke((URLs.ToArray(), Password));
 
@@ -149,7 +149,8 @@ public class CNLServer
                 var DataUTF8 = Encoding.UTF8.GetString(Data);
 
                 var DecryptedUrls = DataUTF8.Split('\r', '\n', '\x0')
-                    .Where(x => Uri.IsWellFormedUriString(x, UriKind.Absolute));
+                    .Where(x => x.IsValidURL())
+                    .ToArray();
                 
                 OnLinksReceived?.Invoke((DecryptedUrls.ToArray(), Password));
             }

@@ -7,25 +7,25 @@ namespace DirectPackageInstaller
 {
     public class ViewLocator : IDataTemplate
     {
-        public IControl? Build(object? data)
+        public bool Match(object? data)
         {
-            if (data is null)
+            return data is ViewModelBase;
+        }
+
+        Control? ITemplate<object?, Control?>.Build(object? param)
+        {
+            if (param is null)
                 return null;
 
-            var name = data.GetType().FullName!.Replace("ViewModel", "View");
+            var name = param.GetType().FullName!.Replace("ViewModel", "View");
             var type = Type.GetType(name);
 
             if (type != null)
             {
-                return (Control) Activator.CreateInstance(type)!;
+                return (Control)Activator.CreateInstance(type)!;
             }
 
-            return new TextBlock {Text = name};
-        }
-
-        public bool Match(object? data)
-        {
-            return data is ViewModelBase;
+            return new TextBlock { Text = name };
         }
     }
 }

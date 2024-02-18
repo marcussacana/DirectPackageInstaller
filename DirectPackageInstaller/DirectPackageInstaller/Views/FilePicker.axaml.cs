@@ -59,9 +59,19 @@ public partial class FilePicker : UserControl
 
     public Stack<string> BckDirs = new Stack<string>();
     public Stack<string> NxtDirs = new Stack<string>();
+
+    static bool PermissionsAsked = false;
     
     public async Task OpenDir(string Path)
     {
+        if (!PermissionsAsked)
+        {
+            PermissionsAsked = true;
+
+            if (App.GetRootDirPermission is not null)
+                await App.GetRootDirPermission();
+        }
+
         if (!Directory.Exists(Path))
             return;
 
@@ -105,7 +115,9 @@ public partial class FilePicker : UserControl
 
             Model.CurrentDir = LastDir = Path;
 
-            if (App.IsAndroid && HasSDCard && (Path == App.AndroidRootSDDir || Path == App.AndroidRootInternalDir))
+            var tPath = Path?.TrimEnd('/');
+
+            if (App.IsAndroid && HasSDCard && (tPath == App.AndroidRootSDDir?.TrimEnd('/') || tPath == App.AndroidRootInternalDir?.TrimEnd('/')))
             {
                 var SpecialEntry = new FileEntry(InSDCard ? App.AndroidRootInternalDir! : App.AndroidRootSDDir!, true);
                 SpecialEntry.IsSDCard = !InSDCard;

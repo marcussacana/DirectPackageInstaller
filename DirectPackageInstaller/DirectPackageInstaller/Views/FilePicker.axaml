@@ -32,9 +32,9 @@
         <Button Grid.Row="0" Grid.Column="3" Name="btnCancel" Classes="btnCancel">
             <Image/>
         </Button>
-        <AutoCompleteBox Name="tbFolder" Grid.Row="0" Grid.Column="2" Text="{Binding CurrentDir, Mode=TwoWay}" Items="{Binding CurrentSubDirs}"/>
+		<AutoCompleteBox Name="tbFolder" Grid.Row="0" Grid.Column="2" Text="{Binding CurrentDir, Mode=TwoWay}" ItemsSource="{Binding CurrentSubDirs}"/>
         <ScrollViewer Name="lbEntriesScroll" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4" Classes="lbEntriesScroll" AllowAutoHide="False">
-            <ItemsControl Name="lbEntries" Items="{Binding CurrentDirEntries}"/>
+			<ItemsControl Name="lbEntries" ItemsSource="{Binding CurrentDirEntries}"/>
         </ScrollViewer>
         <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Classes="btnOK" IsVisible="{Binding InMultiselect}" Click="Open_OnClick"/>
     </Grid>

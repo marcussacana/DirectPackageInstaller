@@ -21,7 +21,7 @@
         </Grid.ColumnDefinitions>
         
         <ScrollViewer Grid.ColumnSpan="3" VerticalScrollBarVisibility="Auto" IsEnabled="{Binding IsMultipart}">
-            <ItemsControl Items="{Binding Links}">
+            <ItemsControl ItemsSource="{Binding Links}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                             <StackPanel Orientation="Vertical"/>

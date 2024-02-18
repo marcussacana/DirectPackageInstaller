@@ -17,7 +17,7 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         <Label Content="PKG:"/>
-        <ComboBox Grid.Column="1" Items="{Binding Options}" Name="Items"></ComboBox>
+        <ComboBox Grid.Column="1" Name="Items" ItemsSource="{Binding Options}"/>
     </Grid>
     <UserControl.Styles>
         <Style Selector="Label">

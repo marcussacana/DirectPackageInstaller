@@ -159,6 +159,11 @@ int main()
 			rv = sceBgftDownloadStartTask(task);
 			continue;
 		}
+		
+		if (rv == 0x80990086){			
+			sceSysUtilSendSystemNotificationWithText(222, "DPI: BGFT Error 0x80990086\nEnsure that there are no old downloads in the notification list.");
+			continue;
+		}
 
 		if (rv == 0x80990088) {
 			sceSysUtilSendSystemNotificationWithText(222, "DPI: Package Already Installed!");

@@ -1,15 +1,11 @@
 ﻿using DirectPackageInstaller.IO;
 using SharpCompress.Archives;
-using SharpCompress.Archives.Rar;
-using SharpCompress.Archives.SevenZip;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Avalonia.Dialogs;
-using DirectPackageInstaller.Tasks;
 using Microsoft.CodeAnalysis;
 
 namespace DirectPackageInstaller.Compression
@@ -92,6 +88,7 @@ namespace DirectPackageInstaller.Compression
 
                 try
                 {
+                    int ReadTries = 0;
                     var Buffer = new byte[1024 * 1024 * 1];
 
                     int Readed;
@@ -101,6 +98,12 @@ namespace DirectPackageInstaller.Compression
                         Output.Write(Buffer, 0, Readed);
 
                         *TaskInfo.TotalDecompressed += Readed;
+
+                        if (Readed == 0 && Output.Length < Entry.Size && ReadTries++ < 3)
+                        {
+                            Readed = 1;
+                            continue;
+                        }
 
                     } while (Readed > 0);
 

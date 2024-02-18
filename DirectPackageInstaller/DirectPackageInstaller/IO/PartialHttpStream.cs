@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
+using System.Threading;
 using System.Web;
 
 namespace DirectPackageInstaller.IO
@@ -112,6 +112,8 @@ namespace DirectPackageInstaller.IO
         }
         public override void SetLength(long value)
         { throw new NotImplementedException(); }
+
+        private SemaphoreSlim Semaphore = new SemaphoreSlim(1);
         public override int Read(byte[] buffer, int offset, int count)
         {
             if (count == 0)
@@ -124,35 +126,50 @@ namespace DirectPackageInstaller.IO
             if (count < 0 || offset + count > buffer.Length)
                 throw new ArgumentException(nameof(count));
 
-            long curPosition = Position;
-            Position += ReadFromCache(buffer, ref offset, ref count);
+#if DEBUG
+            if (Semaphore.CurrentCount == 0)
+                System.Diagnostics.Debugger.Break();
+#endif
 
-            if (count > cacheLen)
-            {
-                int EmptyTries = 3;
-                // large request, do not cache
-                while (count > 0)
-                {
-                    int Readed;
-                    Position += Readed = HttpRead(buffer, ref offset, ref count);
+            Semaphore.Wait();
 
-                    if (Readed == 0 && EmptyTries-- < 0)
-                        break;
-                    else if (Readed > 0)
-                        EmptyTries = 3;
-                }
-            }
-            else if (count > 0)
+            try 
             {
-                // read to cache
-                cachePosition = Position;
-                int off = 0;
-                int len = cacheLen;
-                cacheCount = HttpRead(cache, ref off, ref len);
+                long curPosition = Position;
                 Position += ReadFromCache(buffer, ref offset, ref count);
-            }
 
-            return (int)(Position - curPosition);
+                if (count > cacheLen)
+                {
+                    int EmptyTries = 3;
+                    // large request, do not cache
+                    while (count > 0)
+                    {
+                        int Readed;
+                        Position += Readed = HttpRead(buffer, ref offset, ref count);
+
+                        if (Readed == 0 && EmptyTries-- < 0)
+                            break;
+                        else if (Readed > 0)
+                            EmptyTries = 3;
+                    }
+                }
+                else if (count > 0)
+                {
+                    // read to cache
+                    cachePosition = Position;
+                    int off = 0;
+                    int len = cacheLen;
+                    cacheCount = HttpRead(cache, ref off, ref len);
+                    Position += ReadFromCache(buffer, ref offset, ref count);
+                }
+
+                int TotalReaded = (int)(Position - curPosition);
+                return TotalReaded;
+            }
+            finally
+            {
+                Semaphore.Release();
+            }
         }
         public override void Write(byte[] buffer, int offset, int count)
         { throw new NotImplementedException(); }
@@ -228,7 +245,7 @@ namespace DirectPackageInstaller.IO
                         resp?.Dispose();
                     }
 
-                    req = HttpWebRequest.CreateHttp(Url);
+                    req = WebRequest.CreateHttp(Url);
                     req.ConnectionGroupName = Guid.NewGuid().ToString();
                     req.CookieContainer = Cookies;
                     req.CachePolicy = new System.Net.Cache.RequestCachePolicy(System.Net.Cache.RequestCacheLevel.NoCacheNoStore);
@@ -296,6 +313,8 @@ namespace DirectPackageInstaller.IO
 
                 if (Tries < 3)
                 {
+                    Thread.Sleep(Tries * 500);
+
                     RefreshUrl?.Invoke();
                     return HttpRead(buffer, ref offset, ref count, Tries + 1);
                 }

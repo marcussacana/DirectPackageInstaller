@@ -6,6 +6,7 @@ using System.Net;
 using System.Threading.Tasks;
 using System.Web;
 using DirectPackageInstaller.UIBase;
+using HtmlAgilityPack;
 
 namespace DirectPackageInstaller.FileHosts
 {
@@ -32,7 +33,7 @@ namespace DirectPackageInstaller.FileHosts
             var DownloadUri = $"{DownloadPageUri}&confirm=t";
 
             var Headers = Head(DownloadUri, Cookies.ToArray());
-            
+
             if (Headers == null || Headers.AllKeys.Contains("x-auto-login"))
             {
                 var OldCount = Cookies.Count;
@@ -75,6 +76,40 @@ namespace DirectPackageInstaller.FileHosts
             if (Cookies.Any())
             {
                 CookieAsked = true;
+            }
+
+            var Page = DownloadString(DownloadPageUri, Cookies.ToArray());
+
+            var Doc = new HtmlDocument();
+            Doc.LoadHtml(Page);
+            var Form = Doc.DocumentNode.SelectSingleNode("//form[@id='download-form']");
+
+            if (Form != null)
+            {
+                var FormURI = Form.GetAttributeValue("action", null);
+
+                if (FormURI != null)
+                {
+                    if (!FormURI.Contains("?"))
+                        FormURI += "?";
+                    else
+                        FormURI += "&";
+
+                    foreach (var Param in Form.SelectNodes("//input[@type='hidden']"))
+                    {
+                        var Key = Param.GetAttributeValue("name", null);
+                        var Value = Param.GetAttributeValue("value", "");
+
+                        if (Key != null)
+                        {
+                            FormURI += $"{Key}={HttpUtility.UrlEncode(Value)}&";
+                        }
+                    }
+
+                    FormURI = FormURI.TrimEnd('&');
+
+                    DownloadUri = FormURI;
+                }
             }
 
             return new DownloadInfo()

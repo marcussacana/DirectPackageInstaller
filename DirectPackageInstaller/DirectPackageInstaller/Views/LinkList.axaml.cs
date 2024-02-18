@@ -22,7 +22,7 @@ namespace DirectPackageInstaller.Views
             get
             {
                 if (!CheckAccess())
-                    return Dispatcher.UIThread.InvokeAsync(() => Password).ConfigureAwait(false).GetAwaiter().GetResult();
+                    return Dispatcher.UIThread.InvokeAsync(() => Password).Result;
 
                 return Model?.Password;
             }
@@ -33,7 +33,7 @@ namespace DirectPackageInstaller.Views
             get
             {
                 if (!CheckAccess())
-                    return Dispatcher.UIThread.InvokeAsync(() => HasPassword).ConfigureAwait(false).GetAwaiter().GetResult();
+                    return Dispatcher.UIThread.InvokeAsync(() => HasPassword).Result;
 
                 return Model?.HasPassword ?? false;
             }
@@ -44,7 +44,7 @@ namespace DirectPackageInstaller.Views
             get
             {
                 if (!CheckAccess())
-                    return  Dispatcher.UIThread.InvokeAsync(() => IsMultipart).ConfigureAwait(false).GetAwaiter().GetResult();
+                    return  Dispatcher.UIThread.InvokeAsync(() => IsMultipart).Result;
 
                 return Model?.IsMultipart ?? false;
             }

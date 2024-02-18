@@ -161,39 +161,10 @@ namespace DirectPackageInstaller.Tasks
 
                 if (MissingData)
                 {
-                    var IsMultipart = Multipart && (Info == null || Info?.Urls.Length == 1);
-                    
-                    if (App.IsSingleView)
-                    {
-                        var List = Extensions.CreateInstance<LinkListView>(new LinkListViewModel()
-                        {
-                            IsMultipart = IsMultipart,
-                            HasPassword = Encrypted,
-                            MainUrl = FirstUrl
-                        });
-                        
-                        List.SetInitialInfo(Info?.Links, Password);
-                        
-                        
-                        Passwords[FirstUrl] = List.Model!.Password;
+                    Info = await GetMissingArchiveInfo(Multipart, Encrypted, FirstUrl, Password, Info, ProgressChanged);
 
-                        Info = await URLAnalyzer.Analyze(List.Links!, false);
-                        Password = List.Model!.Password;
-                    }
-                    else
-                    {
-                        var List = new LinkList(IsMultipart, Encrypted, FirstUrl);
-                        List.SetInitialInfo(Info?.Links, Password);
-
-                        if (await List.ShowDialogAsync() != DialogResult.OK)
-                            throw new Exception();
-                    
-
-                        Passwords[FirstUrl] = List.Password;
-
-                        Info = await URLAnalyzer.Analyze(List.Links!, false);
-                        Password = List.Password;
-                    }
+                    if (Passwords.ContainsKey(FirstUrl))
+                        Password = Passwords[FirstUrl];
 
                     while (!Info.Value.Ready && !Info.Value.Failed)
                     {
@@ -238,6 +209,42 @@ namespace DirectPackageInstaller.Tasks
             finally
             {
                 Ready = true;
+            }
+        }
+
+        private static async Task<URLAnalyzer.URLInfo?> GetMissingArchiveInfo(bool Multipart, bool? Encrypted, string FirstUrl, string Password, URLAnalyzer.URLInfo? Info, Action<string> ProgressChanged)
+        {
+            var IsMultipart = Multipart && (Info == null || Info?.Urls.Length == 1);
+
+            if (App.IsSingleView)
+            {
+                var List = Extensions.CreateInstance<LinkListView>(new LinkListViewModel()
+                {
+                    IsMultipart = IsMultipart,
+                    HasPassword = Encrypted,
+                    MainUrl = FirstUrl
+                });
+
+                List.SetInitialInfo(Info?.Links, Password);
+
+
+                Passwords[FirstUrl] = List.Model!.Password;
+
+                return Info = await URLAnalyzer.Analyze(List.Links!, false);
+            }
+            else
+            {
+                var List = new LinkList(IsMultipart, Encrypted, FirstUrl);
+                List.SetInitialInfo(Info?.Links, Password);
+
+                if (await List.ShowDialogAsync() != DialogResult.OK)
+                    throw new Exception();
+
+
+                Passwords[FirstUrl] = List.Password;
+
+                Password = List.Password;
+                return Info = await URLAnalyzer.Analyze(List.Links!, false);
             }
         }
 
@@ -336,7 +343,6 @@ namespace DirectPackageInstaller.Tasks
 
         public static async Task<ArchiveDataInfo?> UnArchive(IArchive Archive, DecompressorHelperStream[] Volumes, bool Silent, string? EntryName, bool Seekable)
         {
-
             var Compressions = Archive.Entries.Where(x => Path.GetExtension(x.Key).StartsWith(".r", StringComparison.OrdinalIgnoreCase) || x.Key.Contains(".7z"));
 
             var PKGs = Archive.Entries.Where(x => x.Key.EndsWith(".pkg", StringComparison.OrdinalIgnoreCase));
@@ -344,7 +350,7 @@ namespace DirectPackageInstaller.Tasks
             if (!PKGs.Any())
             {
                 if (!Silent)
-                    MessageBox.ShowSync("No PKG Found in the given file" + (Compressions.Any() ? "\nIt looks like this file has been redundantly compressed." : ""), "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    await MessageBox.ShowAsync("No PKG Found in the given file" + (Compressions.Any() ? "\nIt looks like this file has been redundantly compressed." : ""), "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return null;
             }
 

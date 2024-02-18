@@ -7,6 +7,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using DirectPackageInstaller.ViewModels;
+using ReactiveUI;
 
 namespace DirectPackageInstaller.Views;
 
@@ -86,7 +87,7 @@ public partial class SingleView : UserControl
 
         if (!Dispatcher.UIThread.CheckAccess())
         {
-            Dispatcher.UIThread.InvokeAsync(() => ReturnView(View)).ConfigureAwait(false).GetAwaiter().GetResult();
+            Dispatcher.UIThread.InvokeAsync(() => ReturnView(View));
             return;
         }
         

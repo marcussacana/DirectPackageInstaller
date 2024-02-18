@@ -35,7 +35,7 @@ namespace DirectPackageInstaller.Views
         {
             if (!Dispatcher.UIThread.CheckAccess())
             {
-                Dispatcher.UIThread.InvokeAsync(() => Initialize(Parent, Options, this.OnSelectionChanged)).ConfigureAwait(false).GetAwaiter().GetResult();
+                Dispatcher.UIThread.InvokeAsync(() => Initialize(Parent, Options, this.OnSelectionChanged));
                 return;
             }
             

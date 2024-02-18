@@ -153,12 +153,16 @@ namespace DirectPackageInstaller.Views
                     AllDebridApiKey = null
                 };
 
-                await MessageBox.ShowAsync($"Welcome. User, The focus of this tool is download PKGs from direct links but we have others minor features as well.\n\nGood to know:\nWhen using the direct download mode, you can turn off the computer or close the DirectPakcageInstaller and your PS4 will continue the download alone.\n\nWhen using the \"Proxy Downloads\" feature, the PS4 can't download the game alone and the DirectPackageInstaller must keep open.\n\nDirect PKG urls, using the \"Proxy Download\" feature or not, can be resumed anytime by just selecting 'resume' in your PS4 download list.\n\nThe DirectPackageInstaller use the port {Installer.ServerPort} in the \"Proxy Downloads\" feature, maybe you will need to open the ports in your firewall.\n\nWhen downloading directly from compressed files, you can't resume the download after the DirectPackageInstaller is closed, but before close the DirectPackageInstaller you still can pause and resume the download in your PS4.\n\nIf your download speed is very slow, you can try enable the \"Proxy Downloads\" feature, since this feature has been created just to optimize the download speed.\n\nCreated by marcussacana", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-                if (App.IsAndroid)
-                {
-                    await MessageBox.ShowAsync("Is recommended to keep your phone in charger to prevent any battery optimization problems.\nIf you're using MIUI, disable the battery optimizations manually in the app properties.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
+                var ProxyHint = "If your download speed is very slow, you can try enable the \"Proxy Downloads\" feature, since this feature has been created just to optimize the download speed.";
+                var CompressedHint = "When downloading directly from compressed files, you can't resume the download after the DirectPackageInstaller is closed, but before close the DirectPackageInstaller you still can pause and resume the download in your PS4.";
+                var AndroidHints = "Is recommended to keep your phone in charger to prevent any battery optimization problems.\nIf you're using MIUI, disable the battery optimizations manually in the app properties.";
+                var FirewallHint = $"The DirectPackageInstaller use the port {Installer.ServerPort} in the \"Proxy Downloads\" feature, maybe you will need to open the ports in your firewall.";
+                var ResumeHint = "Direct PKG urls, using the \"Proxy Download\" feature or not, can be resumed anytime by just selecting 'resume' in your PS4 download list.";
+                var IndirectDownloadHint = "When using the \"Proxy Downloads\" feature, the PS4 can't download the game alone and the DirectPackageInstaller must keep open.";
+                var DirectDownloadHint = "When using the direct download mode, you can turn off the computer or close the DirectPakcageInstaller and your PS4 will continue the download alone.";
+                var WelcomeText = $"Welcome. User, The focus of this tool is download PKGs from direct links but we have others minor features as well.\n\nGood to know:\n{DirectDownloadHint}\n\n{IndirectDownloadHint}\n\n{ResumeHint}\n\n{(App.IsAndroid ? AndroidHints : FirewallHint)}\n\n{CompressedHint}\n\n{ProxyHint}\n\nCreated by marcussacana";
+                
+                await MessageBox.ShowAsync(WelcomeText, "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
 
              Model.CNLService = App.Config.EnableCNL;
@@ -347,7 +351,7 @@ namespace DirectPackageInstaller.Views
 
             InputType = Source.NONE;
 
-            if (!Uri.IsWellFormedUriString(SourcePackage, UriKind.Absolute) && !File.Exists(SourcePackage)) {
+            if (!SourcePackage.IsValidURL() && !File.Exists(SourcePackage)) {
                 await MessageBox.ShowAsync(Parent, "Invalid URL or File Path", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
@@ -712,7 +716,9 @@ namespace DirectPackageInstaller.Views
 
             bool ErrorIgnored = false;
 
-            foreach (var File in Installer.CurrentFileList ?? BatchList.Select(x => x.Source))
+            var Files = Installer.CurrentFileList ?? BatchList.Select(x => x.Source);
+
+            foreach (var File in Files.ToArray())
             {
                 var ContentSource = tbURL.Text;
                 
@@ -750,9 +756,13 @@ namespace DirectPackageInstaller.Views
                     
                     try
                     {
-                         using (FileStream Stream = new FileStream(File, FileMode.Open))
-                            Installer.CurrentPKG = Stream.GetPKGInfo() ?? throw new Exception();
-                    } catch { continue; }
+                        using FileStream Stream = new FileStream(File, FileMode.Open);
+                        Installer.CurrentPKG = Stream.GetPKGInfo() ?? throw new Exception();
+                    } 
+                    catch 
+                    { 
+                        continue; 
+                    }
                 }
 
                 if (!await Install(ContentSource, true) && !ErrorIgnored)
@@ -769,14 +779,7 @@ namespace DirectPackageInstaller.Views
                 {
                     bool Decompressing() => Installer.Server?.Decompress.Tasks.Any(x => x.Value.Running) ?? false;
                     
-                    int LastRequest()
-                    {
-                        if (Installer.Server?.LastRequest == null)
-                            return int.MaxValue;
-                        return (int)(DateTime.Now - (Installer.Server!.LastRequest!.Value)).TotalSeconds;
-                    }
-                    
-                    while (Decompressing() || Installer.Server.Connections > 0 || LastRequest() > 15)
+                    while (Decompressing() || Installer.Server.Connections > 0 || PS4IdleSeconds() > 15)
                         await Task.Delay(5000);
                 }
             }
@@ -784,9 +787,16 @@ namespace DirectPackageInstaller.Views
             await MessageBox.ShowAsync("Packages Sent!", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
+        private static int PS4IdleSeconds()
+        {
+            if (Installer.Server?.LastRequest == null)
+                return int.MaxValue;
+            return (int)(DateTime.Now - (Installer.Server!.LastRequest!.Value)).TotalSeconds;
+        }
+
         private void ListEntries(string[]? PKGList)
         {
-            if (PKGList == null)
+            if (PKGList == null || PackagesMenu.Items == null)
                 return;
             
             PackagesMenu.IsVisible = PKGList.Length > 1;
@@ -813,42 +823,50 @@ namespace DirectPackageInstaller.Views
                 {
                     var Item = new MenuItem()
                     {
-                        Header = Path.GetFileName(Entry)
-                        
+                        Header = Path.GetFileName(Entry),
+                        DataContext = Entry
                     };
                     
-                    Item.Click += (sender, e) =>
-                    {
-                        var OriSource = InputType;
-                        InputType = Source.NONE;
-                        
-                        if (OriSource.HasFlag(Source.RAR) || OriSource.HasFlag(Source.SevenZip)) {
-                            var FileEntry = CurrentDecompressor!.Entries.First(x => x.Key.EndsWith(Entry, StringComparison.InvariantCultureIgnoreCase));
-                            Installer.EntryFileName = Path.GetFileName(FileEntry.Key);
-                            var Stream = new ReadSeekableStream(FileEntry.OpenEntryStream());
-                            
-                            App.Callback(() =>
-                            {
-                                BtnLoadOnClick(Stream, null);
-                                
-                                //Restore variables that is modified by the BtnLoadOnClick event
-                                InputType = OriSource;
-                                Installer.EntryFileName = Path.GetFileName(FileEntry.Key);
-                            });
-                            return;
-                        }
-
-                        tbURL.Text = Entry;
-                        App.Callback(() => BtnLoadOnClick(Entry, null));
-                    };
+                    Item.Click += onInstallListItemClicked;
 
                     Items.Insert(0, Item);
                 }
-
-                PackagesMenu.Items = Items;
+                PackagesMenu.Items.Clear();
+                PackagesMenu.ItemsSource = Items;
             }
         }
         
+        private void onInstallListItemClicked(object? sender, RoutedEventArgs e)
+        {
+            if (sender == null)
+                return;
+
+            var Item = (MenuItem)sender;
+            var Entry = (string?)Item.DataContext;
+
+            var OriSource = InputType;
+            InputType = Source.NONE;
+
+            if (OriSource.HasFlag(Source.RAR) || OriSource.HasFlag(Source.SevenZip))
+            {
+                var FileEntry = CurrentDecompressor!.Entries.First(x => x.Key.EndsWith(Entry, StringComparison.InvariantCultureIgnoreCase));
+                Installer.EntryFileName = Path.GetFileName(FileEntry.Key);
+                var Stream = new ReadSeekableStream(FileEntry.OpenEntryStream());
+
+                App.Callback(() =>
+                {
+                    BtnLoadOnClick(Stream, null);
+
+                    //Restore variables that is modified by the BtnLoadOnClick event
+                    InputType = OriSource;
+                    Installer.EntryFileName = Path.GetFileName(FileEntry.Key);
+                });
+                return;
+            }
+
+            tbURL.Text = Entry;
+            App.Callback(() => BtnLoadOnClick(Entry, null));
+        }
 
         private void OnLinksReceived((string[] Links, string Password) Info)
         {
@@ -937,7 +955,7 @@ namespace DirectPackageInstaller.Views
                 return;
             }
 
-            if (Url.StartsWith("http", StringComparison.InvariantCultureIgnoreCase) && !Uri.IsWellFormedUriString(Url, UriKind.Absolute)) {
+            if (Url.StartsWith("http", StringComparison.InvariantCultureIgnoreCase) && !Url.IsValidURL()) {
                 int PathOrQueryPos = Url.IndexOfAny(new char[] { '/', '?' }, Url.IndexOf("://", StringComparison.Ordinal) + 3);
                 
                 if (PathOrQueryPos < 0)
@@ -971,7 +989,7 @@ namespace DirectPackageInstaller.Views
                     QueryOnly = QueryOnly.Replace(Pair.Key, Pair.Value);
 
                 var NewUrl = $"{Host}{PathOnly}{QueryOnly}";
-                if (Uri.IsWellFormedUriString(NewUrl, UriKind.Absolute))
+                if (NewUrl.IsValidURL())
                     Model!.CurrentURL = NewUrl;
             }
 
@@ -999,7 +1017,7 @@ namespace DirectPackageInstaller.Views
             }
         }
         
-        private void RestartServer_OnClick(object? sender, RoutedEventArgs? e)
+        private async void RestartServer_OnClick(object? sender, RoutedEventArgs? e)
         {
             if (Model == null)
                 return;
@@ -1007,12 +1025,14 @@ namespace DirectPackageInstaller.Views
             try
             {
                 Installer.Server?.Stop();
-            }
-            catch { }
 
-            PS4Server pS4Server = new PS4Server(Model.PCIP);
-            Installer.Server = pS4Server;
-            Installer.Server.Start();
+                PS4Server pS4Server = new PS4Server(Model.PCIP);
+                Installer.Server = pS4Server;
+                Installer.Server.Start();
+            }
+            catch (Exception ex){
+                await MessageBox.ShowAsync($"Failed to restart the server, Report a Bug:\n{ex.ToString()}", "Server Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void btnExitOnClick(object? sender, RoutedEventArgs? e)

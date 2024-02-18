@@ -88,7 +88,7 @@ namespace DirectPackageInstaller.Host
         async Task Decompress(HttpContext Context, string Url, string? Entry, bool FromPS4)
         {
             HttpRange? Range = null;
-            bool Partial = Context.Request.HeaderExists("Range", true);
+            bool Partial = Context.Request.HeaderExists("Range");
             if (Partial)
                 Range = new HttpRange(Context.Request.Headers["Range"]);
 

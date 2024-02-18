@@ -74,10 +74,15 @@ public class Document : JsValue
         Node.SetAttributeValue(e.PropertyName, Dictionary[e.PropertyName].ToString());
     }
 
+    public override object? ToObject()
+    {
+        return HTML.DocumentNode.ToString();
+    }
+
     private Engine Context;
     private HtmlDocument HTML;
 
-    public Document(Engine Engine, HtmlDocument Doc) : base(Engine.Global)
+    public Document(Engine Engine, HtmlDocument Doc) : base(Engine.Global.Type)
     {
         this.HTML = Doc;
         this.Context = Engine;
