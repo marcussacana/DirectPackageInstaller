@@ -205,9 +205,16 @@ namespace DirectPackageInstaller
                     string Base = File.Substring(RunningDir.Length).TrimStart('\\', '/');
                     string UpPath = Path.Combine(RunningDir, Base);
                     string OlPath = Path.Combine(OriginalPath, Base);
-                    
+                    string OlDir = Path.GetDirectoryName(OlPath)!;
+
+                    if (!System.IO.File.Exists(UpPath))
+                        continue;
 
                     Delete(OlPath);
+
+                    if (!Directory.Exists(OlDir))
+                        Directory.CreateDirectory(OlDir);
+
                     System.IO.File.Copy(UpPath, OlPath, true);
                 }
                 
