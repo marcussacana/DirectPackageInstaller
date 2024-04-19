@@ -84,7 +84,11 @@ namespace DirectPackageInstaller.Host
 
         public void Stop()
         {
-            Server.Stop();
+            try
+            {
+                Server.Stop();
+            }
+            catch { }
             LOG("Server Stopped");
         }
 
