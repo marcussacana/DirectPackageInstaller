@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Android.App;
 using Android.Content;
 using Android.OS;
+using Microsoft.VisualBasic;
 using Exception = Java.Lang.Exception;
 
 namespace DirectPackageInstaller.Android;
@@ -19,12 +20,17 @@ public class ForegroundService : Service
     private NotificationChannel _channel;
     
     public override void OnCreate()
-    {
-        
+    {        
         BindChannel();
         BindForeground();
         
         base.OnCreate();
+    }
+
+    public override void OnDestroy()
+    {
+        UnbindForeground();
+        base.OnDestroy();
     }
 
     public override StartCommandResult OnStartCommand(Intent? intent, StartCommandFlags flags, int startId)

@@ -8,7 +8,6 @@ using Android.Content.PM;
 using Android.Net;
 using Android.Net.Wifi;
 using Android.OS;
-using AndroidX.Core.App;
 using AndroidX.Core.Content;
 using Avalonia.Android;
 using Avalonia;
@@ -17,7 +16,6 @@ using Java.Lang;
 using Application = Android.App.Application;
 using File = Java.IO.File;
 using System.Linq;
-using Android.Runtime;
 
 [assembly: Application(UsesCleartextTraffic = true)]
 
@@ -29,11 +27,13 @@ namespace DirectPackageInstaller.Android
         public static int Instances = 0;
         public ClipboardManager? ClipboardManager;
 
-	 	protected override AppBuilder CustomizeAppBuilder(AppBuilder builder)
-	    {
-	        return base.CustomizeAppBuilder(builder)
-	            .WithInterFont()
-	            .UseReactiveUI();
+        protected override AppBuilder CustomizeAppBuilder(AppBuilder builder)
+        {
+            SetupEnv();
+
+            return base.CustomizeAppBuilder(builder)
+                .WithInterFont()
+                .UseReactiveUI();
         }
         
         protected override async void OnCreate(Bundle savedInstanceState)
@@ -72,6 +72,9 @@ namespace DirectPackageInstaller.Android
 
         private void SetupEnv()
         {
+            if (ClipboardManager != null)
+                return;
+
             ClipboardManager = (ClipboardManager)GetSystemService(ClipboardService);
 
             App.GetClipboardText = () =>

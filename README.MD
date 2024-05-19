@@ -29,10 +29,10 @@ Or alternatively the RemotePackageInstaller Homebrew.
 - Download and Install the [.NET 6 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime)
 - Download one of those builds:
 	- Windows: [ARM](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/Windows-ARM.zip), [ARM64](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/Windows-ARM64.zip), [x64](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/Windows-X64.zip), [x86](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/Windows-X86.zip)
-	- Android: [ARM](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/Android-ARM.zip), [ARM64](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/Android-ARM64.zip), [x64](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/Android-X64.zip), [x86](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/Android-X86.zip) (BETA)
+	- Android: [ARM](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/Android-ARM.zip), [ARM64](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/Android-ARM64.zip), [x64](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/Android-X64.zip), [x86](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/Android-X86.zip)
 	- Linux: [ARM](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/Linux-ARM.zip), [ARM64](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/Linux-ARM64.zip), [x64](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/Linux-X64.zip)
-	- OSX: [ARM64](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/OSX-ARM64.zip), [x64](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/OSX-X64.zip)
-
+	- OSX CLI: [ARM64](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/OSX-ARM64.zip), [x64](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/OSX-X64.zip)
+    - OSX App: [ARM64](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/OSX-ARM64-APP.zip), [x64](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/OSX-X64-APP.zip)
 
 ### How to Use 
 - Direct Download Mode
@@ -72,10 +72,9 @@ Or alternatively the RemotePackageInstaller Homebrew.
 	- Click at "Install" and wait again.
 	- It's done, you can't close the DirectPackageInstaller or turn off your computer.
 
-### For OSX Users
-You must run the `./DirectPackageInstaller.Desktop` file with help of the terminal  
-We have App builds as well, but isn't working very well right now, you can try: [OSX x64 App](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/OSX-X64-APP.zip) or [OSX ARM64 App](https://raw.githubusercontent.com/marcussacana/DirectPackageInstaller/Updater/OSX-ARM64-APP.zip).  
-The App Builds aren't working too well because of permissions problems, that can be easy solved by changing the paths of where the DirectPackageInstaller store his data, but the Auto-Update with the App container not works because the app can't modify himself.
+### For OSX CLI Users
+You should run the `./DirectPackageInstaller.Desktop` file with help of the terminal
+Some cases run with `dotnet DirectPackageInstaller.Desktop.dll` might be necessary.
 
 ### How It Works
 The tool it self is very simple, the Remote Package Installer have an API that allow you put packages from URLs into your PS4 download queue, the DirectPackageInstaller just use that API to push to your PS4 the download URL, helping only to you preview the PKG that you're installing.

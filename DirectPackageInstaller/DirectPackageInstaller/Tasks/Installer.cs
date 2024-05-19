@@ -187,6 +187,7 @@ namespace DirectPackageInstaller.Tasks
                     break;
 
                 case Source.URL:
+                    CanSplit = false;
                     break;
 
                 default:

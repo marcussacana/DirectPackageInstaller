@@ -191,6 +191,9 @@ namespace DirectPackageInstaller.Views
                             Model.PCIP = NewPCIP;
                         
                         RestartServer_OnClick(null, null);
+
+                        if (App.IsAndroid)
+                            App.SaveSettings();
                     });
                 });
             }
@@ -630,8 +633,11 @@ namespace DirectPackageInstaller.Views
                     break;
                 case "CurrentURL":
                     UrlChanged(Model.CurrentURL);
-                    break;
+                    return;
             }
+
+            if (App.IsAndroid)
+                App.SaveSettings();
         }
 
         private void BtnCNLServiceOnClick(object? sender, RoutedEventArgs e)
