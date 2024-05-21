@@ -92,8 +92,10 @@ namespace DirectPackageInstaller
                 IniWriter.SetValue("ProxyDownload", Config.ProxyDownload.ToString());
                 IniWriter.SetValue("SegmentedDownload", Config.SegmentedDownload.ToString());
                 IniWriter.SetValue("UseAllDebrid", Config.UseAllDebrid.ToString());
-                IniWriter.SetValue("EnableCNL", Config.EnableCNL.ToString());
                 IniWriter.SetValue("AllDebridApiKey", Config.AllDebridApiKey);
+                IniWriter.SetValue("UseRealDebrid", Config.UseRealDebrid.ToString());
+                IniWriter.SetValue("RealDebridApiKey", Config.RealDebridApiKey);
+                IniWriter.SetValue("EnableCNL", Config.EnableCNL.ToString());
                 IniWriter.SetValue("Concurrency", SegmentedStream.DefaultConcurrency.ToString());
                 IniWriter.SetValue("ShowError", Config.ShowError.ToString());
                 IniWriter.SetValue("SkipUpdateCheck", Config.SkipUpdateCheck.ToString());

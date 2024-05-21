@@ -21,7 +21,6 @@ using DirectPackageInstaller.ViewModels;
 using Image = Avalonia.Controls.Image;
 using Path = System.IO.Path;
 using Size = Avalonia.Size;
-using Avalonia.Controls.Shapes;
 
 namespace DirectPackageInstaller.Views
 {
@@ -71,6 +70,7 @@ namespace DirectPackageInstaller.Views
             btnProxyDownload = this.Find<MenuItem>("btnProxyDownload");
             btnRestartServer = this.Find<MenuItem>("btnRestartServer");
             btnAllDebirdEnabled = this.Find<MenuItem>("btnAllDebirdEnabled");
+            btnRealDebirdEnabled = this.Find<MenuItem>("btnRealDebirdEnabled");
             btnSegmentedDownload = this.Find<MenuItem>("btnSegmentedDownload");
             btnCNLService = this.Find<MenuItem>("btnCNLService");
             btnExit = this.Find<MenuItem>("btnExit");
@@ -80,6 +80,7 @@ namespace DirectPackageInstaller.Views
             btnRestartServer.Click += RestartServer_OnClick;
             btnProxyDownload.Click += BtnProxyDownloadOnClick;
             btnAllDebirdEnabled.Click += BtnAllDebirdEnabledOnClick;
+            btnRealDebirdEnabled.Click += BtnRealDebirdEnabledOnClick;
             btnSegmentedDownload.Click += BtnSegmentedDownloadOnClick;
             btnCNLService.Click += BtnCNLServiceOnClick;
 
@@ -122,6 +123,8 @@ namespace DirectPackageInstaller.Views
                 App.Config.SegmentedDownload = IniReader.GetBooleanValue("SegmentedDownload");
                 App.Config.UseAllDebrid = IniReader.GetBooleanValue("UseAllDebrid");
                 App.Config.AllDebridApiKey = IniReader.GetValue("AllDebridApiKey");
+                App.Config.UseRealDebrid = IniReader.GetBooleanValue("UseRealDebrid");
+                App.Config.RealDebridApiKey = IniReader.GetValue("RealDebridApiKey");
                 App.Config.EnableCNL = IniReader.GetBooleanValue("EnableCNL");
                 App.Config.ShowError = IniReader.GetBooleanValue("ShowError");
                 App.Config.SkipUpdateCheck = IniReader.GetBooleanValue("SkipUpdateCheck");
@@ -150,7 +153,8 @@ namespace DirectPackageInstaller.Views
                     EnableCNL = true,
                     ShowError = false,
                     SkipUpdateCheck = false,
-                    AllDebridApiKey = null
+                    AllDebridApiKey = null,
+                    RealDebridApiKey = null
                 };
 
                 var ProxyHint = "If your download speed is very slow, you can try enable the \"Proxy Downloads\" feature, since this feature has been created just to optimize the download speed.";
@@ -167,11 +171,13 @@ namespace DirectPackageInstaller.Views
 
              Model.CNLService = App.Config.EnableCNL;
              Model.ProxyMode = App.Config.ProxyDownload;
-             Model.UseAllDebird = App.Config.UseAllDebrid;
+             Model.UseAllDebrid = App.Config.UseAllDebrid;
              Model.SegmentedMode = App.Config.SegmentedDownload;
+             Model.UseRealDebrid = App.Config.UseRealDebrid;
              Model.PS4IP = App.Config.PS4IP;
              Model.PCIP = App.Config.PCIP;
-             Model.AllDebirdApiKey = App.Config.AllDebridApiKey;
+             Model.AllDebridApiKey = App.Config.AllDebridApiKey;
+             Model.RealDebridApiKey = App.Config.RealDebridApiKey;
              
             if (App.Config.SearchPS4 || string.IsNullOrEmpty(App.Config.PS4IP))
             {
@@ -604,11 +610,17 @@ namespace DirectPackageInstaller.Views
                 case "PCIP":
                     App.Config.PCIP = Model.PCIP;
                     break;
-                case "UseAllDebird":
-                    App.Config.UseAllDebrid = Model.UseAllDebird;
+                case "UseAllDebrid":
+                    App.Config.UseAllDebrid = Model.UseAllDebrid;
                     break;
-                case "AllDebirdApiKey":
-                    App.Config.AllDebridApiKey = Model.AllDebirdApiKey;
+                case "UseRealDebrid":
+                    App.Config.UseRealDebrid = Model.UseRealDebrid;
+                    break;
+                case "AllDebridApiKey":
+                    App.Config.AllDebridApiKey = Model.AllDebridApiKey;
+                    break;
+                case "RealDebridApiKey":
+                    App.Config.RealDebridApiKey = Model.RealDebridApiKey;
                     break;
                 case "CNLService":
                     App.Config.EnableCNL = Model.CNLService;
@@ -669,7 +681,15 @@ namespace DirectPackageInstaller.Views
             if (Model == null)
                 return;
             
-            Model.UseAllDebird = !Model.UseAllDebird;
+            Model.UseAllDebrid = !Model.UseAllDebrid;
+        }
+        
+        private void BtnRealDebirdEnabledOnClick(object? sender, RoutedEventArgs e)
+        {
+            if (Model == null)
+                return;
+            
+            Model.UseRealDebrid = !Model.UseRealDebrid;
         }
 
         private async Task<bool> Install(string URL, bool Silent)

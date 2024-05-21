@@ -20,6 +20,7 @@ Or alternatively the RemotePackageInstaller Homebrew.
 ### Supported File Hostings
 - Any direct link (Without Authentication)
 - AllDebrid (API Key Required)
+- RealDebrid ([API Key Required](https://real-debrid.com/apitoken))
 - Google Drive (With or Without Authentication)
 - Mediafire (Without Authentication)
 - PixelDrain
@@ -130,7 +131,7 @@ Alternatively, create an fork and start the github action build
 	an PKG to google drive and try install by yourself, since the google drive have a high download speed.
 	
 - What is the file hostings that you recommend?
-	- Alldebird > Google Drive > Mediafire > Zippyshare > The whole universe > 1Fichier  
+	- Alldebrid/Realdebrid > Google Drive > Mediafire > Zippyshare > The whole universe > 1Fichier  
 	This is the list of which hosts has best download performances.
 	
 - When I tries to install a **insert your error here** error happens

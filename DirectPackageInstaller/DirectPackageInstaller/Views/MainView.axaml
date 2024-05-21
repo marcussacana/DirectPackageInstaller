@@ -40,7 +40,7 @@
 					</MenuItem.Icon>
 				</MenuItem>
 				<MenuItem Header="_IP Address">
-					<Grid Margin="10">
+					<Grid Margin="0">
 						<Grid.ColumnDefinitions>
 							<ColumnDefinition/>
 							<ColumnDefinition/>
@@ -48,7 +48,7 @@
 						<Label Grid.Column="0">PS4 IP:</Label>
 						<TextBox Grid.Column="1" Text="{Binding PS4IP, Mode=TwoWay}"></TextBox>
 					</Grid>
-					<Grid Margin="10">
+					<Grid Margin="0">
 						<Grid.ColumnDefinitions>
 							<ColumnDefinition></ColumnDefinition>
 							<ColumnDefinition></ColumnDefinition>
@@ -57,21 +57,39 @@
 						<TextBox Grid.Column="1" Text="{Binding PCIP, Mode=TwoWay}"></TextBox>
 					</Grid>
 				</MenuItem>
-				<MenuItem Header="_AllDebrid">
-					<Grid Margin="10">
-						<Grid.ColumnDefinitions>
-							<ColumnDefinition/>
-							<ColumnDefinition/>
-						</Grid.ColumnDefinitions>
-						<Label Grid.Column="0">API Key:</Label>
-						<TextBox Grid.Column="1" Text="{Binding AllDebirdApiKey, Mode=TwoWay}"></TextBox>
-					</Grid>
-					<MenuItem Header="_Enabled" Padding="10, 10,0,10" Name="btnAllDebirdEnabled">
-						<MenuItem.Icon>
-							<CheckBox BorderThickness="0" IsChecked="{Binding UseAllDebird, Mode=TwoWay}"/>
-						</MenuItem.Icon>
+				<MenuItem Header="_Debrids">
+					<MenuItem Header="_AllDebrid">
+						<Grid Margin="0">
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition/>
+								<ColumnDefinition/>
+							</Grid.ColumnDefinitions>
+							<Label Grid.Column="0">API Key:</Label>
+							<TextBox Grid.Column="1" Text="{Binding AllDebridApiKey, Mode=TwoWay}"></TextBox>
+						</Grid>
+						<MenuItem Header="_Enabled" Padding="10, 10,0,10" Name="btnAllDebirdEnabled">
+							<MenuItem.Icon>
+								<CheckBox BorderThickness="0" IsChecked="{Binding UseAllDebrid, Mode=TwoWay}"/>
+							</MenuItem.Icon>
+						</MenuItem>
+					</MenuItem>
+					<MenuItem Header="_RealDebrid">
+						<Grid Margin="0">
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition/>
+								<ColumnDefinition/>
+							</Grid.ColumnDefinitions>
+							<Label Grid.Column="0">API Key:</Label>
+							<TextBox Grid.Column="1" Text="{Binding RealDebridApiKey, Mode=TwoWay}"></TextBox>
+						</Grid>
+						<MenuItem Header="_Enabled" Padding="10, 10,0,10" Name="btnRealDebirdEnabled">
+							<MenuItem.Icon>
+								<CheckBox BorderThickness="0" IsChecked="{Binding UseRealDebrid, Mode=TwoWay}"/>
+							</MenuItem.Icon>
+						</MenuItem>
 					</MenuItem>
 				</MenuItem>
+				
 				<MenuItem Header="_Restart Server" Name="btnRestartServer"/>
 				<MenuItem Header="_Exit" Name="btnExit"/>
 			</MenuItem>
@@ -128,9 +146,6 @@
             <Setter Property="IsReadOnly" Value="True"/>
             <Setter Property="HorizontalScrollBarVisibility" Value="Visible"/>
             <Setter Property="VerticalScrollBarVisibility" Value="Visible"/>
-        </Style>
-        <Style Selector="Menu > MenuItem > MenuItem > MenuItem">
-            <Setter Property="Padding" Value="5,-5,-15,-5"></Setter>
         </Style>
         <Style Selector="MenuItem >> Label">
             <Setter Property="HorizontalAlignment" Value="Right"></Setter>

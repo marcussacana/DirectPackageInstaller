@@ -41,11 +41,18 @@ namespace DirectPackageInstaller.ViewModels
             }
         }
 
-        private string _AllDebirdApiKey = null;
-        public string AllDebirdApiKey
+        private string _allDebridApiKey = null;
+        public string AllDebridApiKey
         {
-            get => _AllDebirdApiKey;
-            set => this.RaiseAndSetIfChanged(ref _AllDebirdApiKey, value);
+            get => _allDebridApiKey;
+            set => this.RaiseAndSetIfChanged(ref _allDebridApiKey, value);
+        }
+
+        private string _realDebridApiKey = null;
+        public string RealDebridApiKey
+        {
+            get => _realDebridApiKey;
+            set => this.RaiseAndSetIfChanged(ref _realDebridApiKey, value);
         }
 
         private bool _ProxyMode = false;
@@ -62,11 +69,18 @@ namespace DirectPackageInstaller.ViewModels
             set => this.RaiseAndSetIfChanged(ref _SegmentedMode, value);
         }
         
-        private bool _UseAllDebird = false;
-        public bool UseAllDebird 
+        private bool _useAllDebrid = false;
+        public bool UseAllDebrid 
         {
-            get => _UseAllDebird;
-            set => this.RaiseAndSetIfChanged(ref _UseAllDebird, value);
+            get => _useAllDebrid;
+            set => this.RaiseAndSetIfChanged(ref _useAllDebrid, value);
+        }
+        
+        private bool _useRealDebrid = false;
+        public bool UseRealDebrid 
+        {
+            get => _useRealDebrid;
+            set => this.RaiseAndSetIfChanged(ref _useRealDebrid, value);
         }
 
 

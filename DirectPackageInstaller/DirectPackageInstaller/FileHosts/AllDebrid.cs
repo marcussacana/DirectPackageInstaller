@@ -60,31 +60,31 @@ namespace DirectPackageInstaller.FileHosts
 
         struct AllDebridApi
         {
-            public string status;
-            public AllDebridApiData data;
+            public string status { get; set; }
+            public AllDebridApiData data { get; set; }
         }
 
         struct AllDebridApiData
         {
-            public Dictionary<string, AllDebridHostsEntry> hosts;
+            public Dictionary<string, AllDebridHostsEntry> hosts { get; set; }
 
-            public string link;
-            public string host;
-            public string hostDomain;
-            public string filename;
-            public bool paws;
-            public long filesize;
-            public string id;
+            public string link { get; set; }
+            public string host { get; set; }
+            public string hostDomain { get; set; }
+            public string filename { get; set; }
+            public bool paws { get; set; }
+            public long filesize { get; set; }
+            public string id { get; set; }
         }
 
         struct AllDebridHostsEntry
         {
-            public string name;
-            public string type;
-            public string[] domains;
-            public string[] regexps;
-            public string regexp;
-            public bool status;
+            public string name { get; set; }
+            public string type { get; set; }
+            public string[] domains { get; set; }
+            public string[] regexps { get; set; }
+            public string regexp { get; set; }
+            public bool status { get; set; }
         }
     }
 
