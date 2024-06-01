@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Web;
@@ -51,8 +52,9 @@ namespace DirectPackageInstaller.FileHosts
                 return false;
 
             foreach (var Host in Info?.data.hosts) {
-                if (new Regex(Host.Value.regexp).IsMatch(URL))
-                    return true;
+                foreach (var exp in Host.Value.regexps)
+                    if (new Regex(exp).IsMatch(URL))
+                        return true;
             }
 
             return false;
@@ -83,7 +85,7 @@ namespace DirectPackageInstaller.FileHosts
             public string type { get; set; }
             public string[] domains { get; set; }
             public string[] regexps { get; set; }
-            public string regexp { get; set; }
+            public object regexp { get; set; }
             public bool status { get; set; }
         }
     }
