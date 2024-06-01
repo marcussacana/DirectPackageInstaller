@@ -53,8 +53,14 @@ namespace DirectPackageInstaller.FileHosts
 
             foreach (var Host in Info?.data.hosts) {
                 foreach (var exp in Host.Value.regexps)
-                    if (new Regex(exp).IsMatch(URL))
-                        return true;
+                {
+                    try
+                    {
+                        if (new Regex(exp).IsMatch(URL))
+                            return true;
+                    }
+                    catch { }
+                }
             }
 
             return false;
