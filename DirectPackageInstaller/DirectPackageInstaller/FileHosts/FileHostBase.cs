@@ -84,6 +84,7 @@ namespace DirectPackageInstaller.FileHosts
                 var container = new CookieContainer();
                 ReqHandler.CookieContainer = container;
                 ReqHandler.AllowAutoRedirect = false;
+                ReqHandler.ServerCertificateCustomValidationCallback = delegate { return true; };
                 using (HttpClient Client = new HttpClient(ReqHandler))
                 {
                     try

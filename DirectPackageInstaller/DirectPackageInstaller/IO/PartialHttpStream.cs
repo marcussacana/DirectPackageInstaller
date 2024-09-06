@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Web;
 
@@ -253,6 +255,8 @@ namespace DirectPackageInstaller.IO
                     req.KeepAlive = KeepAlive;
                     req.ServicePoint.SetTcpKeepAlive(KeepAlive, 1000 * 60 * 5, 1000);
 
+                    req.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback(SllBypass);
+
                     foreach (var Header in Headers)
                         req.Headers[Header.Key] = Header.Value;
 
@@ -346,6 +350,11 @@ namespace DirectPackageInstaller.IO
             }
         }
 
+        private bool SllBypass(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)
+        {
+            return true;
+        }
+
         static Dictionary<string, (string Filename, long Length)> HeadCache = new Dictionary<string, (string Filename, long Length)>();
         
         private long? HttpGetLength(bool NoHead = false)
@@ -369,6 +378,8 @@ namespace DirectPackageInstaller.IO
                 request.Proxy = Proxy;
                 request.Method = NoHead ? "GET" : "HEAD";
                 request.Timeout = 15000;
+
+                request.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback(SllBypass);
 
 
                 foreach (var Header in Headers)

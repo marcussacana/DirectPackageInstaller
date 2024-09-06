@@ -9,7 +9,7 @@ namespace DirectPackageInstaller.FileHosts
         public override bool Limited { get; } = false;
         public override bool IsValidUrl(string URL)
         {
-            return URL.Contains("datanodes.to") && URL.Substring("datanodes.to/").Split('/').Length == 2;
+            return URL.Contains("datanodes.to/") && URL.Substring("datanodes.to/").Split('/').Length == 2;
         }
 
         public override DownloadInfo GetDownloadInfo(string URL)
