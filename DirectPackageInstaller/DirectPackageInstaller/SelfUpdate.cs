@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -46,7 +47,7 @@ namespace DirectPackageInstaller
 
         const string UpdateList = "Update.ini";
 
-        public static Version CurrentVersion = new Version("6.2.10");
+        public static Version CurrentVersion = new Version("6.2.11");
 
         public static Version? LastVersion = null;
 
@@ -89,6 +90,58 @@ namespace DirectPackageInstaller
             Runtime = $"{OS}-{Arch}";
         }
 
+        public async Task<string?> RequiresNewRuntime()
+        {
+            try
+            {
+                if (App.IsAndroid)
+                    return null;
+                
+                string UpdateInfo = await DownloadStringAsync(Repo + UpdateList);
+                Ini IniReader = new Ini(UpdateInfo.Replace("\r\n", "\n").Split('\n'));
+                var DotNet = IniReader.GetValues("DotNet");
+
+                if (DotNet != null)
+                {
+                    var Version = DotNet["versionname"];
+                    var Match = DotNet["match"];
+
+                    foreach (var runtime in  ListRuntimes())
+                    {
+                        if (runtime.Contains(Match, StringComparison.InvariantCulture))
+                            return null;
+                    }
+
+                    return Version;
+                }
+
+                return null;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+        }
+        
+        public static List<string> ListRuntimes()
+        {
+            var dotnet = Process.Start(new ProcessStartInfo("dotnet", "--list-runtimes")
+            {
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
+            });
+            dotnet.WaitForExit();
+            string result = dotnet.StandardOutput.ReadToEnd().TrimEnd();
+            string errors = dotnet.StandardError.ReadToEnd().TrimEnd();
+
+            if (!string.IsNullOrEmpty(errors))
+                throw new Exception(errors);
+            return result.Split(new string[] { Environment.NewLine },
+                StringSplitOptions.RemoveEmptyEntries).ToList();
+        }
 
         public async Task<bool> HasUpdates()
         {

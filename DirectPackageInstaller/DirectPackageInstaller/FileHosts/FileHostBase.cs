@@ -1,6 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
 using System.Web;
 
 namespace DirectPackageInstaller.FileHosts
@@ -17,37 +20,37 @@ namespace DirectPackageInstaller.FileHosts
 
         protected string DownloadString(string URL, Cookie[]? Cookies = null)
         {
-            lock (App.HttpClient)
+            lock (App.WebClient)
             {
-                App.HttpClient.Headers.Clear();
-                App.HttpClient.Headers["user-agent"] = UserAgent;
-                App.HttpClient.Headers["referer"] = HttpUtility.UrlEncode(URL);
+                App.WebClient.Headers.Clear();
+                App.WebClient.Headers["user-agent"] = UserAgent;
+                App.WebClient.Headers["referer"] = HttpUtility.UrlEncode(URL);
 
-                App.HttpClient.Container = new CookieContainer();
+                App.WebClient.Container = new CookieContainer();
                 if (Cookies != null)
                 {
                     foreach (var Cookie in Cookies)
                     {
                         try
                         {
-                            App.HttpClient.Container.Add(Cookie);
+                            App.WebClient.Container.Add(Cookie);
                         }
                         catch { }
                     }
                 }
 
-                return App.HttpClient.DownloadString(URL);
+                return App.WebClient.DownloadString(URL);
             }
         }
-        protected WebHeaderCollection? Head(string URL, Cookie[]? Cookies = null)
+        protected WebHeaderCollection? HeadGet(string URL, Cookie[]? Cookies = null)
         {
-            lock (App.HttpClient)
+            lock (App.WebClient)
             {
-                App.HttpClient.Headers.Clear();
-                App.HttpClient.Headers["user-agent"] = UserAgent;
-                App.HttpClient.Headers["referer"] = HttpUtility.UrlEncode(URL);
+                App.WebClient.Headers.Clear();
+                App.WebClient.Headers["user-agent"] = UserAgent;
+                App.WebClient.Headers["referer"] = HttpUtility.UrlEncode(URL);
 
-                App.HttpClient.Container = new CookieContainer();
+                App.WebClient.Container = new CookieContainer();
                 
                 if (Cookies != null)
                 {
@@ -55,7 +58,7 @@ namespace DirectPackageInstaller.FileHosts
                     {
                         try
                         {
-                            App.HttpClient.Container.Add(Cookie);
+                            App.WebClient.Container.Add(Cookie);
                         }
                         catch { }
                     }
@@ -63,10 +66,10 @@ namespace DirectPackageInstaller.FileHosts
 
                 try
                 {
-                    var Response = App.HttpClient.OpenRead(URL);
+                    var Response = App.WebClient.OpenRead(URL);
                     Response.Close();
 
-                    return App.HttpClient.ResponseHeaders;
+                    return App.WebClient.ResponseHeaders;
                 }
                 catch
                 {
@@ -74,60 +77,107 @@ namespace DirectPackageInstaller.FileHosts
                 }
             }
         }
+        protected HttpResponseHeaders? HeadPost(string URL, string ContentType, string Data, Cookie[]? Cookies = null)
+        {
+            using (var ReqHandler = new HttpClientHandler())
+            {
+                var container = new CookieContainer();
+                ReqHandler.CookieContainer = container;
+                ReqHandler.AllowAutoRedirect = false;
+                using (HttpClient Client = new HttpClient(ReqHandler))
+                {
+                    try
+                    {
+                        using (var Message = new HttpRequestMessage())
+                        {
+                            Message.Method = HttpMethod.Post;
+                            Message.RequestUri = new Uri(URL);
+                            Message.Headers.TryAddWithoutValidation("content-type", ContentType);
+                            Message.Headers.TryAddWithoutValidation("user-agent", UserAgent);
+                            Message.Headers.TryAddWithoutValidation("referer", HttpUtility.UrlEncode(URL));
+
+                            Message.Content = new StringContent(Data, Encoding.UTF8, "application/x-www-form-urlencoded");
+                            
+                            if (Cookies != null)
+                            {
+                                foreach (var Cookie in Cookies)
+                                {
+                                    try
+                                    {
+                                       container.Add(Cookie);
+                                    }
+                                    catch { }
+                                }
+                            }
+
+                            using (var Response = Client.Send(Message))
+                            {
+                                return Response.Headers;
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        return null;
+                    }
+                }
+            }
+        }
         protected string PostString(string URL, string ContentType, string Data, Cookie[]? Cookies = null)
         {
-            lock (App.HttpClient)
+            lock (App.WebClient)
             {
-                App.HttpClient.Headers.Clear();
-                App.HttpClient.Headers["content-type"] = ContentType;
-                App.HttpClient.Headers["user-agent"] = UserAgent;
-                App.HttpClient.Headers["referer"] = HttpUtility.UrlEncode(URL);
+                App.WebClient.Headers.Clear();
+                App.WebClient.Headers["content-type"] = ContentType;
+                App.WebClient.Headers["user-agent"] = UserAgent;
+                App.WebClient.Headers["referer"] = HttpUtility.UrlEncode(URL);
 
-                App.HttpClient.Container = new CookieContainer();
+                App.WebClient.Container = new CookieContainer();
                 if (Cookies != null)
                 {
                     foreach (var Cookie in Cookies)
                     {
                         try
                         {
-                            App.HttpClient.Container.Add(Cookie);
+                            App.WebClient.Container.Add(Cookie);
                         }
                         catch { }
                     }
                 }
 
-                return App.HttpClient.UploadString(URL, Data);
+                return App.WebClient.UploadString(URL, Data);
             }
         }
 
         protected (byte[] Data, WebHeaderCollection? Headers) DownloadRequest(string URL, Cookie[]? Cookies = null)
         {
-            lock (App.HttpClient)
+            lock (App.WebClient)
             {
-                App.HttpClient.Headers.Clear();
-                App.HttpClient.Headers["user-agent"] = UserAgent;
-                App.HttpClient.Headers["referer"] = HttpUtility.UrlEncode(URL);
+                App.WebClient.Headers.Clear();
+                App.WebClient.Headers["user-agent"] = UserAgent;
+                App.WebClient.Headers["referer"] = HttpUtility.UrlEncode(URL);
 
-                App.HttpClient.Container = new CookieContainer();
+                App.WebClient.Container = new CookieContainer();
                 if (Cookies != null)
                 {
                     foreach (var Cookie in Cookies)
                     {
                         try
                         {
-                            App.HttpClient.Container.Add(Cookie);
+                            App.WebClient.Container.Add(Cookie);
                         }
                         catch { }
                     }
                 }
 
-                return (App.HttpClient.DownloadData(URL), App.HttpClient.ResponseHeaders);
+                return (App.WebClient.DownloadData(URL), App.WebClient.ResponseHeaders);
             }
         }
 
         public static FileHostBase[] Hosts => new FileHostBase[] {
                 new Mediafire(), new GoogleDrive(), new PixelDrain(), 
-                new AllDebrid(), new RealDebrid(), new OneFichier()
+                new AllDebrid(), new RealDebrid(), new OneFichier(),
+                new DataNodes()
         };
     }
 

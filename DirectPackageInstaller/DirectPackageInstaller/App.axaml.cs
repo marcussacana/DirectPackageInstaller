@@ -213,7 +213,7 @@ namespace DirectPackageInstaller
         
         internal static Settings Config = new Settings();
 
-        internal static WebClientWithCookies HttpClient = new WebClientWithCookies();
+        internal static WebClientWithCookies WebClient = new WebClientWithCookies();
         internal static bool IsRunningOnMono => Type.GetType("Mono.Runtime") != null;
         internal static bool IsUnix => (int)Environment.OSVersion.Platform == 4 || (int)Environment.OSVersion.Platform == 6 || (int)Environment.OSVersion.Platform == 128;
 

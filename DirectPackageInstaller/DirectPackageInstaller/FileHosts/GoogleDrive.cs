@@ -32,7 +32,7 @@ namespace DirectPackageInstaller.FileHosts
 
             var DownloadUri = $"{DownloadPageUri}&confirm=t";
 
-            var Headers = Head(DownloadUri, Cookies.ToArray());
+            var Headers = HeadGet(DownloadUri, Cookies.ToArray());
 
             if (Headers == null || Headers.AllKeys.Contains("x-auto-login"))
             {

@@ -1,8 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -226,6 +230,17 @@ namespace DirectPackageInstaller.Views
              
              App.Callback(async () =>
              {
+                 var MissingRuntime = await App.Updater.RequiresNewRuntime();
+                 if (!App.Config.SkipUpdateCheck && MissingRuntime != null)
+                 {
+                     var Response = await MessageBox.ShowAsync($"A New update has been released, but you can't update because a required program is missing.\nNow, the DirectPackageInstaller will use .NET {MissingRuntime}, and you can update only after install the Runtime, Press Yes to Visit the Download Page.", "DirectPackageInstaller - MISSING RUNTIME", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                     if (Response == DialogResult.Yes)
+                     { 
+                         OpenUrl($"https://dotnet.microsoft.com/en-us/download/dotnet/{MissingRuntime}/runtime");
+                     }
+                     return;
+                 }
+                 
                  if (!App.Config.SkipUpdateCheck && await App.Updater.HasUpdates())
                  {
                      var Response = await MessageBox.ShowAsync($"New Update Found, You're using the {SelfUpdate.CurrentVersion} the last version is {SelfUpdate.LastVersion},\nDo you wanna update the DirectPackageInstaller now?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
@@ -241,6 +256,35 @@ namespace DirectPackageInstaller.Views
                  await MessageBox.ShowAsync("Failed find the Working Directory Path of the DirectPackageInstaller.\nPlease, Restart the Program.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                  Environment.Exit(0);
              }
+        }
+        
+        private void OpenUrl(string url)
+        {
+            try
+            {
+                Process.Start(url);
+            }
+            catch
+            {
+                // hack because of this: https://github.com/dotnet/corefx/issues/10361
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    url = url.Replace("&", "^&");
+                    Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                {
+                    Process.Start("xdg-open", url);
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    Process.Start("open", url);
+                }
+                else
+                {
+                    throw;
+                }
+            }
         }
   
         private async void BtnLoadOnClick(object? sender, RoutedEventArgs e)

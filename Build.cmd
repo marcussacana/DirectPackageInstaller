@@ -163,6 +163,8 @@ dotnet clean
 rmdir /s /q .\Release
 mkdir .\Release
 
+dotnet workload restore
+
 call :Build win-x64
 call :Build win-x86
 call :Build win-arm
@@ -235,7 +237,6 @@ IF NOT EXIST "%AndroidNdkDirectory%ndk-build.cmd" (
 	echo ANDROID NDK NOT FOUND
 	goto :eof
 )
-dotnet workload restore
 call :Build %1
 del /s /q .\Release\%1.zip
 del /s /q .\DirectPackageInstaller\DirectPackageInstaller.Android\bin\Release\net6.0-android\%1\publish\com.marcussacana.DirectPackageInstaller.apk

@@ -19,7 +19,7 @@
         <PackageReference Include="Avalonia.Themes.Fluent" Version="11.0.10" />
         <PackageReference Include="HtmlAgilityPack" Version="1.11.61" />
         <PackageReference Include="Jint" Version="3.0.0" />
-        <PackageReference Include="SharpCompress" Version="0.37.2" />
+        <PackageReference Include="SharpCompress" Version="0.38.0" />
         <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="6.0.1" />
         <PackageReference Include="System.Management" Version="6.0.0" />
         <PackageReference Include="XamlNameReferenceGenerator" Version="1.4.2" />
