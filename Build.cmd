@@ -4,7 +4,7 @@ clear
 
 echo "DirectPackageInstaller Build Script - Unix";
 
-if !(dotnet --list-sdks | grep -q '6.'); then
+if !(dotnet --list-sdks | grep -q '8.'); then
   echo ".NET 6 SDK NOT FOUND"
   exit;
 fi
@@ -140,7 +140,7 @@ exit;
 :BATCH
 echo off
 
-dotnet --list-sdks | find /i "6."
+dotnet --list-sdks | find /i "8."
 if errorlevel 1 (
    cls
    echo DirectPackageInstaller Build Script - Windows
