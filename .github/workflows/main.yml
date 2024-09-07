@@ -39,7 +39,7 @@ jobs:
         
       - uses: actions/setup-dotnet@v2
         with:
-            dotnet-version: '6.0.x'
+            dotnet-version: '8.0.x'
 
       # Runs a single command using the runners shell
       - name: Building
@@ -51,7 +51,7 @@ jobs:
             sh  Build.cmd
 
       - name: Archive production artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Releases
           path: |

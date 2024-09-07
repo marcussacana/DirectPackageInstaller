@@ -1,8 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net6.0-android</TargetFramework>
-		<SupportedOSPlatformVersion>23</SupportedOSPlatformVersion>
+        <TargetFramework>net8.0-android34</TargetFramework>
         <Nullable>enable</Nullable>
         <ApplicationId>com.marcussacana.DirectPackageInstaller</ApplicationId>
         <ApplicationVersion>1</ApplicationVersion>
@@ -39,9 +38,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-	    <PackageReference Include="Avalonia.Android" Version="11.0.10" />
-	    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.0.10" />
-	    <PackageReference Include="Xamarin.AndroidX.Core.SplashScreen" Version="1.0.1.5" />
+	    <PackageReference Include="Avalonia.Android" Version="11.1.3" />
+	    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.1.3" />
+	    <PackageReference Include="CavemanTcp" Version="2.0.2" />
+	    <PackageReference Include="System.Text.Json" Version="8.0.4" />
+	    <PackageReference Include="Xamarin.AndroidX.Core.SplashScreen" Version="1.0.1.11" />
     </ItemGroup>
 
     <ItemGroup>
