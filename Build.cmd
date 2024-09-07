@@ -5,11 +5,11 @@ clear
 echo "DirectPackageInstaller Build Script - Unix";
 
 if !(dotnet --list-sdks | grep -q '8.'); then
-  echo ".NET 6 SDK NOT FOUND"
+  echo ".NET 8 SDK NOT FOUND"
   exit;
 fi
 
-echo ".NET 6 SDK FOUND"
+echo ".NET 8 SDK FOUND"
 
 # The correct SDK directory, contains a build-tools directory
 export AndroidSdkDirectory=~/Android/Sdk/
@@ -31,7 +31,7 @@ Publish () {
    echo "Building for $1"
    dotnet restore -r $1
    dotnet publish -c Release -r $1
-   zip -j -9 -r Release/$1.zip DirectPackageInstaller/DirectPackageInstaller.Desktop/bin/Release/net6.0/$1/publish/* -x Icon.icns
+   zip -j -9 -r Release/$1.zip DirectPackageInstaller/DirectPackageInstaller.Desktop/bin/Release/net8.0/$1/publish/* -x Icon.icns
 }
 
 
@@ -82,8 +82,8 @@ AndroidPublish (){
    Publish $1
    
    rm Release/$1.zip
-   rm DirectPackageInstaller/DirectPackageInstaller.Android/bin/Release/net6.0-android/$1/publish/com.marcussacana.DirectPackageInstaller.apk
-   zip -j -9 -r Release/$1.zip DirectPackageInstaller/DirectPackageInstaller.Android/bin/Release/net6.0-android/$1/publish/*
+   rm DirectPackageInstaller/DirectPackageInstaller.Android/bin/Release/net8.0-android/$1/publish/com.marcussacana.DirectPackageInstaller.apk
+   zip -j -9 -r Release/$1.zip DirectPackageInstaller/DirectPackageInstaller.Android/bin/Release/net8.0-android/$1/publish/*
 }
 
 WINPublish win-x64
@@ -144,7 +144,7 @@ dotnet --list-sdks | find /i "8."
 if errorlevel 1 (
    cls
    echo DirectPackageInstaller Build Script - Windows
-   echo .NET 6 SDK NOT FOUND.
+   echo .NET 8 SDK NOT FOUND.
    goto :eof
 )
 
@@ -157,7 +157,7 @@ set AndroidNdkDirectory=C:\Program Files (x86)\Android\android-sdk\ndk\24.0.8215
 
 cls
 echo DirectPackageInstaller Build Script - Windows
-echo .NET 6 SDK FOUND
+echo .NET 8 SDK FOUND
 
 dotnet clean
 rmdir /s /q .\Release
@@ -214,7 +214,7 @@ exit
 echo Building for %1
 dotnet restore -r %1
 dotnet publish -c Release -r %1
-powershell Compress-Archive .\DirectPackageInstaller\DirectPackageInstaller.Desktop\bin\Release\net6.0\%1\publish\* .\Release\%1.zip
+powershell Compress-Archive .\DirectPackageInstaller\DirectPackageInstaller.Desktop\bin\Release\net8.0\%1\publish\* .\Release\%1.zip
 goto :eof
 
 
@@ -239,6 +239,6 @@ IF NOT EXIST "%AndroidNdkDirectory%ndk-build.cmd" (
 )
 call :Build %1
 del /s /q .\Release\%1.zip
-del /s /q .\DirectPackageInstaller\DirectPackageInstaller.Android\bin\Release\net6.0-android\%1\publish\com.marcussacana.DirectPackageInstaller.apk
-powershell Compress-Archive .\DirectPackageInstaller\DirectPackageInstaller.Android\bin\Release\net6.0-android\%1\publish\* .\Release\%1.zip
+del /s /q .\DirectPackageInstaller\DirectPackageInstaller.Android\bin\Release\net8.0-android\%1\publish\com.marcussacana.DirectPackageInstaller.apk
+powershell Compress-Archive .\DirectPackageInstaller\DirectPackageInstaller.Android\bin\Release\net8.0-android\%1\publish\* .\Release\%1.zip
 goto :eof
