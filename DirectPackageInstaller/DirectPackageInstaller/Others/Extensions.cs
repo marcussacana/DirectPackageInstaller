@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text.Encodings.Web;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Controls;
@@ -97,8 +98,17 @@ public static class Extensions
 
     public static bool IsValidURL(this string URL)
     {
-        var Escaped = URL.Replace("[", "%5B").Replace("]", "%5D");
-        return Uri.IsWellFormedUriString(Escaped, UriKind.Absolute);
+        var Escaped = URL
+            .Replace("[", "%5B")
+            .Replace("]", "%5D");
+        try
+        {
+            return new Uri(Escaped).IsAbsoluteUri;
+        }
+        catch
+        {
+            return false;
+        }
     }
     public static bool HasName(this ParamSfo This, string name)
     {
