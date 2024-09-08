@@ -83,7 +83,7 @@ AndroidPublish (){
    
    rm Release/$1.zip
    rm DirectPackageInstaller/DirectPackageInstaller.Android/bin/Release/net8.0-android/$1/publish/com.marcussacana.DirectPackageInstaller.apk
-   zip -j -9 -r Release/$1.zip DirectPackageInstaller/DirectPackageInstaller.Android/bin/Release/net8.0-android/$1/publish/*
+   zip -j -9 -r Release/$1.zip DirectPackageInstaller/DirectPackageInstaller.Android/bin/Release/net8.0-android/$1/publish/*.apk
 }
 
 WINPublish win-x64
@@ -240,5 +240,5 @@ IF NOT EXIST "%AndroidNdkDirectory%ndk-build.cmd" (
 call :Build %1
 del /s /q .\Release\%1.zip
 del /s /q .\DirectPackageInstaller\DirectPackageInstaller.Android\bin\Release\net8.0-android\%1\publish\com.marcussacana.DirectPackageInstaller.apk
-powershell Compress-Archive .\DirectPackageInstaller\DirectPackageInstaller.Android\bin\Release\net8.0-android\%1\publish\* .\Release\%1.zip
+powershell Compress-Archive .\DirectPackageInstaller\DirectPackageInstaller.Android\bin\Release\net8.0-android\%1\publish\*.apk .\Release\%1.zip
 goto :eof
