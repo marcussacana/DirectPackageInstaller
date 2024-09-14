@@ -47,7 +47,9 @@ namespace DirectPackageInstaller
 
         const string UpdateList = "Update.ini";
 
-        public static Version CurrentVersion = new Version("6.2.12");
+        public const string CurrentVersion = "6.2.13";
+        
+        static Version CurrentVer = new Version(CurrentVersion);
 
         public static Version? LastVersion = null;
 
@@ -158,14 +160,14 @@ namespace DirectPackageInstaller
                 if (Values.ContainsKey("brokenupdater"))
                 {
                     var BrokenVer = new Version(Values["brokenupdater"]);
-                    if (CurrentVersion <= BrokenVer)
+                    if (CurrentVer <= BrokenVer)
                     {
                         await Console.Error.WriteAsync("Auto Updater Broken - Please, Download the last update manually");
                         Environment.Exit(134);
                     }
                 }
 
-                return LastVersion > CurrentVersion;
+                return LastVersion > CurrentVer;
             }
             catch
             {
