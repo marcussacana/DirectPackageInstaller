@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DirectPackageInstaller.FileHosts;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -251,6 +252,8 @@ namespace DirectPackageInstaller.IO
                     req.ConnectionGroupName = Guid.NewGuid().ToString();
                     req.CookieContainer = Cookies;
                     req.CachePolicy = new System.Net.Cache.RequestCachePolicy(System.Net.Cache.RequestCacheLevel.NoCacheNoStore);
+                    req.UserAgent = FileHostBase.UserAgent;
+
 
                     req.KeepAlive = KeepAlive;
                     req.ServicePoint.SetTcpKeepAlive(KeepAlive, 1000 * 60 * 5, 1000);
@@ -372,6 +375,7 @@ namespace DirectPackageInstaller.IO
             try
             {
                 HttpWebRequest request = WebRequest.CreateHttp(Url);
+                request.UserAgent = FileHostBase.UserAgent;
                 request.ConnectionGroupName = Guid.NewGuid().ToString();
                 request.KeepAlive = false;
                 request.CookieContainer = Cookies;
