@@ -11,6 +11,10 @@ fi
 
 echo ".NET 8 SDK FOUND"
 
+# Desktop-only builds should not evaluate the Android project (and therefore
+# must not require Android workloads).
+DESKTOP_PROJECT="DirectPackageInstaller/DirectPackageInstaller.Desktop/DirectPackageInstaller.Desktop.csproj"
+
 # The correct SDK directory, contains a build-tools directory
 export AndroidSdkDirectory=~/Android/Sdk/
 
@@ -23,7 +27,7 @@ if [ -d "/usr/local/lib/android/sdk" ]; then
    export AndroidNdkDirectory=/usr/local/lib/android/sdk/ndk/24.0.8215888/ 
 fi
 
-dotnet clean
+dotnet clean "$DESKTOP_PROJECT"
 rm -r Release
 mkdir Release
 
@@ -38,8 +42,8 @@ has_target() {
 
 Publish () {
    echo "Building for $1"
-   dotnet restore -r $1
-   dotnet publish -c Release -r $1 $2
+   dotnet restore "$DESKTOP_PROJECT" -r $1
+   dotnet publish "$DESKTOP_PROJECT" -c Release -r $1 $2
    zip -j -9 -r Release/$1.zip DirectPackageInstaller/DirectPackageInstaller.Desktop/bin/Release/net8.0/$1/publish/* -x Icon.icns
 }
 
@@ -75,21 +79,25 @@ OSXPublish (){
    cp -R ../Files/OSXAppBase/DirectPackageInstaller.app tmp/
    unzip $1.zip -d tmp/DirectPackageInstaller.app/Contents/MacOS
 
-   # Ensure the launcher is executable even if zip permissions were lost.
-   if [ -f tmp/DirectPackageInstaller.app/Contents/MacOS/DirectPackageInstaller.Desktop ]; then
-      chmod +x tmp/DirectPackageInstaller.app/Contents/MacOS/DirectPackageInstaller.Desktop
-   fi
+   # The template keeps this directory in git with a placeholder file. It is
+   # not part of a runnable app and causes strict bundle verification to fail.
+   rm -f tmp/DirectPackageInstaller.app/Contents/MacOS/.gitkeep
 
    if command -v codesign >/dev/null 2>&1; then
       echo "Ad-hoc signing $1 .app bundle"
-      codesign --force --deep --sign - tmp/DirectPackageInstaller.app
+      # The managed .NET payload is code from macOS's perspective. Sign each
+      # file first, then seal the enclosing app bundle.
+      find tmp/DirectPackageInstaller.app/Contents/MacOS -type f -exec codesign --force --sign - {} \;
+      codesign --force --sign - tmp/DirectPackageInstaller.app
    else
       echo "WARNING: codesign not available, skipping ad-hoc signature"
       echo "         arm64 builds produced on non-macOS hosts will not launch on Apple Silicon"
    fi
 
    cd tmp
-   zip -9 -r ../$1-app.zip ./
+   # Preserve code-signing extended attributes; BSD zip drops them and yields
+   # an app that fails strict verification after extraction.
+   ditto -c -k --sequesterRsrc --keepParent DirectPackageInstaller.app ../$1-app.zip
    cd ..
 
    if command -v hdiutil >/dev/null 2>&1; then
