@@ -21,11 +21,12 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Install NDK
-        run: sdkmanager "ndk;24.0.8215888"
+        run: |
+          # GitHub's Ubuntu image already includes the Android SDK. Avoid
+          # android-actions/setup-android@v3: it asks sdkmanager for the
+          # retired "tools" package and fails before the build begins.
+          yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --install "ndk;24.0.8215888"
 
       - uses: actions/setup-dotnet@v2
         with:
@@ -70,8 +71,12 @@ jobs:
       - name: Verify ad-hoc signature on arm64 .app
         run: |
           mkdir -p Release/verify
-          unzip -q Release/OSX-ARM64-APP.zip -d Release/verify
-          codesign -dvvv Release/verify/DirectPackageInstaller.app 2>&1 | tee /tmp/codesign.txt
+          ditto -x -k Release/OSX-ARM64-APP.zip Release/verify
+          APP="Release/verify/DirectPackageInstaller.app"
+          test -f "$APP/Contents/MacOS/libhostfxr.dylib" || { echo "FAIL: self-contained runtime missing"; exit 1; }
+          file "$APP/Contents/MacOS/DirectPackageInstaller.Desktop" | grep -q "arm64" || { echo "FAIL: app host is not arm64"; exit 1; }
+          codesign --verify --deep --strict --verbose=4 "$APP"
+          codesign -dvvv "$APP" 2>&1 | tee /tmp/codesign.txt
           grep -q "Signature=adhoc" /tmp/codesign.txt || { echo "FAIL: arm64 .app missing ad-hoc signature"; exit 1; }
           rm -rf Release/verify
 
