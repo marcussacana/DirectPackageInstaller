@@ -21,11 +21,12 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Install NDK
-        run: sdkmanager "ndk;24.0.8215888"
+        run: |
+          # GitHub's Ubuntu image already includes the Android SDK. Avoid
+          # android-actions/setup-android@v3: it asks sdkmanager for the
+          # retired "tools" package and fails before the build begins.
+          yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --install "ndk;24.0.8215888"
 
       - uses: actions/setup-dotnet@v2
         with:
