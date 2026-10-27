@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Text.Json;
@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Net.Sockets;
 using System.Web;
 using DirectPackageInstaller.IO;
 using DirectPackageInstaller.Tasks;
@@ -29,7 +30,14 @@ namespace DirectPackageInstaller.Host
         Dictionary<string, int> Instances = new Dictionary<string, int>();
         
         static TextWriter? LOGWRITER = null;
+        static readonly object LOGLOCK = new object();
         public int Connections { get; private set; } = 0;
+
+        /// <summary>
+        /// How many requests the console made so far. Used to tell whether the console
+        /// actually went for the package instead of trusting a successful socket write.
+        /// </summary>
+        public long TotalRequests { get; private set; } = 0;
 
         public static event Action<TransferProgressInfo>? GlobalTransferProgressChanged;
         public event Action<TransferProgressInfo>? TransferProgressChanged;
@@ -54,35 +62,119 @@ namespace DirectPackageInstaller.Host
             });
             Decompress.ProgressReporter = ReportTransferProgress;
 
-#if DEBUG
-            if (LOGWRITER == null)
-                LOGWRITER = System.IO.File.CreateText(Path.Combine(App.WorkingDirectory, "DPIServer.log"));
-
+            //The library level messages go to the same file, they are the ones that
+            //show up when a request dies without an exception reaching us.
             Server.Logger = (str) => LOG(str);
-#else
-            if (App.Config.ShowError)
-                LOGWRITER = System.IO.File.CreateText(Path.Combine(App.WorkingDirectory, "DPIServer.log"));
-#endif
+
+            EnableLog(App.Config.ShowError);
 
             Server.Routes.Default = Process;
 
             LOG("Server Address: {0}:{1}", IP, Port);
         }
 
-        private static void LOG(string Message, params object[] Format)
+        /// <summary>
+        /// Turns the log on or off while the app is running. The file is opened on
+        /// demand instead of in the constructor, otherwise turning the option on after
+        /// the server is already up would have no effect.
+        /// </summary>
+        /// <param name="Enabled">Whether the log should be written</param>
+        public static void EnableLog(bool Enabled)
         {
-#if !DEBUG
-            if (!App.Config.ShowError || LOGWRITER == null)
-                return;
-#endif
-            
-            lock (LOGWRITER)
+            lock (LOGLOCK)
             {
-                LOGWRITER.WriteLine(Message, Format);
-                LOGWRITER.Flush();
+#if DEBUG
+                Enabled = true;
+#endif
+                if (Enabled)
+                {
+                    if (LOGWRITER == null)
+                        LOGWRITER = OpenLog("DPIServer.log");
+                }
+                else
+                {
+                    CloseLog();
+                }
             }
-            
         }
+
+        /// <summary>
+        /// Opens a log file, the previous session is kept next to it as .1 so the run
+        /// that just failed isn't lost when the option is toggled.
+        /// </summary>
+        static TextWriter OpenLog(string Name)
+        {
+            try
+            {
+                //Fully qualified, File and Path are method names on this class.
+                var LogPath = System.IO.Path.Combine(App.WorkingDirectory, Name);
+
+                if (System.IO.File.Exists(LogPath))
+                {
+                    var Previous = LogPath + ".1";
+
+                    try
+                    {
+                        if (System.IO.File.Exists(Previous))
+                            System.IO.File.Delete(Previous);
+
+                        System.IO.File.Move(LogPath, Previous);
+                    }
+                    catch { }
+                }
+
+                //UTF8 with a BOM, package names are often not ASCII and Notepad needs
+                //the mark to detect the encoding. Create instead of CreateNew, if the
+                //previous file can't be moved aside we overwrite it rather than ending
+                //up with no log at all.
+                return new StreamWriter(new System.IO.FileStream(LogPath, System.IO.FileMode.Create, System.IO.FileAccess.Write, System.IO.FileShare.ReadWrite), new UTF8Encoding(true))
+                {
+                    AutoFlush = true
+                };
+            }
+            catch
+            {
+                //No log then, better than taking the server down over it.
+                return TextWriter.Null;
+            }
+        }
+
+        static void CloseLog()
+        {
+            try
+            {
+                LOGWRITER?.Dispose();
+            }
+            catch { }
+
+            LOGWRITER = null;
+        }
+
+        public static void LOG(string Message, params object[] Format)
+        {
+            lock (LOGLOCK)
+            {
+#if DEBUG
+                if (LOGWRITER == null)
+                    LOGWRITER = OpenLog("DPIServer.log");
+#else
+                if (LOGWRITER == null)
+                    return;
+#endif
+
+                try
+                {
+                    LOGWRITER.WriteLine("{0} {1}", DateTime.Now.ToString("HH:mm:ss.fff"), string.Format(Message, Format));
+                }
+                catch { }
+            }
+        }
+
+        /// <summary>
+        /// Writes to the same log file from outside the server. Used to record the
+        /// install stages that used to give up without saying anything.
+        /// </summary>
+        public static void Trace(string Message, params object[] Format) => LOG(Message, Format);
 
         public void Start()
         {
@@ -111,6 +203,7 @@ namespace DirectPackageInstaller.Host
         async Task Process(HttpContext Context)
         {
             LastRequest = DateTime.Now;
+            TotalRequests++;
 
             int CID = ConnectionID++;
 
@@ -177,7 +270,17 @@ namespace DirectPackageInstaller.Host
             }
             catch (Exception ex)
             {
-                LOG("ERROR: {0}", ex);
+                if (IsClientAbort(ex))
+                    //The console opens the file, reads what it needs and drops the
+                    //connection, that's how it probes a package. Normal, not a failure.
+                    LOG("Connection '{0}' closed by the client: {1}", CID, Error(ex));
+                else
+                {
+                    LOG("ERROR: {0}", Error(ex));
+                    //Kept on its own line, the stack is identifiers and file paths so it
+                    //reads the same in any language, and it's what a bug report needs.
+                    LOG("STACK: {0}", ex.StackTrace);
+                }
             }
             finally
             {
@@ -187,6 +290,56 @@ namespace DirectPackageInstaller.Host
             }
 
             //Context.Close();
+        }
+
+        /// <summary>
+        /// True when the other end walked away mid transfer, which the console does on
+        /// purpose while it reads the package header.
+        /// </summary>
+        private static bool IsClientAbort(Exception ex)
+        {
+            for (var E = ex; E != null; E = E.InnerException)
+            {
+                if (E is IOException)
+                    return true;
+
+                if (E is SocketException Socket)
+                    return Socket.SocketErrorCode == SocketError.ConnectionReset
+                        || Socket.SocketErrorCode == SocketError.ConnectionAborted
+                        || Socket.SocketErrorCode == SocketError.Shutdown;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Describes an exception for the log in a way that doesn't depend on the
+        /// language of the machine running it. On Windows these messages come from the
+        /// OS resources, so they follow the display language of the machine and stay
+        /// that way even when the app itself runs in another language. The type name
+        /// and the error code are always the same English identifiers, that's what
+        /// makes a line searchable no matter who collected the log. The message is
+        /// kept after them because it's still useful to whoever reads the log in their
+        /// own language.
+        /// </summary>
+        public static string Error(Exception ex)
+        {
+            if (ex == null)
+                return "no exception";
+
+            //The innermost one names the actual cause, the outer ones are usually a
+            //generic "unable to write data" style wrapper.
+            var Current = ex;
+
+            while (Current.InnerException != null)
+                Current = Current.InnerException;
+
+            //Every SocketException reports the same HResult, the useful part is the
+            //socket error itself, so it's spelled out with its native number.
+            if (Current is SocketException Sock)
+                return Current.GetType().Name + " (" + Sock.SocketErrorCode + " / " + Sock.ErrorCode + "): " + Current.Message;
+
+            return Current.GetType().Name + " (0x" + Current.HResult.ToString("X8") + "): " + Current.Message;
         }
 
         async Task File(HttpContext Context, NameValueCollection Query, string Path)
@@ -625,7 +778,7 @@ namespace DirectPackageInstaller.Host
             }
             catch (Exception ex)
             {
-                MessageBox.ShowSync("Failed to Register JSON\n" + ex.ToString());
+                MessageBox.ShowSync(Language.F("Msg.FailedRegisterJSON", ex));
                 throw;
             }
         }

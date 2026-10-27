@@ -8,6 +8,8 @@ namespace DirectPackageInstaller
 {
     public struct Settings
     {
+        public string Language;
+
         public string EthernetAdapter;
 
         public string AllDebridApiKey;

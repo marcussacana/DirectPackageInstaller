@@ -7,6 +7,9 @@
              x:Class="DirectPackageInstaller.Views.MainView"
              Foreground="White"
              Background="#171C2C">
+  <!--The Header/Content attributes below hold the language keys, they are replaced by
+      the translated text in MainView.ApplyLanguage(), the key is only the design time preview.-->
+
   <Design.DataContext>
     <viewModels:MainViewModel />
   </Design.DataContext>
@@ -22,85 +25,91 @@
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
 
-        <Menu Grid.ColumnSpan="2">
-            <MenuItem Header="_Options">
-                <MenuItem Header="_Proxy Downloads" Name="btnProxyDownload">
+        <Menu Grid.ColumnSpan="2" Name="MainMenu">
+            <MenuItem Header="Menu.Options" Name="btnOptions">
+                <MenuItem Header="Menu.ProxyDownloads" Name="btnProxyDownload">
                     <MenuItem.Icon>
                         <CheckBox BorderThickness="0" IsChecked="{Binding ProxyMode, Mode=TwoWay}"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="_Segmented Downloads" Name="btnSegmentedDownload" >
+                <MenuItem Header="Menu.SegmentedDownloads" Name="btnSegmentedDownload" >
                     <MenuItem.Icon>
                         <CheckBox BorderThickness="0" IsChecked="{Binding SegmentedMode, Mode=TwoWay}"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="_Transfer Progress" Name="btnTransferProgress" >
+                <MenuItem Header="Menu.TransferProgress" Name="btnTransferProgress" >
                     <MenuItem.Icon>
                         <CheckBox BorderThickness="0" IsChecked="{Binding ShowTransferProgress, Mode=TwoWay}"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="_CNL Support" Name="btnCNLService" >
+                <MenuItem Header="Menu.ErrorLog" Name="btnErrorLog" >
+                    <MenuItem.Icon>
+                        <CheckBox BorderThickness="0" IsChecked="{Binding ShowError, Mode=TwoWay}"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Menu.CNLSupport" Name="btnCNLService" >
                     <MenuItem.Icon>
                         <CheckBox BorderThickness="0" IsChecked="{Binding CNLService, Mode=TwoWay}"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="_DHCP Server" Name="btnDHCPService" >
+                <MenuItem Header="Menu.DHCPServer" Name="btnDHCPService" >
                     <MenuItem.Icon>
                         <CheckBox BorderThickness="0" IsChecked="{Binding DHCPService, Mode=TwoWay}"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="_IP Address" Classes="NoChildFocus">
+                <MenuItem Header="Menu.IPAddress" Name="btnIPAddress" Classes="NoChildFocus">
                     <StackPanel Orientation="Horizontal">
-                        <Label Grid.Column="0">PS IP</Label>
+                        <Label Grid.Column="0" Content="Menu.PSIP" Name="lblPSIP"></Label>
                         <TextBox Grid.Column="1" Text="{Binding PS4IP, Mode=TwoWay}"></TextBox>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal">
-                        <Label Grid.Column="0">PC IP</Label>
+                        <Label Grid.Column="0" Content="Menu.PCIP" Name="lblPCIP"></Label>
                         <TextBox Grid.Column="1" Text="{Binding PCIP, Mode=TwoWay}"></TextBox>
                     </StackPanel>
                 </MenuItem>
-                <MenuItem Header="_Debrids">
-                    <MenuItem Header="_AllDebrid" Classes="NoChildFocus">
+                <MenuItem Header="Menu.Debrids" Name="btnDebrids">
+                    <MenuItem Header="Menu.AllDebrid" Name="btnAllDebrid" Classes="NoChildFocus">
                         <StackPanel Orientation="Horizontal">
-                            <Label Grid.Column="0">API Key</Label>
+                            <Label Grid.Column="0" Content="Menu.APIKey" Name="lblAllDebridAPIKey"></Label>
                             <TextBox Grid.Column="1" Text="{Binding AllDebridApiKey, Mode=TwoWay}" Focusable="True"></TextBox>
                         </StackPanel>
-                        <MenuItem Header="_Enabled" Padding="10,10,0,10" Name="btnAllDebirdEnabled">
+                        <MenuItem Header="Menu.Enabled" Padding="10,10,0,10" Name="btnAllDebirdEnabled">
                             <MenuItem.Icon>
                                 <CheckBox BorderThickness="0" IsChecked="{Binding UseAllDebrid, Mode=TwoWay}"/>
                             </MenuItem.Icon>
                         </MenuItem>
                     </MenuItem>
-                    <MenuItem Header="_RealDebrid" Classes="NoChildFocus">
+                    <MenuItem Header="Menu.RealDebrid" Name="btnRealDebrid" Classes="NoChildFocus">
                         <StackPanel Orientation="Horizontal">
-                            <Label Grid.Column="0">API Key</Label>
+                            <Label Grid.Column="0" Content="Menu.APIKey" Name="lblRealDebridAPIKey"></Label>
                             <TextBox Grid.Column="1" Text="{Binding RealDebridApiKey, Mode=TwoWay}"></TextBox>
                         </StackPanel>
-                        <MenuItem Header="_Enabled" Padding="10,10,0,10" Name="btnRealDebirdEnabled">
+                        <MenuItem Header="Menu.Enabled" Padding="10,10,0,10" Name="btnRealDebirdEnabled">
                             <MenuItem.Icon>
                                 <CheckBox BorderThickness="0" IsChecked="{Binding UseRealDebrid, Mode=TwoWay}"/>
                             </MenuItem.Icon>
                         </MenuItem>
                     </MenuItem>
-                    <MenuItem Header="_DebridLink" Classes="NoChildFocus">
+                    <MenuItem Header="Menu.DebridLink" Name="btnDebridLink" Classes="NoChildFocus">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="API Key" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <TextBlock Text="Menu.APIKey" Name="lblDebridLinkAPIKey" VerticalAlignment="Center" Margin="0,0,5,0"/>
                             <TextBox Width="150" Text="{Binding DebridLinkApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                         </StackPanel>
-                        <MenuItem Header="_Enabled" Padding="10,10,0,10" Name="btnDebirdLinkEnabled">
+                        <MenuItem Header="Menu.Enabled" Padding="10,10,0,10" Name="btnDebirdLinkEnabled">
                             <MenuItem.Icon>
                                 <CheckBox BorderThickness="0" IsChecked="{Binding UseDebridLink, Mode=TwoWay}"/>
                             </MenuItem.Icon>
                         </MenuItem>
                     </MenuItem>
                 </MenuItem>
-                
-                <MenuItem Header="_Restart Server" Name="btnRestartServer"/>
-                <MenuItem Header="_Exit" Name="btnExit"/>
+
+                <MenuItem Header="Menu.Language" Name="btnLanguage" Classes="NoChildFocus"/>
+                <MenuItem Header="Menu.RestartServer" Name="btnRestartServer"/>
+                <MenuItem Header="Menu.Exit" Name="btnExit"/>
             </MenuItem>
-            <MenuItem Header="Packages" IsVisible="False" Name="PackagesMenu">
+            <MenuItem Header="Menu.Packages" IsVisible="False" Name="PackagesMenu">
                 <Separator></Separator>
-                <MenuItem Header="Install _All" Name="btnInstallAll"></MenuItem>
+                <MenuItem Header="Menu.InstallAll" Name="btnInstallAll"></MenuItem>
             </MenuItem>
         </Menu>
 
@@ -110,9 +119,9 @@
                 <ColumnDefinition Width="*"></ColumnDefinition>
                 <ColumnDefinition Width="auto"></ColumnDefinition>
             </Grid.ColumnDefinitions>
-            <Label Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="5,0,0,0">URL:</Label>
+            <Label Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="5,0,0,0" Content="Main.URL" Name="lblURL"/>
             <TextBox Grid.Row="0" Grid.Column="1" Margin="5" Text="{Binding CurrentURL, Mode=TwoWay}" Name="tbURL"></TextBox>
-            <Button Grid.Row="0" Grid.Column="2" HorizontalAlignment="Right" Margin="5,0,5,0" Name="btnLoad">Open</Button>
+            <Button Grid.Row="0" Grid.Column="2" HorizontalAlignment="Right" Margin="5,0,5,0" Name="btnLoad" Content="Main.Open"/>
         </Grid>
 
 
@@ -127,8 +136,8 @@
 
             <DataGrid Grid.Column="2" Name="PkgInfoGrid" ItemsSource="{Binding PKGParams}">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Param" Binding="{Binding Name}"/>
-                    <DataGridTextColumn Header="Value" Binding="{Binding Value}"/>
+                    <DataGridTextColumn Header="Main.Param" Binding="{Binding Name}"/>
+                    <DataGridTextColumn Header="Main.Value" Binding="{Binding Value}"/>
                 </DataGrid.Columns>
             </DataGrid>
         </Grid>
@@ -166,6 +175,10 @@
         <Style Selector="MenuItem.NoChildFocus > MenuItem">
             <Setter Property="Focusable" Value="False"></Setter>
             <Setter Property="StaysOpenOnClick" Value="True"></Setter>
+        </Style>
+        <Style Selector="MenuItem.SelectedLanguage">
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="#FF5AC8FA"/>
         </Style>
     </UserControl.Styles>
 </UserControl>

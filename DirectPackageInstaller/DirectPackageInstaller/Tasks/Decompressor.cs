@@ -191,7 +191,7 @@ namespace DirectPackageInstaller.Tasks
                 if (!Archive.IsComplete)
                 {
                     if (!Silent)
-                        await MessageBox.ShowAsync("Corrupted, missing or RAR parts with wrong sorting.",
+                        await MessageBox.ShowAsync(Language.L("Msg.CorruptedParts"),
                             "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return null;
                 }
@@ -350,7 +350,7 @@ namespace DirectPackageInstaller.Tasks
             if (!PKGs.Any())
             {
                 if (!Silent)
-                    await MessageBox.ShowAsync("No PKG Found in the given file" + (Compressions.Any() ? "\nIt looks like this file has been redundantly compressed." : ""), "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    await MessageBox.ShowAsync(Language.L("Msg.NoPKGFound") + (Compressions.Any() ? Language.L("Msg.RedundantlyCompressed") : string.Empty), "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return null;
             }
 

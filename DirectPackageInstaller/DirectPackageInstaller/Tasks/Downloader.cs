@@ -188,7 +188,9 @@ namespace DirectPackageInstaller.Tasks
 
         public double Progress => ((double)SafeReadyLength / SafeLength) * 100.0;
 
-        public bool Failed => !Running && SafeReadyLength > 0 && SafeReadyLength < SafeLength;
+        //A task that got nothing at all is a failure too, otherwise a dead link is
+        //retried forever and the progress bar simply never moves.
+        public bool Failed => !Running && SafeReadyLength < SafeLength;
 
         public Exception Error { get; internal set; }
     }

@@ -8,6 +8,8 @@
     </PropertyGroup>
     <ItemGroup>
         <AvaloniaResource Include="Assets\**" />
+        <!--Language packs are loose files, keep them as language/*.ini in the output/publish folder.-->
+        <None Include="language\**" CopyToOutputDirectory="PreserveNewest" TargetPath="language\%(Filename)%(Extension)" />
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="Avalonia" Version="11.3.8" />

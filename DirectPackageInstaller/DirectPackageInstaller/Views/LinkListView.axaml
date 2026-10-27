@@ -3,6 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:viewModels="clr-namespace:DirectPackageInstaller.ViewModels"
+             xmlns:loc="clr-namespace:DirectPackageInstaller"
              mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="200"
              x:Class="DirectPackageInstaller.Views.LinkListView"
              Background="#171C2C">
@@ -41,9 +42,9 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </ScrollViewer>
-        <TextBlock Grid.Row="1" Grid.Column="0" Text="Password:"/>
+        <TextBlock Grid.Row="1" Grid.Column="0" Text="{loc:Translate Key=LinkList.Password}"/>
         <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Password}" IsEnabled="{Binding HasPassword}"></TextBox>
-        <Button Grid.Row="1" Grid.Column="2" Name="btnOK">OK</Button>
+        <Button Grid.Row="1" Grid.Column="2" Name="btnOK" Content="{loc:Translate Key=LinkList.OK}"/>
     </Grid>
     
     <UserControl.Styles>

@@ -108,7 +108,7 @@ namespace DirectPackageInstaller
             {
                 long Missing = MaxAllocationSize - FreeSpace;
 
-                var Message = $"{MaxAllocationSize.ToFileSize()} in your {(App.UseSDCard ? "SD card" : "internal storage")} is required, missing {Missing.ToFileSize()} currently.";
+                var Message = Language.F("Msg.NotEnoughSpace", MaxAllocationSize.ToFileSize(), GetStorageName(App.UseSDCard), Missing.ToFileSize());
 
                 if (App.IsAndroid)
                 {
@@ -117,7 +117,7 @@ namespace DirectPackageInstaller
 
                     var AltFreeSpace = App.GetFreeStorageSpace();
                     var AltMissingSpace = MaxAllocationSize - AltFreeSpace;
-                    var AltStorageName = App.UseSDCard ? "SD card" : "internal storage";
+                    var AltStorageName = GetStorageName(App.UseSDCard);
 
                     App.UseSDCard = CurrentStorage;
 
@@ -127,11 +127,11 @@ namespace DirectPackageInstaller
                         continue;
                     }
 
-                    Message += $"\nOr clean more {AltMissingSpace.ToFileSize()} in your {AltStorageName}.";
+                    Message += Language.F("Msg.OrCleanMore", AltMissingSpace.ToFileSize(), AltStorageName);
                 }
 
                 if (InputType.HasFlag(Source.Segmented))
-                    Message += "\nAlternatively, you can disable Segmented Download feature.";
+                    Message += Language.L("Msg.OrDisableSegmented");
 
                 if (!TempHelper.CacheIsEmpty() && Installer.Server is { Connections: 0 })
                 {
@@ -146,6 +146,9 @@ namespace DirectPackageInstaller
 
             return true;
         }
+
+        static string GetStorageName(bool SDCard) => SDCard ? Language.L("Storage.SDCard") : Language.L("Storage.Internal");
+
         public enum Flavor : int
         {
 	        // host_statistics()

@@ -82,6 +82,13 @@ namespace DirectPackageInstaller.ViewModels
             get => _ShowTransferProgress;
             set => this.RaiseAndSetIfChanged(ref _ShowTransferProgress, value);
         }
+
+        private bool _ShowError = false;
+        public bool ShowError
+        {
+            get => _ShowError;
+            set => this.RaiseAndSetIfChanged(ref _ShowError, value);
+        }
         
         private bool _useAllDebrid = false;
         public bool UseAllDebrid 

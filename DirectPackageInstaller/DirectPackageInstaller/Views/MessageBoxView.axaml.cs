@@ -16,9 +16,10 @@ public partial class MessageBoxView : UserControl
     const string No = "No"; 
     const string Cancel = "Cancel"; 
     const string Retry = "Retry"; 
-    const string Ignore = "Ignore";
-    const string Abort = "Abort";
+    const string Ignore = "Ignore"; 
+    const string Abort = "Abort"; 
     private DialogModel? Model => (DialogModel?) DataContext;
+
     public MessageBoxView()
     {
         InitializeComponent();
@@ -119,26 +120,21 @@ public partial class MessageBoxView : UserControl
 
         for (int i = 0; i < Buttons.Count; i++)
         {
-            var Text = Buttons[i];
-            switch (i)
+            var Text = Translate(Buttons[i]);
+            var Result = GetResult(Buttons[i]);
+
+            Button Target = i switch
             {
-                case 0:
-                    ButtonA.Content = Text;
-                    ButtonA.IsVisible = true;
-                    break;
-                case 1:
-                    ButtonB.Content = Text;
-                    ButtonB.IsVisible = true;
-                    break;
-                case 2:
-                    ButtonC.Content = Text;
-                    ButtonC.IsVisible = true;
-                    break;
-                case 3:
-                    ButtonD.Content = Text;
-                    ButtonD.IsVisible = true;
-                    break; 
-            }
+                0 => ButtonA,
+                1 => ButtonB,
+                2 => ButtonC,
+                3 => ButtonD,
+                _ => throw new Exception("Too Many Buttons")
+            };
+
+            Target.Content = Text;
+            Target.Tag = Result;
+            Target.IsVisible = true;
         }
 
         Icon.Classes.Clear();
@@ -168,40 +164,40 @@ public partial class MessageBoxView : UserControl
     
     private void BtnClicked(object? sender, RoutedEventArgs e)
     {
-        if (sender == null || Model == null)
+        if (sender is not Button Btn || Model == null)
             return;
-        
-        Button Btn = (Button) sender;
 
-        switch (Btn.Content as string)
-        {
-            case OK:
-                Model.Result = DialogResult.OK;
-                break;
-            case Yes:
-                Model.Result = DialogResult.Yes;
-                break;
-            case No:
-                Model.Result = DialogResult.No;
-                break;
-            case Cancel:
-                Model.Result = DialogResult.Cancel;
-                break;
-            case Retry:
-                Model.Result = DialogResult.Retry;
-                break;
-            case Ignore:
-                Model.Result = DialogResult.Ignore;
-                break;
-            case Abort:
-                Model.Result = DialogResult.Abort;
-                break;
-            default:
-                return;
-        }
-        
+        if (Btn.Tag is not DialogResult Result)
+            return;
+
+        Model.Result = Result;
+
         Close();
     }
+
+    static string Translate(string InternalCaption) => InternalCaption switch
+    {
+        OK => Language.L("Button.Ok"),
+        Yes => Language.L("Button.Yes"),
+        No => Language.L("Button.No"),
+        Cancel => Language.L("Button.Cancel"),
+        Retry => Language.L("Button.Retry"),
+        Ignore => Language.L("Button.Ignore"),
+        Abort => Language.L("Button.Abort"),
+        _ => InternalCaption
+    };
+
+    static DialogResult GetResult(string InternalCaption) => InternalCaption switch
+    {
+        OK => DialogResult.OK,
+        Yes => DialogResult.Yes,
+        No => DialogResult.No,
+        Cancel => DialogResult.Cancel,
+        Retry => DialogResult.Retry,
+        Ignore => DialogResult.Ignore,
+        Abort => DialogResult.Abort,
+        _ => throw new Exception($"Unknown Dialog Caption: {InternalCaption}")
+    };
 
     private void Close()
     {

@@ -84,6 +84,7 @@ namespace DirectPackageInstaller.Views
             btnDebirdLinkEnabled = this.Find<MenuItem>("btnDebirdLinkEnabled");
             btnSegmentedDownload = this.Find<MenuItem>("btnSegmentedDownload");
             btnTransferProgress = this.Find<MenuItem>("btnTransferProgress");
+            btnErrorLog = this.Find<MenuItem>("btnErrorLog");
             btnCNLService = this.Find<MenuItem>("btnCNLService");
             btnDHCPService = this.Find<MenuItem>("btnDHCPService");
             btnExit = this.Find<MenuItem>("btnExit");
@@ -97,6 +98,7 @@ namespace DirectPackageInstaller.Views
             btnDebirdLinkEnabled.Click += BtnDebirdLinkEnabledOnClick;
             btnSegmentedDownload.Click += BtnSegmentedDownloadOnClick;
             btnTransferProgress.Click += BtnTransferProgressOnClick;
+            btnErrorLog.Click += BtnErrorLogOnClick;
             btnCNLService.Click += BtnCNLServiceOnClick;
             btnDHCPService.Click += BtnDHCPServiceOnClick;
 
@@ -116,7 +118,212 @@ namespace DirectPackageInstaller.Views
             AddHandler(DragDrop.DropEvent, DropEventEvent);
 
             btnDHCPService.IsVisible = App.IsWindows;
+
+            Language.Loaded += OnLanguageLoaded;
+
+            btnLanguage.SubmenuOpened += BtnLanguageSubmenuOpened;
+
+            ApplyLanguage();
         }
+
+        /// <summary>
+        /// Replaces the language keys set as design time placeholders in the XAML by the
+        /// text of the active language, and rebuilds the language sub-menu.
+        /// </summary>
+        private void ApplyLanguage()
+        {
+            btnOptions.Header = Language.L("Menu.Options");
+            btnProxyDownload.Header = Language.L("Menu.ProxyDownloads");
+            btnSegmentedDownload.Header = Language.L("Menu.SegmentedDownloads");
+            btnTransferProgress.Header = Language.L("Menu.TransferProgress");
+            btnErrorLog.Header = Language.L("Menu.ErrorLog");
+            btnCNLService.Header = Language.L("Menu.CNLSupport");
+            btnDHCPService.Header = Language.L("Menu.DHCPServer");
+            btnIPAddress.Header = Language.L("Menu.IPAddress");
+            btnDebrids.Header = Language.L("Menu.Debrids");
+            btnAllDebrid.Header = Language.L("Menu.AllDebrid");
+            btnRealDebrid.Header = Language.L("Menu.RealDebrid");
+            btnDebridLink.Header = Language.L("Menu.DebridLink");
+            btnAllDebirdEnabled.Header = Language.L("Menu.Enabled");
+            btnRealDebirdEnabled.Header = Language.L("Menu.Enabled");
+            btnDebirdLinkEnabled.Header = Language.L("Menu.Enabled");
+            btnLanguage.Header = Language.L("Menu.Language");
+            btnRestartServer.Header = Language.L("Menu.RestartServer");
+            btnExit.Header = Language.L("Menu.Exit");
+            PackagesMenu.Header = Language.L("Menu.Packages");
+            btnInstallAll.Header = Language.L("Menu.InstallAll");
+
+            lblPSIP.Content = Language.L("Menu.PSIP");
+            lblPCIP.Content = Language.L("Menu.PCIP");
+            lblAllDebridAPIKey.Content = Language.L("Menu.APIKey");
+            lblRealDebridAPIKey.Content = Language.L("Menu.APIKey");
+            lblDebridLinkAPIKey.Text = Language.L("Menu.APIKey");
+            lblURL.Content = Language.L("Main.URL");
+
+            PkgInfoGrid.Columns[0].Header = Language.L("Main.Param");
+            PkgInfoGrid.Columns[1].Header = Language.L("Main.Value");
+
+            AddLanguageMenu();
+        }
+
+        private string? LanguageMenuSignature;
+
+        /// <summary>
+        /// Rebuilds the language sub menu out of the *.ini files currently sitting in
+        /// the language folder. It is also wired to the sub menu opening, so dropping a
+        /// new pack in while the app runs is enough to get it listed, no restart needed.
+        /// The rebuild is skipped when the folder content didn't change, that way the
+        /// sub menu doesn't flicker while it's open.
+        /// </summary>
+        private void AddLanguageMenu(bool Force = false)
+        {
+            var Available = Language.Labeled();
+
+            string Signature = string.Join('|', Available.Select(x => x.Key));
+
+            if (!Force && Signature == LanguageMenuSignature)
+                return;
+
+            LanguageMenuSignature = Signature;
+
+            btnLanguage.Items.Clear();
+
+            foreach (var Entry in Available)
+            {
+                var Item = new MenuItem()
+                {
+                    Header = Entry.Key,
+                    Tag = Entry.Value
+                };
+
+                if (Entry.Value.Name.Equals(Language.Current, StringComparison.OrdinalIgnoreCase))
+                    Item.Classes.Add("SelectedLanguage");
+
+                Item.Click += BtnLanguageOnClick;
+
+                btnLanguage.Items.Add(Item);
+            }
+
+            btnLanguage.IsVisible = btnLanguage.Items.Count > 0;
+        }
+
+        private void BtnLanguageSubmenuOpened(object? sender, EventArgs e) => AddLanguageMenu();
+
+        private void BtnLanguageOnClick(object? sender, RoutedEventArgs e)
+        {
+            var Selected = (sender as MenuItem)?.Tag as LanguageInfo;
+            if (Selected == null)
+                return;
+
+            if (Selected.Name.Equals(Language.Current, StringComparison.OrdinalIgnoreCase))
+                return;
+
+            App.Config.Language = Language.Load(Selected.Name);
+
+            App.SaveSettings();
+        }
+
+        private void OnLanguageLoaded(object? sender, EventArgs e)
+        {
+            if (!Dispatcher.UIThread.CheckAccess())
+            {
+                Dispatcher.UIThread.Post(() => OnLanguageLoaded(sender, e));
+                return;
+            }
+
+            ApplyLanguage();
+
+            AddLanguageMenu(true);
+
+            switch (btnLoad.Tag as string)
+            {
+                case "Install":
+                    btnLoad.Content = Language.L("Main.Install");
+                    break;
+                case "Load":
+                    btnLoad.Content = Language.L("Main.Load");
+                    break;
+                case "Pushing":
+                    btnLoad.Content = Language.L("Main.Pushing");
+                    break;
+                default:
+                    btnLoad.Content = Language.L("Main.Open");
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Keeps the load button caption and its state in sync, the state is stored in
+        /// the Tag so the caption can be rebuilt in any language.
+        /// </summary>
+        private void SetLoadButtonState(string State)
+        {
+            btnLoad.Tag = State;
+
+            btnLoad.Content = State switch
+            {
+                "Install" => Language.L("Main.Install"),
+                "Load" => Language.L("Main.Load"),
+                "Pushing" => Language.L("Main.Pushing"),
+                _ => Language.L("Main.Open")
+            };
+        }
+
+        /// <summary>
+        /// First run only, there is no Settings.ini yet so nothing tells us which
+        /// language to use. The picker is shown before the welcome text is built, so
+        /// the welcome text itself is already in the picked language. Dismissing the
+        /// dialog keeps the default.
+        /// </summary>
+        private async Task SelectLanguageAsync()
+        {
+            //Language.Labeled also disambiguates packs sharing a native name.
+            var Available = Language.Labeled();
+
+            if (Available.Count <= 1)
+                return;
+
+            var Labels = Available.Select(x => x.Key).ToArray();
+            var Entries = Available.ToDictionary(x => x.Key, x => x.Value, StringComparer.OrdinalIgnoreCase);
+
+            string? Selected = null;
+
+            if (App.IsSingleView)
+            {
+                var ChoiceBox = Extensions.CreateInstance<SelectView>(new SelectViewModel());
+                ((SelectViewModel)ChoiceBox.DataContext).Caption = Language.L("Main.SelectLanguage");
+
+                ChoiceBox.Initialize(null, Labels, (n) =>
+                {
+                    Selected = n;
+                    SingleView.ReturnView(ChoiceBox);
+                });
+
+                await SingleView.CallView(ChoiceBox, true);
+            }
+            else
+            {
+                var ChoiceBox = new Select(Labels)
+                {
+                    Caption = Language.L("Main.SelectLanguage"),
+                    Title = Language.L("Title.SelectLanguage")
+                };
+
+                if (await ChoiceBox.ShowDialogAsync() == DialogResult.OK)
+                    Selected = ChoiceBox.Choice;
+            }
+
+            if (string.IsNullOrWhiteSpace(Selected))
+                return;
+
+            if (!Entries.TryGetValue(Selected!, out var Choice))
+                return;
+
+            App.Config.Language = Language.Load(Choice.Name);
+
+            App.SaveSettings();
+        }
+
         public async Task OnShown(MainWindow? Parent)
         {
             if (Model == null)
@@ -134,6 +341,7 @@ namespace DirectPackageInstaller.Views
                 App.Config = new Settings();
                 var IniReader = new Ini(App.SettingsPath, "Settings");
 
+                App.Config.Language = IniReader.GetValue("Language");
                 App.Config.EthernetAdapter = IniReader.GetValue("EthernetAdapter");
                 App.Config.EnableDHCP = IniReader.GetBooleanValue("EnableDHCP");
 
@@ -163,9 +371,11 @@ namespace DirectPackageInstaller.Views
                 if (!string.IsNullOrWhiteSpace(Concurrency) && int.TryParse(Concurrency, out int ConcurrencyNum))
                     SegmentedStream.DefaultConcurrency = ConcurrencyNum;
 
+                App.Config.Language = Language.Load(App.Config.Language);
+
                 if (ConnectionHelper.AllowReconnect && !ConnectionHelper.IsWindowsAdministrator())
                 {
-                    await MessageBox.ShowAsync("Please, Restart the DirectPackageInstaller as Administrator\nto use the Auto Reconnection feature.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    await MessageBox.ShowAsync(Language.L("Msg.AdminRequired"), "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             }
             else
@@ -184,18 +394,26 @@ namespace DirectPackageInstaller.Views
                     SkipUpdateCheck = false,
                     EnableDHCP = false,
                     AllDebridApiKey = null,
-                    RealDebridApiKey = null
+                    RealDebridApiKey = null,
+                    Language = Language.Current
                 };
 
-                var DHCPHint = "With DirectPackageInstaller your PS4/PS5 and PC can do a \"Plug And Play\" network connection just enable the DHCP Server option and select your network adapter if needed.";
-                var ProxyHint = "If your download speed is very slow, you can try enable the \"Proxy Downloads\" feature, since this feature has been created just to optimize the download speed.";
-                var CompressedHint = "When downloading directly from compressed files, you can't resume the download after the DirectPackageInstaller is closed, but before close the DirectPackageInstaller you still can pause and resume the download in your PS4.";
-                var AndroidHints = "Is recommended to keep your phone in charger to prevent any battery optimization problems.\nIf you're using MIUI, disable the battery optimizations manually in the app properties.";
-                var FirewallHint = $"The DirectPackageInstaller use the port {Installer.ServerPort} in the \"Proxy Downloads\" feature, maybe you will need to open the ports in your firewall.";
-                var ResumeHint = "Direct PKG urls, using the \"Proxy Download\" feature or not, can be resumed anytime by just selecting 'resume' in your PS4/PS5 download list.";
-                var IndirectDownloadHint = "When using the \"Proxy Downloads\" feature, the PS4/PS5 can't download the game alone and the DirectPackageInstaller must keep open.";
-                var DirectDownloadHint = "When using the direct download mode, you can turn off the computer or close the DirectPakcageInstaller and your PS4/PS5 will continue the download alone.";
-                var WelcomeText = $"Welcome. User, The focus of this tool is download PKGs from direct links but we have others minor features as well.\n\nGood to know:\n{DirectDownloadHint}\n\n{IndirectDownloadHint}\n\n{ResumeHint}\n\n{(App.IsAndroid ? AndroidHints : FirewallHint)}\n\n{CompressedHint}\n\n{ProxyHint}\n\n{(App.IsWindows? DHCPHint  + "\n\n": "")}Created by marcussacana";
+                await SelectLanguageAsync();
+
+                var Hints = new List<string>()
+                {
+                    Language.L("Welcome.DirectDownload"),
+                    Language.L("Welcome.IndirectDownload"),
+                    Language.L("Welcome.Resume"),
+                    App.IsAndroid ? Language.L("Welcome.Android") : Language.F("Welcome.Firewall", Installer.ServerPort),
+                    Language.L("Welcome.Compressed"),
+                    Language.L("Welcome.Proxy")
+                };
+
+                if (App.IsWindows)
+                    Hints.Add(Language.L("Welcome.DHCP"));
+
+                var WelcomeText = Language.L("Welcome.Intro") + string.Join("\n\n", Hints) + "\n\n" + Language.L("Welcome.Footer");
                 
                 await MessageBox.ShowAsync(WelcomeText, "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
@@ -204,6 +422,7 @@ namespace DirectPackageInstaller.Views
             Model.CNLService = App.Config.EnableCNL;
             Model.ProxyMode = App.Config.ProxyDownload;
             Model.ShowTransferProgress = App.Config.ShowTransferProgress;
+            Model.ShowError = App.Config.ShowError;
             Model.UseAllDebrid = App.Config.UseAllDebrid;
             Model.UseDebridLink = App.Config.UseDebridLink;
             Model.SegmentedMode = App.Config.SegmentedDownload;
@@ -237,11 +456,11 @@ namespace DirectPackageInstaller.Views
                  {
                      App.Callback(async () =>
                      {
-                         await MessageBox.ShowAsync("Failed to start the CNL Server\nMaybe another process is already listening?", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                     });
-                 }
-             }
-
+                          await MessageBox.ShowAsync(Language.L("Msg.CNLServerStartFail"), "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                      });
+                  }
+              }
+ 
              Model.PropertyChanged += ModelOnPropertyChanged;
              
              App.Callback(async () =>
@@ -249,7 +468,7 @@ namespace DirectPackageInstaller.Views
                  var MissingRuntime = await App.Updater.RequiresNewRuntime();
                  if (!App.Config.SkipUpdateCheck && MissingRuntime != null)
                  {
-                     var Response = await MessageBox.ShowAsync($"A New update has been released, but you can't update because a required program is missing.\nNow, the DirectPackageInstaller will use .NET {MissingRuntime}, and you can update only after install the Runtime, Press Yes to Visit the Download Page.", "DirectPackageInstaller - MISSING RUNTIME", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                     var Response = await MessageBox.ShowAsync(Language.F("Msg.MissingRuntime", MissingRuntime), Language.L("Title.MissingRuntime"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
                      if (Response == DialogResult.Yes)
                      { 
                          OpenUrl($"https://dotnet.microsoft.com/en-us/download/dotnet/{MissingRuntime}/runtime");
@@ -259,7 +478,7 @@ namespace DirectPackageInstaller.Views
                  
                  if (!App.Config.SkipUpdateCheck && await App.Updater.HasUpdates())
                  {
-                     var Response = await MessageBox.ShowAsync($"New Update Found, You're using the {SelfUpdate.CurrentVersion} the last version is {SelfUpdate.LastVersion},\nDo you wanna update the DirectPackageInstaller now?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                     var Response = await MessageBox.ShowAsync(Language.F("Msg.UpdateAvailable", SelfUpdate.CurrentVersion, SelfUpdate.LastVersion), "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                      if (Response != DialogResult.Yes)
                          return;
                      
@@ -269,7 +488,7 @@ namespace DirectPackageInstaller.Views
 
              if (string.IsNullOrWhiteSpace(App.WorkingDirectory))
              {
-                 await MessageBox.ShowAsync("Failed find the Working Directory Path of the DirectPackageInstaller.\nPlease, Restart the Program.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                  await MessageBox.ShowAsync(Language.L("Msg.WorkingDirectoryFail"), "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                  Environment.Exit(0);
              }
         }
@@ -282,7 +501,7 @@ namespace DirectPackageInstaller.Views
                 {
                     if (!string.IsNullOrEmpty(Model.PS4IP))
                     {
-                        if (Model.PS4IP == PS4IP.ToString() || await MessageBox.ShowAsync($"A new PS{VERSION} IP has been found ({PS4IP}), Update the PS{VERSION} IP?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.No)
+                        if (Model.PS4IP == PS4IP.ToString() || await MessageBox.ShowAsync(Language.F("Msg.NewPSFound", VERSION, PS4IP), "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.No)
                             return;
                     }
                     Model.PS4IP = PS4IP.ToString();
@@ -315,14 +534,14 @@ namespace DirectPackageInstaller.Views
                     if (Model != null)
                         Model!.DHCPService = false;
 
-                    await MessageBox.ShowAsync("Currently, the DHCP Server is not supported in the current platform", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    await MessageBox.ShowAsync(Language.L("Msg.DHCPNotSupported"), Language.L("Title.Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
             }
 
             if (DefaultAdapter == null) {
 
-                await SetStatus("Analyzing Network Adapters...");
+                await SetStatus(Language.L("Status.AnalyzingAdapters"));
 
                 var Adapters = await AdapterHelper.GetValidAdapters();
 
@@ -335,7 +554,7 @@ namespace DirectPackageInstaller.Views
                     if (App.IsSingleView)
                     {
                         var ChoiceBox = Extensions.CreateInstance<SelectView>(new SelectViewModel());
-                        ((SelectViewModel)ChoiceBox.DataContext).Caption = "Adapter:";
+                        ((SelectViewModel)ChoiceBox.DataContext).Caption = Language.L("Main.Adapter");
                         ChoiceBox.Initialize(null, Adapters, (n) =>
                         {
                             AdapterHelper.Adapter = n;
@@ -347,7 +566,7 @@ namespace DirectPackageInstaller.Views
                     else
                     {
                         var ChoiceBox = new Select(Adapters);
-                        ChoiceBox.Caption = "Adapter:";
+                        ChoiceBox.Caption = Language.L("Main.Adapter");
                         if (await ChoiceBox.ShowDialogAsync() == DialogResult.OK)
                             AdapterHelper.Adapter = ChoiceBox.Choice;
                     }
@@ -364,7 +583,7 @@ namespace DirectPackageInstaller.Views
                 if (Model != null)
                     Model!.DHCPService = false;
 
-                await MessageBox.ShowAsync("Failed to find the ethernet network adapter.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                await MessageBox.ShowAsync(Language.L("Msg.FailedToFindAdapter"), Language.L("Title.Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
@@ -373,13 +592,13 @@ namespace DirectPackageInstaller.Views
                 DHCP = new DHCPHost();
                 DHCP.OnNewClient += OnClientFound();
                 DHCP.OnNewClient += async (a, b, c) => {
-                    await SetStatus($"Device Connected, IP: {a}");
+                    await SetStatus(Language.F("Status.DeviceConnected", a));
                 };
             }
 
             App.Config.EthernetAdapter = AdapterHelper.Adapter;
 
-            await SetStatus("Initializing DHCP...");
+            await SetStatus(Language.L("Status.InitializingDHCP"));
 
             if (!await App.SetupStaticNetwork())
             {
@@ -388,7 +607,7 @@ namespace DirectPackageInstaller.Views
 
                 await SetStatus("");
 
-                await MessageBox.ShowAsync("Failed to setup the network adapter.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                await MessageBox.ShowAsync(Language.L("Msg.FailedToSetupAdapter"), Language.L("Title.Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
@@ -436,7 +655,7 @@ namespace DirectPackageInstaller.Views
             {
                 if (DHCP != null)
                 {
-                    await SetStatus("Restoring Network Settings...");
+                    await SetStatus(Language.L("Status.RestoringNetwork"));
 
                     DHCP.Stop();
                     await App.SetupDHCPNetwork();
@@ -451,7 +670,7 @@ namespace DirectPackageInstaller.Views
             }
             else
             {
-                if (await MessageBox.ShowAsync("The DHCP Service will change your network settings, are you sure?\n\nNote: When you close the DirectPackageInstaller your network settings will be restored.", "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+                if (await MessageBox.ShowAsync(Language.L("Msg.DHCPConfirm"), Language.L("Title.Warning"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
                     await StartDHCP();
                 else
                     Model.DHCPService = false;
@@ -508,17 +727,17 @@ namespace DirectPackageInstaller.Views
                         {
                             new()
                             {
-                                Name = "ALL PKG Files",
+                                Name = Language.L("Filter.AllPKG"),
                                 Extensions = new List<string>() {"pkg", "PKG", "json", "JSON"},
                             },
                             new()
                             {
-                                Name = "Split PKG Manifest",
+                                Name = Language.L("Filter.SplitPKG"),
                                 Extensions = new List<string>() {"json", "JSON"}
                             },
                             new()
                             {
-                                Name = "ALL Files",
+                                Name = Language.L("Filter.AllFiles"),
                                 Extensions = new List<string>() {"*"}
                             }
                         },
@@ -576,7 +795,7 @@ namespace DirectPackageInstaller.Views
             InputType = Source.NONE;
 
             if (!SourcePackage.IsValidURL() && !File.Exists(SourcePackage)) {
-                await MessageBox.ShowAsync(Parent, "Invalid URL or File Path", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                await MessageBox.ShowAsync(Parent, Language.L("Msg.InvalidURL"), "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
@@ -639,7 +858,7 @@ namespace DirectPackageInstaller.Views
 
                 if (LimitedFHost && !BadHostAlert)
                 {
-                    await MessageBox.ShowAsync("This Filehosting is limited, Even though it is compatible with DirectPackageInstaller it is not recommended for use, prefer services like alldebrid to download from this server, otherwise you may have connection and/or speed problems.\nDon't expect to compressed files works as expected as well, the DirectPackageInstaller will need download the entire file before can do anything", "Bad File Hosting Service", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    await MessageBox.ShowAsync(Language.L("Msg.BadFileHosting"), Language.L("Title.BadFileHosting"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     BadHostAlert = true;
                 }
 
@@ -648,19 +867,19 @@ namespace DirectPackageInstaller.Views
                 PKGStream.Position = 0;
 
                 if (LimitedFHost && Common.DetectCompressionFormat(Magic) != CompressionFormat.None)
-                    await MessageBox.ShowAsync("You're trying open a compressed file from a limited file hosting,\nMaybe the compressed file must be fully downloaded to open it.", "Bad File Hosting Service", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                    await MessageBox.ShowAsync(Language.L("Msg.BadFileHostingCompressed"), Language.L("Title.BadFileHosting"), MessageBoxButtons.OK, MessageBoxIcon.Stop);
 
                 ArchiveDataInfo? DataInfo = null;
                 switch (Common.DetectCompressionFormat(Magic))
                 {
                     case CompressionFormat.RAR:
                         InputType |= Source.RAR;
-                        await SetStatus(LimitedFHost ? "Downloading... (It may take a while)" : "Decompressing...");
+                        await SetStatus(LimitedFHost ? Language.L("Status.Downloading") : Language.L("Status.Decompressing"));
                         DataInfo = await Decompressor.UnrarPKG(PKGStream, SourcePackage, async (s) => await SetStatus(s),ForcedSource);
                         break;
                     case CompressionFormat.SevenZip:
                         InputType |= Source.SevenZip;
-                        await SetStatus(LimitedFHost ? "Downloading... (It may take a while)" : "Decompressing...");
+                        await SetStatus(LimitedFHost ? Language.L("Status.Downloading") : Language.L("Status.Decompressing"));
                         DataInfo = await Decompressor.Un7zPKG(PKGStream, SourcePackage,async (s) => await SetStatus(s), ForcedSource);
                         break;
                 }
@@ -669,7 +888,7 @@ namespace DirectPackageInstaller.Views
                 {
                     if (App.IsAndroid && Model.SegmentedMode)
                     {
-                        await MessageBox.ShowAsync("Download of compressed files in android isn't stable, Segmented Download Will be disabled", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        await MessageBox.ShowAsync(Language.L("Msg.AndroidCompressed"), "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         Model.SegmentedMode = false;
                     }
                     PKGStream = DataInfo?.Buffer ?? throw new Exception();
@@ -679,7 +898,7 @@ namespace DirectPackageInstaller.Views
                     ListEntries(Installer.CurrentFileList = DataInfo?.PKGList ?? throw new AbortException("Failed to list compressed files"));
                 }
 
-                await SetStatus("Reading PKG...");
+                await SetStatus(Language.L("Status.ReadingPKG"));
 
                 var Info = Installer.CurrentPKG = PKGStream.GetPKGInfo() ?? throw new AbortException("Failed to read the PKG information");
 
@@ -697,29 +916,34 @@ namespace DirectPackageInstaller.Views
                     Parent.Activate();
                 }
 
-                btnLoad.Content = "Install";
+                SetLoadButtonState("Install");
             }
             catch (Exception ex)
             {
-                await File.WriteAllTextAsync(Path.Combine(App.WorkingDirectory, "DPI-ERROR.log"), ex.ToString());
-                
-                if (ex is not AbortException)
-                    await MessageBox.ShowAsync(ex.ToString(), "DirectPackageInstaller - Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                else if (App.Config.ShowError)
-                    await MessageBox.ShowAsync(ex.Message, "DirectPackageInstaller - Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                //The type and the code read the same in every language, only the message
+                //behind them comes from the OS. The stack goes to the file, not to the
+                //dialog, it was never meant to be read by a person.
+                var Reason = PS4Server.Error(ex);
+
+                await File.WriteAllTextAsync(Path.Combine(App.WorkingDirectory, "DPI-ERROR.log"), Reason + Environment.NewLine + ex.StackTrace);
+
+                //An abort is what the user asked for, so it stays quiet unless the error
+                //log option is on. Anything else is always reported.
+                if (ex is not AbortException || App.Config.ShowError)
+                    await MessageBox.ShowAsync(Language.F("Msg.UnexpectedError", Reason), $"DirectPackageInstaller - {Language.L("Title.Error")}", MessageBoxButtons.OK, MessageBoxIcon.Error);
 
                 IconBox.Source = null;
                 Model.PKGParams?.Clear();
 
                 InputType = Source.NONE;
-                btnLoad.Content = "Load";
+                SetLoadButtonState("Load");
 
                 PackagesMenu.IsVisible = false;
 #if DEBUG
                 throw;
 #endif
 
-                await SetStatus("Failed to Open the PKG");
+                await SetStatus(Language.L("Status.FailedOpenPKG"));
             }
             finally
             {
@@ -732,13 +956,13 @@ namespace DirectPackageInstaller.Views
 
         private async Task<FileHostStream?> LoadUrl(string SourcePackage)
         {
-            await SetStatus("Analyzing Urls...");
+            await SetStatus(Language.L("Status.AnalyzingURLs"));
 
             var UrlInfo = await URLAnalyzer.Analyze(SourcePackage, false);
 
             while (!UrlInfo.Ready && !UrlInfo.Failed)
             {
-                await SetStatus($"Analyzing Urls... {UrlInfo.Progress}");
+                await SetStatus(Language.F("Status.AnalyzingURLsProgress", UrlInfo.Progress));
                 await Task.Delay(100);
             }
 
@@ -769,7 +993,7 @@ namespace DirectPackageInstaller.Views
                 {
                     if (UrlInfo.Urls.Length == 1)
                     {
-                        await MessageBox.ShowAsync($"The input file has a unsupported format,\nSupported Files: .rar .7z .pkg", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        await MessageBox.ShowAsync(Language.L("Msg.UnsupportedFormat"), "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return null;
                     }
 
@@ -822,6 +1046,14 @@ namespace DirectPackageInstaller.Views
                 case "ShowTransferProgress":
                     App.Config.ShowTransferProgress = Model.ShowTransferProgress;
                     break;
+                case "ShowError":
+                    App.Config.ShowError = Model.ShowError;
+                    PS4Server.EnableLog(Model.ShowError);
+
+                    if (Model.ShowError)
+                        await MessageBox.ShowAsync(Language.F("Msg.LogEnabled", Path.Combine(App.WorkingDirectory, "DPIServer.log")), "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                    break;
                 case "PS4IP":
                     App.Config.PSIP = Model.PS4IP;
                     break;
@@ -865,7 +1097,7 @@ namespace DirectPackageInstaller.Views
                         {
                             App.Callback(async () =>
                             {
-                                await MessageBox.ShowAsync("Failed to start the CNL Server\nMaybe another process is already listening?", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                await MessageBox.ShowAsync(Language.L("Msg.CNLServerStartFail"), "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                             });
                         }
                     }
@@ -901,6 +1133,14 @@ namespace DirectPackageInstaller.Views
                 return;
 
             Model.ShowTransferProgress = !Model.ShowTransferProgress;
+        }
+
+        private void BtnErrorLogOnClick(object? sender, RoutedEventArgs e)
+        {
+            if (Model == null)
+                return;
+
+            Model.ShowError = !Model.ShowError;
         }
 
         private void BtnProxyDownloadOnClick(object? sender, RoutedEventArgs e)
@@ -939,12 +1179,12 @@ namespace DirectPackageInstaller.Views
         {
             if (string.IsNullOrWhiteSpace(App.Config.PSIP) || string.IsNullOrWhiteSpace(App.Config.PCIP))
             {
-                await MessageBox.ShowAsync(Parent, "Failed to detect your playstation IP.\nPlease, Type your PS/PC IP in the options menu", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                await MessageBox.ShowAsync(Parent, Language.L("Msg.FailedDetectPSIP"), "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
 
             var OriStatus = Status.Text;
-            btnLoad.Content = "Pushing...";
+            SetLoadButtonState("Pushing");
             PackagesMenu.IsEnabled = false;
             btnLoad.IsEnabled = false;
             tbURL.IsEnabled = false;
@@ -955,7 +1195,7 @@ namespace DirectPackageInstaller.Views
                     {
                         if (!await IPHelper.IsEtaHenOnline(App.Config.PSIP))
                         {
-                            await MessageBox.ShowAsync($"RPI, GoldHEN nor etaHEN Found at {App.Config.PSIP}, Verify if is running.\nYou may need re-enable the payload server.", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            await MessageBox.ShowAsync(Language.F("Msg.NoPayloadFound", App.Config.PSIP), "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                             return false;
                         }
                     }
@@ -973,7 +1213,7 @@ namespace DirectPackageInstaller.Views
                 PackagesMenu.IsEnabled = true;
                 btnLoad.IsEnabled = true;
                 tbURL.IsEnabled = true;
-                btnLoad.Content = "Install";
+                SetLoadButtonState("Install");
             }
         }
         
@@ -1041,7 +1281,7 @@ namespace DirectPackageInstaller.Views
 
                 if (!await Install(ContentSource, true) && !ErrorIgnored)
                 {
-                    var Reply = await MessageBox.ShowAsync("Continue trying install the others packages?","DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    var Reply = await MessageBox.ShowAsync(Language.L("Msg.ContinueInstall"),"DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                     if (Reply != DialogResult.Yes){
                         break;
                     }
@@ -1058,7 +1298,7 @@ namespace DirectPackageInstaller.Views
                 }
             }
 
-            await MessageBox.ShowAsync("Packages Sent!", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            await MessageBox.ShowAsync(Language.L("Msg.PackagesSent"), "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private static int PS4IdleSeconds()
@@ -1201,7 +1441,7 @@ namespace DirectPackageInstaller.Views
         {
             InputType = Source.NONE;
 
-            btnLoad.Content = (string.IsNullOrWhiteSpace(Url) && !File.Exists(Url)) ? "Open" : "Load";
+            SetLoadButtonState((string.IsNullOrWhiteSpace(Url) && !File.Exists(Url)) ? "Open" : "Load");
             
             Installer.CurrentFileList = null;
             LastForcedSource = null;
@@ -1316,10 +1556,10 @@ namespace DirectPackageInstaller.Views
             var Total = TransferProgressInfo.FormatBytes(Info.TotalBytes);
 
             if (Info.Completed)
-                return $"Sent {Sent} / {Total}";
+                return Language.F("Status.TransferSent", Sent, Total);
 
             var Speed = TransferProgressInfo.FormatBytes(Info.BytesPerSecond);
-            return $"Sending {Sent} / {Total} ({Info.Percent:P1}) - {Speed}/s";
+            return Language.F("Status.TransferSending", Sent, Total, Info.Percent.ToString("P1"), Speed);
         }
         
         private async void RestartServer_OnClick(object? sender, RoutedEventArgs? e)
@@ -1336,7 +1576,7 @@ namespace DirectPackageInstaller.Views
                 Installer.Server.Start();
             }
             catch (Exception ex){
-                await MessageBox.ShowAsync($"Failed to restart the server, Report a Bug:\n{ex.ToString()}", "Server Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                await MessageBox.ShowAsync(Language.F("Msg.ServerRestartFail", ex), Language.L("Title.ServerError"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 

@@ -45,7 +45,7 @@ namespace DirectPackageInstaller.Views
                 {
                     App.Callback(async () =>
                     {
-                        if (await MessageBox.ShowAsync("The playstation is still downloading\nDo you really wanna exit?", "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+                        if (await MessageBox.ShowAsync(Language.L("Msg.PlaystationStillDownloading"), "DirectPackageInstaller", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
                             return;
 
                         ForceClose = true;
@@ -57,7 +57,7 @@ namespace DirectPackageInstaller.Views
             }
             catch { }
 
-            View.Status.Text = "Shutting Down Servers...";
+            View.Status.Text = Language.L("Status.ShuttingDown");
 
             App.SaveSettings();
             await Installer.Payload.StopServer();

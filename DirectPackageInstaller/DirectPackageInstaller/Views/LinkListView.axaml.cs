@@ -123,7 +123,7 @@ public partial class LinkListView : UserControl
             {
                 if (!Link.IsValidURL())
                 {
-                    await MessageBox.ShowAsync("Invalid URL:\n" + Link, "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    await MessageBox.ShowAsync(Language.L("Msg.InvalidURLLinkList") + Link, "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
             }
@@ -133,7 +133,7 @@ public partial class LinkListView : UserControl
 
         if ((Model.HasPassword ?? false) && string.IsNullOrEmpty(Model.Password))
         {
-            await MessageBox.ShowAsync("Invalid Password", "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            await MessageBox.ShowAsync(Language.L("Msg.InvalidPassword"), "DirectPackageInstaller", MessageBoxButtons.OK, MessageBoxIcon.Error);
             return;
         }
         

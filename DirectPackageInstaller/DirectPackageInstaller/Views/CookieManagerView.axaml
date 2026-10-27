@@ -3,6 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:viewModels="clr-namespace:DirectPackageInstaller.ViewModels"
+             xmlns:loc="clr-namespace:DirectPackageInstaller"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="480"
              MinHeight="300"
              x:Class="DirectPackageInstaller.Views.CookieManagerView"
@@ -20,8 +21,8 @@
             <RowDefinition Height="Auto"></RowDefinition>
         </Grid.RowDefinitions>
         <TextBox Name="tbCookie" Grid.ColumnSpan="2" Text="{Binding CookieList}"></TextBox>
-        <Label Grid.Row="1">You can use the "Get cookies.txt" extension to get a valid cookie list</Label>
-        <Button Name="btnSave" Grid.Row="1" Grid.Column="1">Save Cookies</Button>
+        <Label Grid.Row="1" Content="{loc:Translate Key=Cookie.Hint}"></Label>
+        <Button Name="btnSave" Grid.Row="1" Grid.Column="1" Content="{loc:Translate Key=Cookie.Save}"/>
     </Grid>
     <UserControl.Styles>
         <Style Selector="TextBox">

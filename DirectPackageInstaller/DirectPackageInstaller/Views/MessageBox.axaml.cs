@@ -27,7 +27,7 @@ namespace DirectPackageInstaller.Views
         {
             if (Dispatcher.UIThread.CheckAccess())
             {
-                _ = ShowAsync("Sync MessageBox Called from main thread", "DirectPackageInstaller - ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                _ = ShowAsync(Language.L("Msg.SyncMessageBoxFromMainThread"), $"DirectPackageInstaller - {Language.L("Title.Error")}", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return DialogResult.Cancel;
             }
             

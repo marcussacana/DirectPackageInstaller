@@ -132,7 +132,7 @@ public partial class FilePicker : UserControl
         }
         catch (Exception ex)
         {
-            await MessageBox.ShowAsync("ERROR: " + ex.ToString(), "DPI", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            await MessageBox.ShowAsync(Language.F("Msg.FilePickerError", ex), "DPI", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
